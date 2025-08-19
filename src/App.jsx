@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, 
-  HelpCircle, Lock, UserCheck, LogOut, Loader2, History
+  HelpCircle, Lock, UserCheck, LogOut, Loader2, History, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -17,6 +17,7 @@ import Reports from '@/components/Reports';
 import Logs from '@/components/Logs';
 import Help from '@/components/Help';
 import Versions from '@/components/Versions';
+import UserManagement from '@/components/UserManagement'; // Importando o novo componente
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useApp } from '@/contexts/AppContext';
 
@@ -24,7 +25,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
-  const { session, user, signOut } = useAuth();
+  const { session, user, signOut, role } = useAuth(); // Obtendo a função do usuário
   const { appVersion } = useApp();
   const navigate = useNavigate();
 
@@ -36,7 +37,7 @@ function App() {
     });
   };
 
-  const sidebarItems = [
+  const baseSidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'company', label: 'Empresa', icon: Building },
     { id: 'certificate', label: 'Certificado', icon: Lock },
@@ -48,6 +49,11 @@ function App() {
     { id: 'versions', label: 'Versões', icon: History }
   ];
 
+  // Adiciona o item de menu de usuários apenas se o usuário for admin
+  const sidebarItems = role === 'admin' 
+    ? [...baseSidebarItems.slice(0, 5), { id: 'users', label: 'Usuários', icon: Users }, ...baseSidebarItems.slice(5)]
+    : baseSidebarItems;
+
   const renderContent = () => {
     const commonProps = { handleNotImplemented, isSupabaseConnected: !!session };
     switch (activeTab) {
@@ -56,6 +62,7 @@ function App() {
       case 'certificate': return <CertificateSettings {...commonProps} />;
       case 'sefaz': return <SefazSettings {...commonProps} />;
       case 'techResp': return <TechRespSettings {...commonProps} />;
+      case 'users': return <UserManagement {...commonProps} />; // Rota para o novo componente
       case 'reports': return <Reports {...commonProps} />;
       case 'logs': return <Logs {...commonProps} />;
       case 'help': return <Help {...commonProps} />;
