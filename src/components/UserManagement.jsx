@@ -141,7 +141,6 @@ const UserManagement = ({ handleNotImplemented }) => {
                                 <TableHead>Nome</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Perfil</TableHead>
-                                <TableHead>Localização</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -151,7 +150,6 @@ const UserManagement = ({ handleNotImplemented }) => {
                                     <TableCell className="font-medium">{u.full_name}</TableCell>
                                     <TableCell>{u.email}</TableCell>
                                     <TableCell>{getRoleBadge(u.role)}</TableCell>
-                                    <TableCell>{u.location}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Visualizar Usuário')}>

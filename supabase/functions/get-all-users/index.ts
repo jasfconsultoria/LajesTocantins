@@ -49,14 +49,13 @@ serve(async (req) => {
 
     const userIds = users.map(u => u.id)
 
-    // Busca os detalhes adicionais (perfil, empresa) para todos os usuários encontrados
+    // Busca os detalhes adicionais (perfil, role) para todos os usuários encontrados
     const { data: details, error: detailsError } = await supabaseAdmin
       .from('profiles')
       .select(`
         id,
         full_name,
-        user_roles ( roles ( name ) ),
-        emitente_users ( emitente ( municipio, uf ) )
+        user_roles ( roles ( name ) )
       `)
       .in('id', userIds)
     
@@ -65,13 +64,11 @@ serve(async (req) => {
     // Combina os dados de autenticação (email) com os detalhes do perfil
     const combinedData = users.map(u => {
       const userDetails = details.find(d => d.id === u.id)
-      const locationData = userDetails?.emitente_users[0]?.emitente
       return {
         id: u.id,
         email: u.email,
         full_name: userDetails?.full_name || u.email,
         role: userDetails?.user_roles[0]?.roles?.name || 'N/A',
-        location: locationData ? `${locationData.municipio}, ${locationData.uf}` : 'N/A',
         created_at: u.created_at,
       }
     })
