@@ -4,18 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, Globe, 
-  HelpCircle, Lock, UserCheck, LogOut, Loader2, ShoppingCart, Users, ClipboardList, History
+  HelpCircle, Lock, UserCheck, LogOut, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import Dashboard from '@/components/Dashboard';
-import Sales from '@/components/Sales';
-import Nfce from '@/components/Nfce';
-import Products from '@/components/Products';
-import Customers from '@/components/Customers';
 import CompanySettings from '@/components/settings/CompanySettings';
 import SefazSettings from '@/components/settings/SefazSettings';
-import WooCommerceSettings from '@/components/settings/WooCommerceSettings';
 import CertificateSettings from '@/components/settings/CertificateSettings';
 import TechRespSettings from '@/components/settings/TechRespSettings';
 import Reports from '@/components/Reports';
@@ -26,11 +21,11 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useApp } from '@/contexts/AppContext';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('sales');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
   const { session, user, signOut } = useAuth();
-  const { isWooConnected, isCheckingConnection, setIsWooConnected, appVersion } = useApp();
+  const { appVersion } = useApp();
   const navigate = useNavigate();
 
   const handleNotImplemented = (feature) => {
@@ -42,16 +37,11 @@ function App() {
   };
 
   const sidebarItems = [
-    { id: 'sales', label: 'Vendas', icon: ClipboardList },
-    { id: 'nfce', label: 'NFC-e', icon: FileText },
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'products', label: 'Produtos', icon: ShoppingCart },
-    { id: 'customers', label: 'Clientes', icon: Users },
     { id: 'company', label: 'Empresa', icon: Building },
     { id: 'certificate', label: 'Certificado', icon: Lock },
     { id: 'sefaz', label: 'SEFAZ', icon: Shield },
     { id: 'techResp', label: 'Resp. Técnico', icon: UserCheck },
-    { id: 'woocommerce', label: 'WooCommerce', icon: Globe },
     { id: 'reports', label: 'Relatórios', icon: BarChart3 },
     { id: 'logs', label: 'Logs', icon: Database },
     { id: 'help', label: 'Ajuda', icon: HelpCircle },
@@ -59,36 +49,22 @@ function App() {
   ];
 
   const renderContent = () => {
-    if (isCheckingConnection) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-                <p className="ml-4 text-slate-600">Verificando conexão com a loja...</p>
-            </div>
-        );
-    }
-
-    const commonProps = { handleNotImplemented, isWooConnected, onWooConnectionChange: setIsWooConnected, setActiveTab, isSupabaseConnected: !!session };
+    const commonProps = { handleNotImplemented, isSupabaseConnected: !!session };
     switch (activeTab) {
-      case 'sales': return <Sales {...commonProps} />;
-      case 'nfce': return <Nfce {...commonProps} />;
       case 'dashboard': return <Dashboard {...commonProps} />;
-      case 'products': return <Products {...commonProps} />;
-      case 'customers': return <Customers {...commonProps} />;
       case 'company': return <CompanySettings {...commonProps} />;
       case 'certificate': return <CertificateSettings {...commonProps} />;
       case 'sefaz': return <SefazSettings {...commonProps} />;
       case 'techResp': return <TechRespSettings {...commonProps} />;
-      case 'woocommerce': return <WooCommerceSettings {...commonProps} />;
       case 'reports': return <Reports {...commonProps} />;
       case 'logs': return <Logs {...commonProps} />;
       case 'help': return <Help {...commonProps} />;
       case 'versions': return <Versions {...commonProps} />;
-      default: return <Sales {...commonProps} />;
+      default: return <Dashboard {...commonProps} />;
     }
   };
   
-  const goHome = () => setActiveTab('sales');
+  const goHome = () => setActiveTab('dashboard');
 
   const handleSignOut = async () => {
     await signOut();
@@ -99,7 +75,7 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 text-sm">
       <Helmet>
         <title>App | NFC-e Plus</title>
-        <meta name="description" content="Painel de controle para emissão automática de NFC-e integrado ao WordPress/WooCommerce." />
+        <meta name="description" content="Painel de controle para emissão automática de NFC-e." />
       </Helmet>
 
       <header className="glass-effect border-b border-white/20 sticky top-0 z-40">
