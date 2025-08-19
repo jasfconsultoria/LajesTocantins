@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Users, ShieldAlert } from 'lucide-react';
+import { Loader2, ShieldAlert, Search, PlusCircle, Edit, Trash2, Eye, Shield, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -11,98 +13,85 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-const UserManagement = () => {
+const UserManagement = ({ handleNotImplemented }) => {
     const { user, role } = useAuth();
     const { toast } = useToast();
     const [users, setUsers] = useState([]);
-    const [roles, setRoles] = useState([]);
-    const [emitentes, setEmitentes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
-    const fetchData = useCallback(async () => {
+    const fetchUsers = useCallback(async () => {
+        if (role !== 'admin') {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         try {
-            // Fetch roles
-            const { data: rolesData, error: rolesError } = await supabase.from('roles').select('*');
-            if (rolesError) throw rolesError;
-            setRoles(rolesData);
+            const { data, error } = await supabase.functions.invoke('get-all-users');
+            
+            if (error) throw error;
 
-            // Fetch emitentes (companies)
-            const { data: emitentesData, error: emitentesError } = await supabase.from('emitente').select('id, razao_social');
-            if (emitentesError) throw emitentesError;
-            setEmitentes(emitentesData);
-
-            // Fetch users with their roles and assigned company
-            const { data: usersData, error: usersError } = await supabase
-                .from('profiles')
-                .select(`
-                    id,
-                    full_name,
-                    user_roles ( role_id, roles ( name ) ),
-                    emitente_users ( emitente_id )
-                `);
-            if (usersError) throw usersError;
-
-            const formattedUsers = usersData.map(u => ({
-                id: u.id,
-                full_name: u.full_name || 'Usuário sem nome',
-                role_id: u.user_roles[0]?.role_id,
-                emitente_id: u.emitente_users[0]?.emitente_id?.toString(),
-            }));
-            setUsers(formattedUsers);
+            const sortedUsers = data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            setUsers(sortedUsers);
 
         } catch (error) {
             toast({
                 variant: "destructive",
-                title: "Erro ao carregar dados",
+                title: "Erro ao carregar usuários",
                 description: error.message,
             });
         } finally {
             setLoading(false);
         }
-    }, [toast]);
+    }, [role, toast]);
 
     useEffect(() => {
-        if (role === 'admin') {
-            fetchData();
-        }
-    }, [role, fetchData]);
+        fetchUsers();
+    }, [fetchUsers]);
 
-    const handleRoleChange = async (userId, newRoleId) => {
-        try {
-            const { error } = await supabase.from('user_roles').update({ role_id: newRoleId }).eq('user_id', userId);
-            if (error) throw error;
-            toast({ title: "Função atualizada com sucesso!" });
-            fetchData();
-        } catch (error) {
-            toast({ variant: "destructive", title: "Erro ao atualizar função", description: error.message });
+    const filteredUsers = useMemo(() => {
+        return users.filter(u =>
+            (u.full_name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (u.email?.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    }, [users, searchTerm]);
+
+    const paginatedUsers = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredUsers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredUsers, currentPage]);
+
+    const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
         }
     };
 
-    const handleCompanyAssignment = async (userId, newEmitenteId) => {
-        try {
-            const { error } = await supabase
-                .from('emitente_users')
-                .upsert({ user_id: userId, emitente_id: newEmitenteId }, { onConflict: 'user_id' });
-            if (error) throw error;
-            toast({ title: "Empresa atribuída com sucesso!" });
-            fetchData();
-        } catch (error) {
-            toast({ variant: "destructive", title: "Erro ao atribuir empresa", description: error.message });
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
         }
+    };
+
+    const getRoleBadge = (roleName) => {
+        const lowerCaseRole = roleName?.toLowerCase();
+        let colorClasses = 'bg-slate-200 text-slate-700';
+        if (lowerCaseRole === 'admin' || lowerCaseRole === 'administrador') {
+            colorClasses = 'bg-green-100 text-green-800';
+        } else if (lowerCaseRole === 'user' || lowerCaseRole === 'coletor') {
+            colorClasses = 'bg-blue-100 text-blue-800';
+        }
+        return <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClasses}`}>{roleName}</span>;
     };
 
     if (role !== 'admin') {
         return (
-            <div className="flex flex-col items-center justify-center h-64 text-center">
+            <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
                 <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
                 <h2 className="text-2xl font-bold text-slate-800">Acesso Negado</h2>
                 <p className="text-slate-600">Você não tem permissão para acessar esta página.</p>
@@ -110,61 +99,98 @@ const UserManagement = () => {
         );
     }
 
-    if (loading) {
-        return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
-    }
-
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold gradient-text">Gerenciamento de Usuários</h1>
-                <p className="text-slate-600 mt-2">Atribua funções e empresas aos usuários do sistema.</p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold gradient-text flex items-center gap-2">
+                        <Users className="w-8 h-8" />
+                        Lista de Usuários
+                    </h1>
+                    <p className="text-slate-600 mt-2">Visualize e gerencie usuários cadastrados.</p>
+                </div>
+                <Button onClick={() => handleNotImplemented('Novo Usuário')} className="save-button">
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Novo Usuário
+                </Button>
+            </div>
+
+            <div className="bg-white/80 p-4 rounded-xl shadow-sm border border-white">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input
+                        type="text"
+                        placeholder="Buscar por nome ou email..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                    />
+                </div>
             </div>
             
-            <div className="data-table-container">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nome</TableHead>
-                            <TableHead>Função</TableHead>
-                            <TableHead>Empresa Atribuída</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {users.map((u) => (
-                            <TableRow key={u.id}>
-                                <TableCell className="font-medium">{u.full_name}</TableCell>
-                                <TableCell>
-                                    <Select
-                                        value={u.role_id}
-                                        onValueChange={(newRoleId) => handleRoleChange(u.id, newRoleId)}
-                                        disabled={u.id === user.id}
-                                    >
-                                        <SelectTrigger className="w-[180px]">
-                                            <SelectValue placeholder="Definir função" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </TableCell>
-                                <TableCell>
-                                     <Select
-                                        value={u.emitente_id}
-                                        onValueChange={(newEmitenteId) => handleCompanyAssignment(u.id, newEmitenteId)}
-                                    >
-                                        <SelectTrigger className="w-[280px]">
-                                            <SelectValue placeholder="Atribuir empresa" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {emitentes.map(e => <SelectItem key={e.id} value={e.id.toString()}>{e.razao_social}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </TableCell>
+            {loading ? (
+                 <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+            ) : (
+                <div className="data-table-container">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Nome</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead>Perfil</TableHead>
+                                <TableHead>Localização</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedUsers.map((u) => (
+                                <TableRow key={u.id}>
+                                    <TableCell className="font-medium">{u.full_name}</TableCell>
+                                    <TableCell>{u.email}</TableCell>
+                                    <TableCell>{getRoleBadge(u.role)}</TableCell>
+                                    <TableCell>{u.location}</TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Visualizar Usuário')}>
+                                                <Eye className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Editar Permissões')}>
+                                                <Shield className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Editar Usuário')}>
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleNotImplemented('Excluir Usuário')}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+
+            <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
+                <div>
+                    Exibindo {paginatedUsers.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
+                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)} de {filteredUsers.length} registros
+                </div>
+                <div className="flex items-center gap-2">
+                    <span>Página {currentPage} de {totalPages}</span>
+                    <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Anterior
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                        Próximo
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                </div>
             </div>
         </div>
     );
