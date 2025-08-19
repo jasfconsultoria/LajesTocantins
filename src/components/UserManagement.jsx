@@ -13,6 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import UserForm from './UserForm';
 
 const UserManagement = ({ handleNotImplemented }) => {
     const { user, role } = useAuth();
@@ -21,6 +22,7 @@ const UserManagement = ({ handleNotImplemented }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [isFormOpen, setIsFormOpen] = useState(false);
     const ITEMS_PER_PAGE = 10;
 
     const fetchUsers = useCallback(async () => {
@@ -78,12 +80,16 @@ const UserManagement = ({ handleNotImplemented }) => {
         }
     };
 
+    const handleSaveSuccess = () => {
+        fetchUsers();
+    };
+
     const getRoleBadge = (roleName) => {
         const lowerCaseRole = roleName?.toLowerCase();
         let colorClasses = 'bg-slate-200 text-slate-700';
-        if (lowerCaseRole === 'admin' || lowerCaseRole === 'administrador') {
+        if (lowerCaseRole === 'admin') {
             colorClasses = 'bg-green-100 text-green-800';
-        } else if (lowerCaseRole === 'user' || lowerCaseRole === 'coletor') {
+        } else if (lowerCaseRole === 'user') {
             colorClasses = 'bg-blue-100 text-blue-800';
         }
         return <span className={`px-2 py-1 rounded-full text-xs font-medium ${colorClasses}`}>{roleName}</span>;
@@ -109,7 +115,7 @@ const UserManagement = ({ handleNotImplemented }) => {
                     </h1>
                     <p className="text-slate-600 mt-2">Visualize e gerencie usuários cadastrados.</p>
                 </div>
-                <Button onClick={() => handleNotImplemented('Novo Usuário')} className="save-button">
+                <Button onClick={() => setIsFormOpen(true)} className="save-button">
                     <PlusCircle className="w-4 h-4 mr-2" />
                     Novo Usuário
                 </Button>
@@ -190,6 +196,11 @@ const UserManagement = ({ handleNotImplemented }) => {
                     </Button>
                 </div>
             </div>
+            <UserForm 
+                isOpen={isFormOpen}
+                setIsOpen={setIsFormOpen}
+                onSave={handleSaveSuccess}
+            />
         </div>
     );
 };
