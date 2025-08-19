@@ -49,26 +49,30 @@ serve(async (req) => {
 
     const userIds = users.map(u => u.id)
 
-    // Busca os detalhes adicionais (perfil, role) para todos os usuários encontrados
-    const { data: details, error: detailsError } = await supabaseAdmin
+    // Busca os perfis dos usuários
+    const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('profiles')
-      .select(`
-        id,
-        full_name,
-        user_roles ( roles ( name ) )
-      `)
+      .select('id, full_name')
       .in('id', userIds)
-    
-    if (detailsError) throw detailsError
+    if (profilesError) throw profilesError
 
-    // Combina os dados de autenticação (email) com os detalhes do perfil
+    // Busca as roles dos usuários
+    const { data: userRoles, error: userRolesError } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id, roles(name)')
+      .in('user_id', userIds)
+    if (userRolesError) throw userRolesError
+
+    // Combina os dados de autenticação, perfil e role
     const combinedData = users.map(u => {
-      const userDetails = details.find(d => d.id === u.id)
+      const profile = profiles.find(p => p.id === u.id)
+      const userRole = userRoles.find(ur => ur.user_id === u.id)
+      
       return {
         id: u.id,
         email: u.email,
-        full_name: userDetails?.full_name || u.email,
-        role: userDetails?.user_roles[0]?.roles?.name || 'N/A',
+        full_name: profile?.full_name || u.email,
+        role: userRole?.roles?.name || 'N/A',
         created_at: u.created_at,
       }
     })
