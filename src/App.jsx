@@ -3,8 +3,8 @@ import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, Globe, 
-  HelpCircle, Lock, UserCheck, LogOut, Loader2
+  FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, 
+  HelpCircle, Lock, UserCheck, LogOut, Loader2, History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
