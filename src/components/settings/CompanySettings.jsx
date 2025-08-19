@@ -1,87 +1,77 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Save, Zap, Building2, Loader2 } from 'lucide-react';
+import { Save, Building2, Loader2, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
-const CompanySettings = ({ handleNotImplemented }) => {
+const CompanySettings = () => {
     const { toast } = useToast();
-    const { user } = useAuth();
-    const [companyConfig, setCompanyConfig] = useState({
-        razao_social: '',
-        nome_fantasia: '',
-        cnpj: '',
-        inscricao_estadual: '',
-        crt: '1',
-        logradouro: '',
-        numero: '',
-        complemento: '',
-        bairro: '',
-        municipio: '',
-        uf: '',
-        cep: '',
-        telefone: '',
-        codigo_municipio: ''
-    });
+    const { user, role } = useAuth();
+    const [companyConfig, setCompanyConfig] = useState(null);
+    const [emitenteId, setEmitenteId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isConfigured, setIsConfigured] = useState(false);
 
     const fetchCompanyData = useCallback(async () => {
-        if (!user) return;
+        if (!user || role === 'admin') {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
-        const { data, error } = await supabase
-            .from('emitente')
-            .select('*')
-            .eq('user_id', user.id)
-            .maybeSingle();
+        
+        try {
+            const { data: assignment, error: assignError } = await supabase
+                .from('emitente_users')
+                .select('emitente_id')
+                .eq('user_id', user.id)
+                .limit(1)
+                .single();
 
-        if (data) {
-            setCompanyConfig({
-                razao_social: data.razao_social || '',
-                nome_fantasia: data.nome_fantasia || '',
-                cnpj: data.cnpj || '',
-                inscricao_estadual: data.inscricao_estadual || '',
-                crt: data.crt || '1',
-                logradouro: data.logradouro || '',
-                numero: data.numero || '',
-                complemento: data.complemento || '',
-                bairro: data.bairro || '',
-                municipio: data.municipio || '',
-                uf: data.uf || '',
-                cep: data.cep || '',
-                telefone: data.telefone || '',
-                codigo_municipio: data.codigo_municipio || ''
-            });
-            setIsConfigured(true);
-        } else if (error) {
+            if (assignError || !assignment) {
+                setIsLoading(false);
+                return;
+            }
+
+            const { data, error } = await supabase
+                .from('emitente')
+                .select('*')
+                .eq('id', assignment.emitente_id)
+                .single();
+
+            if (data) {
+                setCompanyConfig(data);
+                setEmitenteId(data.id);
+                setIsConfigured(true);
+            } else if (error) {
+                throw error;
+            }
+        } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Erro ao buscar dados',
                 description: 'Não foi possível carregar as informações da sua empresa.',
             });
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
-    }, [user, toast]);
+    }, [user, role, toast]);
 
     useEffect(() => {
         fetchCompanyData();
     }, [fetchCompanyData]);
 
     const handleSave = async () => {
-        if (!user) return;
+        if (!user || !emitenteId) return;
         setIsSaving(true);
 
-        const upsertData = {
-            ...companyConfig,
-            user_id: user.id,
-            crt: parseInt(companyConfig.crt, 10),
-        };
+        const { user_id, id, created_at, ...updateData } = companyConfig;
 
         const { error } = await supabase
             .from('emitente')
-            .upsert(upsertData, { onConflict: 'user_id' });
+            .update(updateData)
+            .eq('id', emitenteId);
 
         if (error) {
             toast({
@@ -90,20 +80,12 @@ const CompanySettings = ({ handleNotImplemented }) => {
                 description: `Não foi possível salvar as configurações: ${error.message}`,
             });
         } else {
-            setIsConfigured(true);
             toast({
                 title: "Configurações Salvas!",
                 description: "Os dados da sua empresa foram atualizados com sucesso.",
             });
         }
         setIsSaving(false);
-    };
-
-    const handleTest = () => {
-        toast({
-            title: "🚧 Funcionalidade em desenvolvimento",
-            description: "O teste de validação de dados será implementado em breve.",
-        });
     };
     
     const handleInputChange = (e) => {
@@ -112,9 +94,34 @@ const CompanySettings = ({ handleNotImplemented }) => {
     };
 
     if (isLoading) {
+        return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+    }
+
+    if (role === 'admin') {
         return (
-            <div className="flex justify-center items-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <div className="text-center p-8 bg-white/80 rounded-xl shadow-sm border border-white">
+                <Building2 className="w-12 h-12 mx-auto mb-4 text-blue-600" />
+                <h2 className="text-xl font-bold text-slate-800">Visão do Administrador</h2>
+                <p className="text-slate-600 mt-2">
+                    Como administrador, você pode criar e gerenciar múltiplas empresas.<br/>
+                    A criação de novas empresas e a edição de existentes será feita em uma tela dedicada.
+                </p>
+                 <p className="text-sm text-slate-500 mt-4">
+                    Por favor, utilize a tela de <span className="font-semibold">Gerenciamento de Usuários</span> para atribuir empresas aos usuários.
+                </p>
+            </div>
+        );
+    }
+
+    if (!companyConfig) {
+        return (
+             <div className="text-center p-8 bg-white/80 rounded-xl shadow-sm border border-white">
+                <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-yellow-600" />
+                <h2 className="text-xl font-bold text-slate-800">Nenhuma Empresa Atribuída</h2>
+                <p className="text-slate-600 mt-2">
+                    Você ainda não foi associado a uma empresa. <br/>
+                    Por favor, entre em contato com um administrador para que ele atribua uma empresa ao seu usuário.
+                </p>
             </div>
         );
     }
@@ -240,16 +247,8 @@ const CompanySettings = ({ handleNotImplemented }) => {
                 </div>
 
                 <div className="flex space-x-4 mt-8 justify-end">
-                    <Button onClick={handleTest} variant="outline" className="test-button">
-                        <Zap className="w-4 h-4 mr-2" />
-                        Testar
-                    </Button>
                     <Button onClick={handleSave} className="save-button" disabled={isSaving}>
-                        {isSaving ? (
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                            <Save className="w-4 h-4 mr-2" />
-                        )}
+                        {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                         Salvar Configurações
                     </Button>
                 </div>
