@@ -12,19 +12,18 @@ const CompanySettings = ({ handleNotImplemented }) => {
         razao_social: '',
         nome_fantasia: '',
         cnpj: '',
-        ie: '',
+        inscricao_estadual: '',
         crt: '1',
-        endereco: '',
+        logradouro: '',
         numero: '',
         complemento: '',
         bairro: '',
-        cidade: '',
+        municipio: '',
         uf: '',
         cep: '',
-        fone: '',
-        city_code: ''
+        telefone: '',
+        codigo_municipio: ''
     });
-    const [companyId, setCompanyId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isConfigured, setIsConfigured] = useState(false);
@@ -33,17 +32,30 @@ const CompanySettings = ({ handleNotImplemented }) => {
         if (!user) return;
         setIsLoading(true);
         const { data, error } = await supabase
-            .from('companies')
+            .from('emitente')
             .select('*')
             .eq('user_id', user.id)
-            .limit(1)
-            .single();
+            .maybeSingle();
 
         if (data) {
-            setCompanyConfig(data);
-            setCompanyId(data.id);
+            setCompanyConfig({
+                razao_social: data.razao_social || '',
+                nome_fantasia: data.nome_fantasia || '',
+                cnpj: data.cnpj || '',
+                inscricao_estadual: data.inscricao_estadual || '',
+                crt: data.crt || '1',
+                logradouro: data.logradouro || '',
+                numero: data.numero || '',
+                complemento: data.complemento || '',
+                bairro: data.bairro || '',
+                municipio: data.municipio || '',
+                uf: data.uf || '',
+                cep: data.cep || '',
+                telefone: data.telefone || '',
+                codigo_municipio: data.codigo_municipio || ''
+            });
             setIsConfigured(true);
-        } else if (error && error.code !== 'PGRST116') { // PGRST116: no rows found
+        } else if (error) {
             toast({
                 variant: 'destructive',
                 title: 'Erro ao buscar dados',
@@ -60,10 +72,16 @@ const CompanySettings = ({ handleNotImplemented }) => {
     const handleSave = async () => {
         if (!user) return;
         setIsSaving(true);
+
+        const upsertData = {
+            ...companyConfig,
+            user_id: user.id,
+            crt: parseInt(companyConfig.crt, 10),
+        };
+
         const { error } = await supabase
-            .from('companies')
-            .update(companyConfig)
-            .eq('id', companyId);
+            .from('emitente')
+            .upsert(upsertData, { onConflict: 'user_id' });
 
         if (error) {
             toast({
@@ -137,12 +155,12 @@ const CompanySettings = ({ handleNotImplemented }) => {
                         <input id="cnpj" type="text" className="form-input" value={companyConfig.cnpj} onChange={handleInputChange} />
                     </div>
                     <div className="form-group">
-                        <label className="form-label" htmlFor="ie">Inscrição Estadual *</label>
-                        <input id="ie" type="text" className="form-input" value={companyConfig.ie} onChange={handleInputChange} />
+                        <label className="form-label" htmlFor="inscricao_estadual">Inscrição Estadual *</label>
+                        <input id="inscricao_estadual" type="text" className="form-input" value={companyConfig.inscricao_estadual} onChange={handleInputChange} />
                     </div>
                     <div className="form-group">
-                        <label className="form-label" htmlFor="fone">Telefone</label>
-                        <input id="fone" type="text" className="form-input" value={companyConfig.fone} onChange={handleInputChange} />
+                        <label className="form-label" htmlFor="telefone">Telefone</label>
+                        <input id="telefone" type="text" className="form-input" value={companyConfig.telefone} onChange={handleInputChange} />
                     </div>
                      <div className="form-group">
                         <label className="form-label" htmlFor="crt">Regime Tributário (CRT) *</label>
@@ -162,12 +180,12 @@ const CompanySettings = ({ handleNotImplemented }) => {
                             <input id="cep" type="text" className="form-input" value={companyConfig.cep} onChange={handleInputChange} />
                         </div>
                          <div className="form-group">
-                            <label className="form-label" htmlFor="city_code">Código do Município (IBGE) *</label>
-                            <input id="city_code" type="text" className="form-input" value={companyConfig.city_code} onChange={handleInputChange} />
+                            <label className="form-label" htmlFor="codigo_municipio">Código do Município (IBGE) *</label>
+                            <input id="codigo_municipio" type="text" className="form-input" value={companyConfig.codigo_municipio} onChange={handleInputChange} />
                         </div>
                         <div className="form-group col-span-2 lg:col-span-1">
-                            <label className="form-label" htmlFor="endereco">Logradouro *</label>
-                            <input id="endereco" type="text" className="form-input" value={companyConfig.endereco} onChange={handleInputChange} />
+                            <label className="form-label" htmlFor="logradouro">Logradouro *</label>
+                            <input id="logradouro" type="text" className="form-input" value={companyConfig.logradouro} onChange={handleInputChange} />
                         </div>
                         <div className="form-group">
                             <label className="form-label" htmlFor="numero">Número *</label>
@@ -182,8 +200,8 @@ const CompanySettings = ({ handleNotImplemented }) => {
                             <input id="bairro" type="text" className="form-input" value={companyConfig.bairro} onChange={handleInputChange} />
                         </div>
                         <div className="form-group">
-                            <label className="form-label" htmlFor="cidade">Cidade *</label>
-                            <input id="cidade" type="text" className="form-input" value={companyConfig.cidade} onChange={handleInputChange} />
+                            <label className="form-label" htmlFor="municipio">Cidade *</label>
+                            <input id="municipio" type="text" className="form-input" value={companyConfig.municipio} onChange={handleInputChange} />
                         </div>
                         <div className="form-group">
                             <label className="form-label" htmlFor="uf">UF *</label>
