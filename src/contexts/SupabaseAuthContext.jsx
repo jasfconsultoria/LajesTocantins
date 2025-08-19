@@ -91,17 +91,23 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
+    
+    // Limpa a sessão local imediatamente para garantir que a UI reaja na hora.
+    handleSession(null);
 
     if (error) {
-      toast({
-        variant: "destructive",
-        title: "Sign out Failed",
-        description: error.message || "Something went wrong",
-      });
+      // Evita mostrar um erro para um caso que já tratamos (usuário não existe mais)
+      if (!error.message.includes('User from sub claim in JWT does not exist')) {
+        toast({
+          variant: "destructive",
+          title: "Sign out Failed",
+          description: error.message || "Something went wrong",
+        });
+      }
     }
 
     return { error };
-  }, [toast]);
+  }, [toast, handleSession]);
 
   const value = useMemo(() => ({
     user,
