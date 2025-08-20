@@ -32,19 +32,8 @@ const ProtectedRoute = () => {
     return <Navigate to="/app/login" replace />;
   }
 
-  return (
-    <AppProvider>
-      <MainLayout />
-    </AppProvider>
-  );
+  return <MainLayout />;
 };
-
-const AuthLayout = () => (
-  <AuthProvider>
-    <Outlet />
-    <Toaster />
-  </AuthProvider>
-);
 
 const router = createBrowserRouter([
   {
@@ -53,7 +42,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/app",
-    element: <AuthLayout />,
+    element: <Outlet />,
     children: [
       {
         path: "login",
@@ -86,5 +75,10 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <RouterProvider router={router} />
+  <AuthProvider>
+    <AppProvider>
+      <RouterProvider router={router} />
+      <Toaster />
+    </AppProvider>
+  </AuthProvider>
 );
