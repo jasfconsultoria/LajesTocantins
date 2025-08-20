@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, Users as UsersIcon, Building, ChevronLeft, ChevronRight, KeyRound } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Users as UsersIcon, Building, ChevronLeft, ChevronRight, KeyRound, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -22,11 +22,12 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import CompanyUserDialog from './CompanyUserDialog';
-import CertificateSettings from '@/components/settings/CertificateSettings'; // Import CertificateSettings
+import CertificateSettings from '@/components/settings/CertificateSettings';
+import SefazSettings from '@/components/settings/SefazSettings';
 
 const CompanyList = () => {
     const { handleNotImplemented } = useOutletContext();
-    const { role } = useAuth(); // Get the user's role
+    const { role } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
     const [companies, setCompanies] = useState([]);
@@ -36,6 +37,8 @@ const CompanyList = () => {
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
     const [companyForCertificate, setCompanyForCertificate] = useState(null);
+    const [isSefazModalOpen, setIsSefazModalOpen] = useState(false);
+    const [companyForSefaz, setCompanyForSefaz] = useState(null);
 
     const ITEMS_PER_PAGE = 10;
 
@@ -91,7 +94,18 @@ const CompanyList = () => {
     const handleCloseCertificateModal = () => {
         setIsCertificateModalOpen(false);
         setCompanyForCertificate(null);
-        fetchCompanies(); // Refresh companies after certificate update
+        fetchCompanies();
+    };
+
+    const handleOpenSefazModal = (company) => {
+        setCompanyForSefaz(company);
+        setIsSefazModalOpen(true);
+    };
+
+    const handleCloseSefazModal = () => {
+        setIsSefazModalOpen(false);
+        setCompanyForSefaz(null);
+        fetchCompanies();
     };
 
     return (
@@ -107,7 +121,7 @@ const CompanyList = () => {
                 <Button 
                     onClick={() => navigate('/app/companies/new')} 
                     className="save-button"
-                    disabled={role !== 'admin'} // Disable for non-admin users
+                    disabled={role !== 'admin'}
                 >
                     <PlusCircle className="w-4 h-4 mr-2" />
                     Nova Empresa
@@ -151,7 +165,7 @@ const CompanyList = () => {
                                     <TableCell>{c.municipio}/{c.uf}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            {role === 'admin' && ( // Only show for admins
+                                            {role === 'admin' && (
                                                 <Button variant="ghost" size="icon" onClick={() => setSelectedCompany(c)}>
                                                     <UsersIcon className="w-4 h-4" />
                                                 </Button>
@@ -159,11 +173,13 @@ const CompanyList = () => {
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/edit`)}>
                                                 <Edit className="w-4 h-4" />
                                             </Button>
-                                            {/* Button to open Certificate Modal */}
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenCertificateModal(c)}>
                                                 <KeyRound className="w-4 h-4" />
                                             </Button>
-                                            {role === 'admin' && ( // Only show for admins
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenSefazModal(c)}>
+                                                <Shield className="w-4 h-4" />
+                                            </Button>
+                                            {role === 'admin' && (
                                                 <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleNotImplemented('Excluir Empresa')}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
@@ -195,7 +211,7 @@ const CompanyList = () => {
                 </div>
             </div>
             
-            {selectedCompany && role === 'admin' && ( // Only show dialog for admins
+            {selectedCompany && role === 'admin' && (
                 <CompanyUserDialog
                     company={selectedCompany}
                     isOpen={!!selectedCompany}
@@ -203,9 +219,8 @@ const CompanyList = () => {
                 />
             )}
 
-            {/* Certificate Management Dialog */}
             <Dialog open={isCertificateModalOpen} onOpenChange={setIsCertificateModalOpen}>
-                <DialogContent className="sm:max-w-[480px]"> {/* Reduced max-width here */}
+                <DialogContent className="sm:max-w-[480px]">
                     <DialogHeader>
                         <DialogTitle>Certificado Digital para {companyForCertificate?.razao_social}</DialogTitle>
                         <DialogDescription>
@@ -214,6 +229,20 @@ const CompanyList = () => {
                     </DialogHeader>
                     {companyForCertificate && (
                         <CertificateSettings companyId={companyForCertificate.id} />
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isSefazModalOpen} onOpenChange={setIsSefazModalOpen}>
+                <DialogContent className="sm:max-w-[800px]">
+                    <DialogHeader>
+                        <DialogTitle>Configurações SEFAZ para {companyForSefaz?.razao_social}</DialogTitle>
+                        <DialogDescription>
+                            Configure a integração com a SEFAZ para esta empresa.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {companyForSefaz && (
+                        <SefazSettings companyId={companyForSefaz.id} />
                     )}
                 </DialogContent>
             </Dialog>
