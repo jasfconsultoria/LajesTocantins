@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ShieldAlert, Search, PlusCircle, Edit, Trash2, Users as UsersIcon, Building, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Users as UsersIcon, Building, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,7 +18,7 @@ import CompanyUserDialog from './CompanyUserDialog';
 
 const CompanyList = () => {
     const { handleNotImplemented } = useOutletContext();
-    const { role } = useAuth();
+    const { role } = useAuth(); // Get the user's role
     const { toast } = useToast();
     const navigate = useNavigate();
     const [companies, setCompanies] = useState([]);
@@ -29,17 +29,10 @@ const CompanyList = () => {
     const ITEMS_PER_PAGE = 10;
 
     const fetchCompanies = useCallback(async () => {
-        if (role !== 'admin') {
-            setLoading(false);
-            return;
-        }
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('emitente')
-                .select('*')
-                .order('created_at', { ascending: false });
-
+            const { data, error } = await supabase.functions.invoke('get-all-companies');
+            
             if (error) throw error;
             setCompanies(data);
         } catch (error) {
@@ -51,7 +44,7 @@ const CompanyList = () => {
         } finally {
             setLoading(false);
         }
-    }, [role, toast]);
+    }, [toast]);
 
     useEffect(() => {
         fetchCompanies();
@@ -79,16 +72,6 @@ const CompanyList = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
 
-    if (role !== 'admin') {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
-                <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
-                <h2 className="text-2xl font-bold text-slate-800">Acesso Negado</h2>
-                <p className="text-slate-600">Esta área é restrita a administradores.</p>
-            </div>
-        );
-    }
-
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -99,7 +82,11 @@ const CompanyList = () => {
                     </h1>
                     <p className="text-slate-600 mt-2">Visualize e gerencie as empresas (emitentes) cadastradas.</p>
                 </div>
-                <Button onClick={() => navigate('/app/companies/new')} className="save-button">
+                <Button 
+                    onClick={() => navigate('/app/companies/new')} 
+                    className="save-button"
+                    disabled={role !== 'admin'} // Disable for non-admin users
+                >
                     <PlusCircle className="w-4 h-4 mr-2" />
                     Nova Empresa
                 </Button>
@@ -142,15 +129,19 @@ const CompanyList = () => {
                                     <TableCell>{c.municipio}/{c.uf}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => setSelectedCompany(c)}>
-                                                <UsersIcon className="w-4 h-4" />
-                                            </Button>
+                                            {role === 'admin' && ( // Only show for admins
+                                                <Button variant="ghost" size="icon" onClick={() => setSelectedCompany(c)}>
+                                                    <UsersIcon className="w-4 h-4" />
+                                                </Button>
+                                            )}
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/edit`)}>
                                                 <Edit className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleNotImplemented('Excluir Empresa')}>
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            {role === 'admin' && ( // Only show for admins
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleNotImplemented('Excluir Empresa')}>
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            )}
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -178,7 +169,7 @@ const CompanyList = () => {
                 </div>
             </div>
             
-            {selectedCompany && (
+            {selectedCompany && role === 'admin' && ( // Only show dialog for admins
                 <CompanyUserDialog
                     company={selectedCompany}
                     isOpen={!!selectedCompany}

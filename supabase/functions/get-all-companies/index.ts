@@ -28,16 +28,26 @@ serve(async (req) => {
         .eq('user_id', user.id)
         .single()
 
-    if (roleError || roleData?.roles?.name !== 'admin') {
-        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (roleError) throw roleError
+
+    let companies;
+    if (roleData?.roles?.name === 'admin') {
+      // Admin users can see all companies
+      const { data, error } = await supabaseAdmin
+        .from('emitente')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      companies = data;
+    } else {
+      // Non-admin users can only see companies they are associated with
+      const { data: associatedCompanies, error: assocError } = await supabaseAdmin
+        .from('emitente_users')
+        .select('emitente(id, razao_social, cnpj, municipio, uf, created_at)') // Select specific fields from emitente
+        .eq('user_id', user.id);
+      if (assocError) throw assocError;
+      companies = associatedCompanies.map(assoc => assoc.emitente);
     }
-
-    const { data: companies, error: companiesError } = await supabaseAdmin
-      .from('emitente')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (companiesError) throw companiesError;
 
     return new Response(JSON.stringify(companies), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
