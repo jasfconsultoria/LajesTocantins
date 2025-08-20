@@ -11,7 +11,7 @@ import {
 import { Building, Loader2 } from 'lucide-react';
 
 const CompanySwitcher = () => {
-  const { user, activeCompany, setActiveCompany, loading: authLoading } = useAuth();
+  const { user, activeCompany, setActiveCompany, loading: authLoading } = useAuth(); // setActiveCompany here is the new updateActiveCompany
   const [companies, setCompanies] = useState([]);
   const [loadingCompanies, setLoadingCompanies] = useState(true);
 
@@ -39,7 +39,7 @@ const CompanySwitcher = () => {
   }, [fetchCompanies]);
 
   const handleCompanyChange = (companyId) => {
-    setActiveCompany(parseInt(companyId)); // Ensure companyId is a number
+    setActiveCompany(parseInt(companyId)); // Call the context function
   };
 
   if (authLoading || loadingCompanies) {
