@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import CompanyUserDialog from './CompanyUserDialog';
 
 const CompanyList = () => {
     const { handleNotImplemented } = useOutletContext();
@@ -24,6 +25,7 @@ const CompanyList = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedCompany, setSelectedCompany] = useState(null);
     const ITEMS_PER_PAGE = 10;
 
     const fetchCompanies = useCallback(async () => {
@@ -140,7 +142,7 @@ const CompanyList = () => {
                                     <TableCell>{c.municipio}/{c.uf}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/users`)}>
+                                            <Button variant="ghost" size="icon" onClick={() => setSelectedCompany(c)}>
                                                 <UsersIcon className="w-4 h-4" />
                                             </Button>
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/edit`)}>
@@ -175,6 +177,14 @@ const CompanyList = () => {
                     </Button>
                 </div>
             </div>
+            
+            {selectedCompany && (
+                <CompanyUserDialog
+                    company={selectedCompany}
+                    isOpen={!!selectedCompany}
+                    setIsOpen={() => setSelectedCompany(null)}
+                />
+            )}
         </div>
     );
 };

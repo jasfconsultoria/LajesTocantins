@@ -11,25 +11,47 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeCompany, setActiveCompany] = useState(null);
 
   const handleSession = useCallback(async (session) => {
     setSession(session);
     const currentUser = session?.user ?? null;
     setUser(currentUser);
+    setActiveCompany(null);
 
     if (currentUser) {
       try {
-        const { data, error } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('roles(name)')
           .eq('user_id', currentUser.id)
           .single();
         
-        if (error) throw error;
-        setRole(data?.roles?.name || 'user');
+        if (roleError) throw roleError;
+        setRole(roleData?.roles?.name || 'user');
+
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('default_emitente_id')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (profileError) throw profileError;
+
+        if (profile && profile.default_emitente_id) {
+          const { data: company, error: companyError } = await supabase
+            .from('emitente')
+            .select('id, razao_social, logo_sistema_url')
+            .eq('id', profile.default_emitente_id)
+            .single();
+          
+          if (companyError) throw companyError;
+          setActiveCompany(company);
+        }
+
       } catch (error) {
-        console.error("Error fetching user role:", error.message);
-        setRole('user'); // Default to 'user' on error
+        console.error("Error fetching user role or company:", error.message);
+        setRole('user');
       }
     } else {
       setRole(null);
@@ -91,12 +113,9 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
-    
-    // Limpa a sessão local imediatamente para garantir que a UI reaja na hora.
     handleSession(null);
 
     if (error) {
-      // Evita mostrar um erro para um caso que já tratamos (usuário não existe mais)
       if (!error.message.includes('User from sub claim in JWT does not exist')) {
         toast({
           variant: "destructive",
@@ -114,10 +133,11 @@ export const AuthProvider = ({ children }) => {
     session,
     role,
     loading,
+    activeCompany,
     signUp,
     signIn,
     signOut,
-  }), [user, session, role, loading, signUp, signIn, signOut]);
+  }), [user, session, role, loading, activeCompany, signUp, signIn, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

@@ -14,7 +14,7 @@ import { useApp } from '@/contexts/AppContext';
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
-  const { user, signOut, role } = useAuth();
+  const { user, signOut, role, activeCompany } = useAuth();
   const { appVersion } = useApp();
   const navigate = useNavigate();
 
@@ -50,7 +50,7 @@ function MainLayout() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 text-sm">
       <Helmet>
-        <title>App | NFC-e Plus</title>
+        <title>{activeCompany ? activeCompany.razao_social : 'App'} | NFC-e Plus</title>
         <meta name="description" content="Painel de controle para emissão automática de NFC-e." />
       </Helmet>
 
@@ -61,11 +61,15 @@ function MainLayout() {
               <Menu className="w-5 h-5" />
             </Button>
             <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/app')}>
-              <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
+              {activeCompany && activeCompany.logo_sistema_url ? (
+                <img src={activeCompany.logo_sistema_url} alt="Logo da Empresa" className="w-9 h-9 rounded-lg object-contain bg-white p-1" />
+              ) : (
+                <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+              )}
               <div>
-                <h1 className="text-lg font-bold gradient-text">NFC-e Plus</h1>
+                <h1 className="text-lg font-bold gradient-text truncate max-w-[200px]">{activeCompany ? activeCompany.razao_social : 'NFC-e Plus'}</h1>
                 <p className="text-xs text-slate-600">Painel de Controle</p>
               </div>
             </div>
