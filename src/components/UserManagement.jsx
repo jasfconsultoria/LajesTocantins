@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,7 +16,8 @@ import {
 } from "@/components/ui/table";
 import UserForm from './UserForm';
 
-const UserManagement = ({ handleNotImplemented }) => {
+const UserManagement = () => {
+    const { handleNotImplemented } = useOutletContext();
     const { user, role } = useAuth();
     const { toast } = useToast();
     const [users, setUsers] = useState([]);

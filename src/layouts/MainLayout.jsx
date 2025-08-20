@@ -127,7 +127,7 @@ function MainLayout() {
         </AnimatePresence>
 
         <main className="flex-1 p-4 lg:p-6">
-          <Outlet />
+          <Outlet context={{ handleNotImplemented }} />
         </main>
       </div>
 

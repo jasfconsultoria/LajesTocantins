@@ -1,4 +1,5 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
   Calendar,
   TrendingUp,
@@ -9,7 +10,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const Reports = ({ handleNotImplemented }) => {
+const Reports = () => {
+  const { handleNotImplemented } = useOutletContext();
   return (
     <div className="space-y-8">
       <div>

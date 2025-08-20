@@ -6,7 +6,7 @@ import { Loader2, History, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 
-const Versions = ({ handleNotImplemented }) => {
+const Versions = () => {
     const { user } = useAuth();
     const { toast } = useToast();
     const [versions, setVersions] = useState([]);

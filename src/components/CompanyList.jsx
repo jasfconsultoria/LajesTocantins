@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -15,7 +15,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-const CompanyList = ({ handleNotImplemented }) => {
+const CompanyList = () => {
+    const { handleNotImplemented } = useOutletContext();
     const { role } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useOutletContext } from 'react-router-dom';
 import {
   Plus,
   Settings,
@@ -9,7 +10,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const Help = ({ handleNotImplemented }) => {
+const Help = () => {
+  const { handleNotImplemented } = useOutletContext();
   return (
     <div className="space-y-8">
       <div>
