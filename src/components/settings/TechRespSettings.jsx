@@ -4,10 +4,13 @@ import { Save, UserCheck, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useOutletContext } from 'react-router-dom'; // Import useOutletContext
 
 const TechRespSettings = () => {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { activeCompanyId } = useOutletContext(); // Get activeCompanyId from context
+
     const [techRespConfig, setTechRespConfig] = useState({
         tech_resp_cnpj: '',
         tech_resp_contact: '',
@@ -19,12 +22,15 @@ const TechRespSettings = () => {
     const [isConfigured, setIsConfigured] = useState(false);
 
     const fetchTechRespData = useCallback(async () => {
-        if (!user) return;
+        if (!user || !activeCompanyId) { // Check for activeCompanyId
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         const { data, error } = await supabase
             .from('nfce_settings')
             .select('tech_resp_cnpj, tech_resp_contact, tech_resp_email, tech_resp_phone')
-            .eq('user_id', user.id)
+            .eq('emitente_id', activeCompanyId) // Filter by emitente_id
             .single();
 
         if (data) {
@@ -44,16 +50,17 @@ const TechRespSettings = () => {
                 description: 'Não foi possível carregar as informações do responsável técnico.',
             });
         } else {
-             const mockTechRespConfig = {
-                tech_resp_cnpj: '02.340.319/0001-91',
-                tech_resp_contact: 'Jose Alves',
-                tech_resp_email: 'jasfconsultoria@gmail.com',
-                tech_resp_phone: '(63) 99238-9218',
-            };
-            setTechRespConfig(mockTechRespConfig);
+             // If no data found, initialize with empty or mock data
+             setTechRespConfig({
+                tech_resp_cnpj: '',
+                tech_resp_contact: '',
+                tech_resp_email: '',
+                tech_resp_phone: '',
+            });
+            setIsConfigured(false);
         }
         setIsLoading(false);
-    }, [user, toast]);
+    }, [user, activeCompanyId, toast]); // Add activeCompanyId to dependencies
 
     useEffect(() => {
         fetchTechRespData();
@@ -65,12 +72,40 @@ const TechRespSettings = () => {
     };
 
     const handleSave = async () => {
-        if (!user) return;
+        if (!user || !activeCompanyId) return; // Check for activeCompanyId
         setIsSaving(true);
-        const { error } = await supabase
+
+        const upsertData = {
+            emitente_id: activeCompanyId, // Use emitente_id
+            tech_resp_cnpj: techRespConfig.tech_resp_cnpj,
+            tech_resp_contact: techRespConfig.tech_resp_contact,
+            tech_resp_email: techRespConfig.tech_resp_email,
+            tech_resp_phone: techRespConfig.tech_resp_phone,
+            updated_at: new Date().toISOString(),
+        };
+
+        // Check if a record already exists for this emitente_id
+        const { data: existingRecord, error: fetchError } = await supabase
             .from('nfce_settings')
-            .update(techRespConfig)
-            .eq('user_id', user.id);
+            .select('id')
+            .eq('emitente_id', activeCompanyId)
+            .single();
+
+        let error;
+        if (existingRecord) {
+            // Update existing record
+            const { error: updateError } = await supabase
+                .from('nfce_settings')
+                .update(upsertData)
+                .eq('emitente_id', activeCompanyId);
+            error = updateError;
+        } else {
+            // Insert new record
+            const { error: insertError } = await supabase
+                .from('nfce_settings')
+                .insert([upsertData]);
+            error = insertError;
+        }
 
         if (error) {
              toast({
@@ -92,6 +127,16 @@ const TechRespSettings = () => {
         return (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    if (!activeCompanyId) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
+                <UserCheck className="w-16 h-16 text-blue-500 mb-4" />
+                <h2 className="text-2xl font-bold text-slate-800">Nenhuma Empresa Ativa</h2>
+                <p className="text-slate-600">Selecione uma empresa para configurar o responsável técnico.</p>
             </div>
         );
     }

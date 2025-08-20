@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [session, setSession] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeCompany, setActiveCompany] = useState(null);
+  const [activeCompany, setActiveCompany] = useState(null); // This is the state setter
 
   const handleSession = useCallback(async (session) => {
     setSession(session);
@@ -138,7 +138,8 @@ export const AuthProvider = ({ children }) => {
     return { error };
   }, [toast, handleSession]);
 
-  const setActiveCompany = useCallback(async (companyId) => {
+  // Renamed to updateActiveCompany to avoid conflict
+  const updateActiveCompany = useCallback(async (companyId) => {
     if (!user) return;
     try {
       const { error } = await supabase
@@ -155,7 +156,7 @@ export const AuthProvider = ({ children }) => {
         .single();
       
       if (companyError) throw companyError;
-      setActiveCompany(company);
+      setActiveCompany(company); // Use the state setter here
       toast({ title: "Empresa ativa alterada!", description: `Agora você está gerenciando ${company.razao_social}.` });
     } catch (error) {
       toast({ variant: "destructive", title: "Erro ao mudar empresa", description: error.message });
@@ -171,8 +172,8 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
-    setActiveCompany,
-  }), [user, session, role, loading, activeCompany, signUp, signIn, signOut, setActiveCompany]);
+    setActiveCompany: updateActiveCompany, // Expose the new function
+  }), [user, session, role, loading, activeCompany, signUp, signIn, signOut, updateActiveCompany]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
