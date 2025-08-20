@@ -30,16 +30,21 @@ function MainLayout() {
   const baseSidebarItems = [
     { to: '/app', label: 'Dashboard', icon: Home },
     { to: '/app/companies', label: 'Empresas', icon: Building },
-    { to: '/app/sefaz', label: 'SEFAZ', icon: Shield },
-    { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck },
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
     { to: '/app/logs', label: 'Logs', icon: Database },
     { to: '/app/help', label: 'Ajuda', icon: HelpCircle },
     { to: '/app/versions', label: 'Versões', icon: History }
   ];
 
+  const adminOnlyItems = [
+    { to: '/app/users', label: 'Usuários', icon: Users },
+    { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck },
+    // SEFAZ is now configured per company via the CompanyList, so it's removed from the main menu.
+    // If a direct SEFAZ page is still needed for global settings, it would be added here.
+  ];
+
   const sidebarItems = role === 'admin' 
-    ? [...baseSidebarItems.slice(0, 2), { to: '/app/users', label: 'Usuários', icon: Users }, ...baseSidebarItems.slice(2)]
+    ? [...baseSidebarItems.slice(0, 2), ...adminOnlyItems, ...baseSidebarItems.slice(2)]
     : baseSidebarItems;
   
   const handleSignOut = async () => {
