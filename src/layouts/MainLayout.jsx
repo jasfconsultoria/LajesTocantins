@@ -1,31 +1,20 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, 
-  HelpCircle, Lock, UserCheck, LogOut, Loader2, History, Users
+  HelpCircle, Lock, UserCheck, LogOut, History, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import Dashboard from '@/components/Dashboard';
-import CompanyList from '@/components/CompanyList'; // Importando a nova lista
-import SefazSettings from '@/components/settings/SefazSettings';
-import CertificateSettings from '@/components/settings/CertificateSettings';
-import TechRespSettings from '@/components/settings/TechRespSettings';
-import Reports from '@/components/Reports';
-import Logs from '@/components/Logs';
-import Help from '@/components/Help';
-import Versions from '@/components/Versions';
-import UserManagement from '@/components/UserManagement';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useApp } from '@/contexts/AppContext';
 
-function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
-  const { session, user, signOut, role } = useAuth();
+  const { user, signOut, role } = useAuth();
   const { appVersion } = useApp();
   const navigate = useNavigate();
 
@@ -38,40 +27,21 @@ function App() {
   };
 
   const baseSidebarItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'companies', label: 'Empresas', icon: Building },
-    { id: 'certificate', label: 'Certificado', icon: Lock },
-    { id: 'sefaz', label: 'SEFAZ', icon: Shield },
-    { id: 'techResp', label: 'Resp. Técnico', icon: UserCheck },
-    { id: 'reports', label: 'Relatórios', icon: BarChart3 },
-    { id: 'logs', label: 'Logs', icon: Database },
-    { id: 'help', label: 'Ajuda', icon: HelpCircle },
-    { id: 'versions', label: 'Versões', icon: History }
+    { to: '/app', label: 'Dashboard', icon: Home },
+    { to: '/app/companies', label: 'Empresas', icon: Building },
+    { to: '/app/certificate', label: 'Certificado', icon: Lock },
+    { to: '/app/sefaz', label: 'SEFAZ', icon: Shield },
+    { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck },
+    { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
+    { to: '/app/logs', label: 'Logs', icon: Database },
+    { to: '/app/help', label: 'Ajuda', icon: HelpCircle },
+    { to: '/app/versions', label: 'Versões', icon: History }
   ];
 
   const sidebarItems = role === 'admin' 
-    ? [...baseSidebarItems.slice(0, 2), { id: 'users', label: 'Usuários', icon: Users }, ...baseSidebarItems.slice(2)]
+    ? [...baseSidebarItems.slice(0, 2), { to: '/app/users', label: 'Usuários', icon: Users }, ...baseSidebarItems.slice(2)]
     : baseSidebarItems;
-
-  const renderContent = () => {
-    const commonProps = { handleNotImplemented, isSupabaseConnected: !!session };
-    switch (activeTab) {
-      case 'dashboard': return <Dashboard {...commonProps} />;
-      case 'companies': return <CompanyList {...commonProps} />;
-      case 'certificate': return <CertificateSettings {...commonProps} />;
-      case 'sefaz': return <SefazSettings {...commonProps} />;
-      case 'techResp': return <TechRespSettings {...commonProps} />;
-      case 'users': return <UserManagement {...commonProps} />;
-      case 'reports': return <Reports {...commonProps} />;
-      case 'logs': return <Logs {...commonProps} />;
-      case 'help': return <Help {...commonProps} />;
-      case 'versions': return <Versions {...commonProps} />;
-      default: return <Dashboard {...commonProps} />;
-    }
-  };
   
-  const goHome = () => setActiveTab('dashboard');
-
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
@@ -90,7 +60,7 @@ function App() {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
               <Menu className="w-5 h-5" />
             </Button>
-            <div className="flex items-center space-x-3 cursor-pointer" onClick={goHome}>
+            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/app')}>
               <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
                 <FileText className="w-5 h-5 text-white" />
               </div>
@@ -128,17 +98,16 @@ function App() {
               <div className="flex flex-col h-full">
                 <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
                   {sidebarItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        setSidebarOpen(false);
-                      }}
-                      className={`sidebar-item w-full ${activeTab === item.id ? 'active' : ''}`}
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.to === '/app'}
+                      onClick={() => setSidebarOpen(false)}
+                      className={({ isActive }) => `sidebar-item w-full ${isActive ? 'active' : ''}`}
                     >
                       <item.icon className="w-5 h-5 mr-3" />
                       {item.label}
-                    </button>
+                    </NavLink>
                   ))}
                 </div>
                 
@@ -158,14 +127,7 @@ function App() {
         </AnimatePresence>
 
         <main className="flex-1 p-4 lg:p-6">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            {renderContent()}
-          </motion.div>
+          <Outlet />
         </main>
       </div>
 
@@ -174,4 +136,4 @@ function App() {
   );
 }
 
-export default App;
+export default MainLayout;

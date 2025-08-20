@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -13,16 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import CompanyForm from './CompanyForm';
 
 const CompanyList = ({ handleNotImplemented }) => {
     const { role } = useAuth();
     const { toast } = useToast();
+    const navigate = useNavigate();
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [isFormOpen, setIsFormOpen] = useState(false);
     const ITEMS_PER_PAGE = 10;
 
     const fetchCompanies = useCallback(async () => {
@@ -72,10 +72,6 @@ const CompanyList = ({ handleNotImplemented }) => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
     };
 
-    const handleSaveSuccess = () => {
-        fetchCompanies();
-    };
-
     if (role !== 'admin') {
         return (
             <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
@@ -96,7 +92,7 @@ const CompanyList = ({ handleNotImplemented }) => {
                     </h1>
                     <p className="text-slate-600 mt-2">Visualize e gerencie as empresas (emitentes) cadastradas.</p>
                 </div>
-                <Button onClick={() => setIsFormOpen(true)} className="save-button">
+                <Button onClick={() => navigate('/app/companies/new')} className="save-button">
                     <PlusCircle className="w-4 h-4 mr-2" />
                     Nova Empresa
                 </Button>
@@ -142,7 +138,7 @@ const CompanyList = ({ handleNotImplemented }) => {
                                             <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Atribuir Usuários')}>
                                                 <UsersIcon className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Editar Empresa')}>
+                                            <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/edit`)}>
                                                 <Edit className="w-4 h-4" />
                                             </Button>
                                             <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleNotImplemented('Excluir Empresa')}>
@@ -174,11 +170,6 @@ const CompanyList = ({ handleNotImplemented }) => {
                     </Button>
                 </div>
             </div>
-            <CompanyForm 
-                isOpen={isFormOpen}
-                setIsOpen={setIsFormOpen}
-                onSave={handleSaveSuccess}
-            />
         </div>
     );
 };
