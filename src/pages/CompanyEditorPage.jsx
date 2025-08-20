@@ -64,12 +64,23 @@ const CompanyEditorPage = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const upsertData = { ...company, updated_at: new Date().toISOString() };
-            if (!id) { // Creating a new one
-                delete upsertData.id;
+            const saveData = { ...company, updated_at: new Date().toISOString() };
+            let error;
+
+            if (id) {
+                const { error: updateError } = await supabase
+                    .from('emitente')
+                    .update(saveData)
+                    .eq('id', id);
+                error = updateError;
+            } else {
+                delete saveData.id;
+                const { error: insertError } = await supabase
+                    .from('emitente')
+                    .insert([saveData]);
+                error = insertError;
             }
 
-            const { error } = await supabase.from('emitente').upsert(upsertData, { onConflict: 'id' });
             if (error) throw error;
 
             toast({ title: 'Sucesso!', description: `Empresa ${id ? 'atualizada' : 'criada'} com sucesso.` });

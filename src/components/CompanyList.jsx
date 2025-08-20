@@ -32,7 +32,11 @@ const CompanyList = ({ handleNotImplemented }) => {
         }
         setLoading(true);
         try {
-            const { data, error } = await supabase.functions.invoke('get-all-companies');
+            const { data, error } = await supabase
+                .from('emitente')
+                .select('*')
+                .order('created_at', { ascending: false });
+
             if (error) throw error;
             setCompanies(data);
         } catch (error) {
