@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import Dashboard from '@/components/Dashboard';
-import CompanySettings from '@/components/settings/CompanySettings';
+import CompanyList from '@/components/CompanyList'; // Importando a nova lista
 import SefazSettings from '@/components/settings/SefazSettings';
 import CertificateSettings from '@/components/settings/CertificateSettings';
 import TechRespSettings from '@/components/settings/TechRespSettings';
@@ -17,7 +17,7 @@ import Reports from '@/components/Reports';
 import Logs from '@/components/Logs';
 import Help from '@/components/Help';
 import Versions from '@/components/Versions';
-import UserManagement from '@/components/UserManagement'; // Importando o novo componente
+import UserManagement from '@/components/UserManagement';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useApp } from '@/contexts/AppContext';
 
@@ -25,7 +25,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { toast } = useToast();
-  const { session, user, signOut, role } = useAuth(); // Obtendo a função do usuário
+  const { session, user, signOut, role } = useAuth();
   const { appVersion } = useApp();
   const navigate = useNavigate();
 
@@ -39,7 +39,7 @@ function App() {
 
   const baseSidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'company', label: 'Empresa', icon: Building },
+    { id: 'companies', label: 'Empresas', icon: Building },
     { id: 'certificate', label: 'Certificado', icon: Lock },
     { id: 'sefaz', label: 'SEFAZ', icon: Shield },
     { id: 'techResp', label: 'Resp. Técnico', icon: UserCheck },
@@ -49,20 +49,19 @@ function App() {
     { id: 'versions', label: 'Versões', icon: History }
   ];
 
-  // Adiciona o item de menu de usuários apenas se o usuário for admin
   const sidebarItems = role === 'admin' 
-    ? [...baseSidebarItems.slice(0, 5), { id: 'users', label: 'Usuários', icon: Users }, ...baseSidebarItems.slice(5)]
+    ? [...baseSidebarItems.slice(0, 2), { id: 'users', label: 'Usuários', icon: Users }, ...baseSidebarItems.slice(2)]
     : baseSidebarItems;
 
   const renderContent = () => {
     const commonProps = { handleNotImplemented, isSupabaseConnected: !!session };
     switch (activeTab) {
       case 'dashboard': return <Dashboard {...commonProps} />;
-      case 'company': return <CompanySettings {...commonProps} />;
+      case 'companies': return <CompanyList {...commonProps} />;
       case 'certificate': return <CertificateSettings {...commonProps} />;
       case 'sefaz': return <SefazSettings {...commonProps} />;
       case 'techResp': return <TechRespSettings {...commonProps} />;
-      case 'users': return <UserManagement {...commonProps} />; // Rota para o novo componente
+      case 'users': return <UserManagement {...commonProps} />;
       case 'reports': return <Reports {...commonProps} />;
       case 'logs': return <Logs {...commonProps} />;
       case 'help': return <Help {...commonProps} />;
