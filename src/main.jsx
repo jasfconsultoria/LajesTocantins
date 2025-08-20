@@ -12,6 +12,7 @@ import { Toaster } from '@/components/ui/toaster';
 import Dashboard from '@/components/Dashboard';
 import CompanyList from '@/components/CompanyList';
 import CompanyEditorPage from '@/pages/CompanyEditorPage';
+import CompanyUserManagement from '@/pages/CompanyUserManagement';
 import SefazSettings from '@/components/settings/SefazSettings';
 import CertificateSettings from '@/components/settings/CertificateSettings';
 import TechRespSettings from '@/components/settings/TechRespSettings';
@@ -67,6 +68,7 @@ const router = createBrowserRouter([
           { path: "companies", element: <CompanyList /> },
           { path: "companies/new", element: <CompanyEditorPage /> },
           { path: "companies/:id/edit", element: <CompanyEditorPage /> },
+          { path: "companies/:id/users", element: <CompanyUserManagement /> },
           { path: "users", element: <UserManagement /> },
           { path: "certificate", element: <CertificateSettings /> },
           { path: "sefaz", element: <SefazSettings /> },

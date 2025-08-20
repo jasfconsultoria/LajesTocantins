@@ -140,7 +140,7 @@ const CompanyList = () => {
                                     <TableCell>{c.municipio}/{c.uf}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Atribuir Usuários')}>
+                                            <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/users`)}>
                                                 <UsersIcon className="w-4 h-4" />
                                             </Button>
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/edit`)}>
