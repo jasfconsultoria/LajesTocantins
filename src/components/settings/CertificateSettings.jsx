@@ -148,14 +148,14 @@ const CertificateSettings = ({ companyId }) => {
     };
 
     if (isLoading) {
-        return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-blue-600" /></div>;
+        return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             <div>
-                <h1 className="text-3xl font-bold gradient-text">Certificado Digital A1</h1>
-                <p className="text-slate-600 mt-2">Faça o upload e gerencie seu certificado digital para emissão de notas.</p>
+                <h1 className="text-2xl font-bold gradient-text">Certificado Digital A1</h1>
+                <p className="text-sm text-slate-600 mt-1">Faça o upload e gerencie seu certificado digital para emissão de notas.</p>
             </div>
 
             <div className="config-card max-w-3xl mx-auto">
@@ -171,22 +171,22 @@ const CertificateSettings = ({ companyId }) => {
                 </div>
 
                 <div 
-                    className={`certificate-upload ${fileName ? 'has-file' : ''}`}
+                    className={`certificate-upload ${fileName ? 'has-file' : ''} p-5`}
                     onClick={handleUploadClick}
                 >
                     <input type="file" id="certificate-input" className="hidden" accept=".pfx" onChange={handleFileChange} />
                     {fileName ? (
                         <>
-                            <FileCheck2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
-                            <h4 className="font-semibold text-lg text-slate-900 mb-2">Arquivo Carregado</h4>
-                            <p className="text-md text-slate-700 font-mono bg-green-100 px-3 py-1 rounded-md inline-block">{fileName}</p>
-                            <p className="text-sm text-slate-600 mt-4">Clique aqui para selecionar outro arquivo.</p>
+                            <FileCheck2 className="w-12 h-12 text-green-600 mx-auto mb-3" />
+                            <h4 className="font-semibold text-base text-slate-900 mb-1">Arquivo Carregado</h4>
+                            <p className="text-sm text-slate-700 font-mono bg-green-100 px-2 py-0.5 rounded-md inline-block">{fileName}</p>
+                            <p className="text-xs text-slate-600 mt-2">Clique aqui para selecionar outro arquivo.</p>
                         </>
                     ) : (
                         <>
-                            <Upload className="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                            <h4 className="font-semibold text-lg text-slate-900 mb-2">Clique para Fazer Upload</h4>
-                            <p className="text-sm text-slate-600">Arraste e solte ou clique para selecionar o arquivo .pfx</p>
+                            <Upload className="w-12 h-12 text-blue-600 mx-auto mb-3" />
+                            <h4 className="font-semibold text-base text-slate-900 mb-1">Clique para Fazer Upload</h4>
+                            <p className="text-xs text-slate-600">Arraste e solte ou clique para selecionar o arquivo .pfx</p>
                         </>
                     )}
                 </div>
@@ -206,7 +206,7 @@ const CertificateSettings = ({ companyId }) => {
                     />
                 </div>
 
-                <div className="mt-8 flex justify-end">
+                <div className="mt-6 flex justify-end">
                     <Button onClick={handleSaveCertificate} className="save-button" disabled={isSaving || !isConfigured || !password}>
                         {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                         Salvar Certificado

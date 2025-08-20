@@ -71,7 +71,10 @@ const CompanyUserDialog = ({ company, isOpen, setIsOpen }) => {
           return newSet;
         });
         if (userId === defaultUserId) {
-            await supabase.from('profiles').update({ default_emitente_id: null }).eq('id', userId);
+            // If disassociating the default company, also unset it as default
+            await supabase.functions.invoke('set-user-default-company', {
+                body: { userId, companyId: null }
+            });
             setDefaultUserId(null);
         }
         toast({ title: "Associação removida." });
@@ -83,7 +86,9 @@ const CompanyUserDialog = ({ company, isOpen, setIsOpen }) => {
 
   const handleSetDefault = async (userId) => {
     try {
-      const { error } = await supabase.from('profiles').update({ default_emitente_id: company.id }).eq('id', userId);
+      const { error } = await supabase.functions.invoke('set-user-default-company', {
+        body: { userId, companyId: company.id }
+      });
       if (error) throw error;
       setDefaultUserId(userId);
       toast({ title: 'Empresa padrão definida com sucesso!' });

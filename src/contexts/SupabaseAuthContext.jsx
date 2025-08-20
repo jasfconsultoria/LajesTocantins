@@ -17,10 +17,11 @@ export const AuthProvider = ({ children }) => {
     setSession(session);
     const currentUser = session?.user ?? null;
     setUser(currentUser);
-    setActiveCompany(null); // Reset active company on session change
+    setActiveCompany(null); // Reset active company initially
 
     if (currentUser) {
       try {
+        // Fetch user role
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('roles(name)')
@@ -30,6 +31,7 @@ export const AuthProvider = ({ children }) => {
         if (roleError) throw roleError;
         setRole(roleData?.roles?.name || 'user');
 
+        // Fetch user profile to get default_emitente_id
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('default_emitente_id')
@@ -38,33 +40,49 @@ export const AuthProvider = ({ children }) => {
         
         if (profileError) throw profileError;
 
+        let companyToSet = null;
+
         if (profile && profile.default_emitente_id) {
-          const { data: company, error: companyError } = await supabase
+          // Try to fetch the default company
+          const { data: defaultCompanyData, error: defaultCompanyError } = await supabase
             .from('emitente')
             .select('id, razao_social, logo_sistema_url')
             .eq('id', profile.default_emitente_id)
-            .single();
+            .limit(1); // Changed from .single()
           
-          if (companyError) throw companyError;
-          setActiveCompany(company);
-        } else {
-          // If no default company, try to set the first associated company as default
+          if (defaultCompanyError) throw defaultCompanyError;
+
+          if (defaultCompanyData && defaultCompanyData.length > 0) {
+            companyToSet = defaultCompanyData[0];
+          }
+        }
+
+        // If no default company was found/set, or if default_emitente_id was null,
+        // try to set the first associated company as default
+        if (!companyToSet) {
           const { data: associatedCompanies, error: assocError } = await supabase.functions.invoke('get-all-companies');
           if (assocError) throw assocError;
 
           if (associatedCompanies && associatedCompanies.length > 0) {
             const firstCompany = associatedCompanies[0];
-            await supabase.from('profiles').update({ default_emitente_id: firstCompany.id }).eq('id', currentUser.id);
-            setActiveCompany(firstCompany);
+            // Only update if there's no default_emitente_id or if the previous one was invalid
+            if (!profile?.default_emitente_id || (profile.default_emitente_id && !companyToSet)) {
+                await supabase.from('profiles').update({ default_emitente_id: firstCompany.id }).eq('id', currentUser.id);
+            }
+            companyToSet = firstCompany;
           }
         }
+        
+        setActiveCompany(companyToSet);
 
       } catch (error) {
         console.error("Error fetching user role or company:", error.message);
         setRole('user');
+        setActiveCompany(null); // Ensure activeCompany is null on error
       }
     } else {
       setRole(null);
+      setActiveCompany(null);
     }
     setLoading(false);
   }, []);
@@ -142,22 +160,21 @@ export const AuthProvider = ({ children }) => {
   const updateActiveCompany = useCallback(async (companyId) => {
     if (!user) return;
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ default_emitente_id: companyId })
-        .eq('id', user.id);
-
-      if (error) throw error;
-
-      const { data: company, error: companyError } = await supabase
+      const { data: companyData, error: companyError } = await supabase
         .from('emitente')
         .select('id, razao_social, logo_sistema_url')
         .eq('id', companyId)
-        .single();
+        .limit(1); // Changed from .single()
       
       if (companyError) throw companyError;
-      setActiveCompany(company); // Use the state setter here
-      toast({ title: "Empresa ativa alterada!", description: `Agora você está gerenciando ${company.razao_social}.` });
+
+      if (companyData && companyData.length > 0) {
+        setActiveCompany(companyData[0]); // Use the state setter here
+        toast({ title: "Empresa ativa alterada!", description: `Agora você está gerenciando ${companyData[0].razao_social}.` });
+      } else {
+        setActiveCompany(null); // If company not found after update, clear active company
+        toast({ variant: "destructive", title: "Erro ao mudar empresa", description: "Empresa selecionada não encontrada ou acessível." });
+      }
     } catch (error) {
       toast({ variant: "destructive", title: "Erro ao mudar empresa", description: error.message });
     }

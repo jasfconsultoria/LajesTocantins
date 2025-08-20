@@ -205,7 +205,7 @@ const CompanyList = () => {
 
             {/* Certificate Management Dialog */}
             <Dialog open={isCertificateModalOpen} onOpenChange={setIsCertificateModalOpen}>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-[480px]"> {/* Reduced max-width here */}
                     <DialogHeader>
                         <DialogTitle>Certificado Digital para {companyForCertificate?.razao_social}</DialogTitle>
                         <DialogDescription>

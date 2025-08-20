@@ -71,7 +71,10 @@ function MainLayout() {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
                 <span className="text-white text-sm font-medium">{user?.email ? user.email.charAt(0).toUpperCase() : '?'}</span>
               </div>
-              <span className="text-sm font-medium text-slate-700 hidden md:block">{user?.email}</span>
+              <div className="hidden md:block">
+                <span className="text-sm font-medium text-slate-700">{user?.email}</span>
+                {role && <span className="block text-xs text-slate-500 capitalize">{role}</span>}
+              </div>
             </div>
           </div>
         </div>
