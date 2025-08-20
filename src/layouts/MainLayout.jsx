@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useApp } from '@/contexts/AppContext';
+import CompanySwitcher from '@/components/CompanySwitcher'; // Import CompanySwitcher
 
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,7 +30,6 @@ function MainLayout() {
   const baseSidebarItems = [
     { to: '/app', label: 'Dashboard', icon: Home },
     { to: '/app/companies', label: 'Empresas', icon: Building },
-    { to: '/app/certificate', label: 'Certificado', icon: Lock },
     { to: '/app/sefaz', label: 'SEFAZ', icon: Shield },
     { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck },
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
@@ -60,19 +60,7 @@ function MainLayout() {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
               <Menu className="w-5 h-5" />
             </Button>
-            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => navigate('/app')}>
-              {activeCompany && activeCompany.logo_sistema_url ? (
-                <img src={activeCompany.logo_sistema_url} alt="Logo da Empresa" className="w-9 h-9 rounded-lg object-contain bg-white p-1" />
-              ) : (
-                <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-              )}
-              <div>
-                <h1 className="text-lg font-bold gradient-text truncate max-w-[200px]">{activeCompany ? activeCompany.razao_social : 'NFC-e Plus'}</h1>
-                <p className="text-xs text-slate-600">Painel de Controle</p>
-              </div>
-            </div>
+            <CompanySwitcher /> {/* Integrated CompanySwitcher here */}
           </div>
           
           <div className="flex items-center space-x-4">
@@ -131,7 +119,7 @@ function MainLayout() {
         </AnimatePresence>
 
         <main className="flex-1 p-4 lg:p-6">
-          <Outlet context={{ handleNotImplemented }} />
+          <Outlet context={{ handleNotImplemented, activeCompanyId: activeCompany?.id }} /> {/* Pass activeCompanyId */}
         </main>
       </div>
 

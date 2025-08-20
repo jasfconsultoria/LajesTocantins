@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, Users as UsersIcon, Building, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Users as UsersIcon, Building, ChevronLeft, ChevronRight, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,7 +14,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import CompanyUserDialog from './CompanyUserDialog';
+import CertificateSettings from '@/components/settings/CertificateSettings'; // Import CertificateSettings
 
 const CompanyList = () => {
     const { handleNotImplemented } = useOutletContext();
@@ -26,6 +34,9 @@ const CompanyList = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedCompany, setSelectedCompany] = useState(null);
+    const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
+    const [companyForCertificate, setCompanyForCertificate] = useState(null);
+
     const ITEMS_PER_PAGE = 10;
 
     const fetchCompanies = useCallback(async () => {
@@ -70,6 +81,17 @@ const CompanyList = () => {
 
     const handlePrevPage = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const handleOpenCertificateModal = (company) => {
+        setCompanyForCertificate(company);
+        setIsCertificateModalOpen(true);
+    };
+
+    const handleCloseCertificateModal = () => {
+        setIsCertificateModalOpen(false);
+        setCompanyForCertificate(null);
+        fetchCompanies(); // Refresh companies after certificate update
     };
 
     return (
@@ -137,6 +159,10 @@ const CompanyList = () => {
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/edit`)}>
                                                 <Edit className="w-4 h-4" />
                                             </Button>
+                                            {/* Button to open Certificate Modal */}
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenCertificateModal(c)}>
+                                                <KeyRound className="w-4 h-4" />
+                                            </Button>
                                             {role === 'admin' && ( // Only show for admins
                                                 <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleNotImplemented('Excluir Empresa')}>
                                                     <Trash2 className="w-4 h-4" />
@@ -176,6 +202,21 @@ const CompanyList = () => {
                     setIsOpen={() => setSelectedCompany(null)}
                 />
             )}
+
+            {/* Certificate Management Dialog */}
+            <Dialog open={isCertificateModalOpen} onOpenChange={setIsCertificateModalOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Certificado Digital para {companyForCertificate?.razao_social}</DialogTitle>
+                        <DialogDescription>
+                            Faça o upload e gerencie o certificado digital A1 para esta empresa.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {companyForCertificate && (
+                        <CertificateSettings companyId={companyForCertificate.id} />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };

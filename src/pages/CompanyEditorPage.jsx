@@ -3,9 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, Building } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, Building } from 'lucide-react'; // Removed KeyRound
 import { Button } from '@/components/ui/button';
 import LogoUploader from '@/components/LogoUploader';
+// Removed import for CertificateSettings
 
 const initialCompanyState = {
     razao_social: '', nome_fantasia: '', cnpj: '', inscricao_estadual: '',
@@ -156,7 +157,7 @@ const CompanyEditorPage = () => {
                         onRemove={() => handleLogoRemove('logo_documentos_url')}
                     />
                 </div>
-
+                
                 <div className="flex justify-end mt-8">
                     <Button onClick={handleSave} className="save-button" disabled={saving}>
                         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}

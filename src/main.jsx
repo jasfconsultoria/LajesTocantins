@@ -13,7 +13,7 @@ import Dashboard from '@/components/Dashboard';
 import CompanyList from '@/components/CompanyList';
 import CompanyEditorPage from '@/pages/CompanyEditorPage';
 import SefazSettings from '@/components/settings/SefazSettings';
-import CertificateSettings from '@/components/settings/CertificateSettings';
+// Removed import for CertificateSettings
 import TechRespSettings from '@/components/settings/TechRespSettings';
 import Reports from '@/components/Reports';
 import Logs from '@/components/Logs';
@@ -57,7 +57,7 @@ const router = createBrowserRouter([
           { path: "companies/new", element: <CompanyEditorPage /> },
           { path: "companies/:id/edit", element: <CompanyEditorPage /> },
           { path: "users", element: <UserManagement /> },
-          { path: "certificate", element: <CertificateSettings /> },
+          // Removed { path: "certificate", element: <CertificateSettings /> },
           { path: "sefaz", element: <SefazSettings /> },
           { path: "techResp", element: <TechRespSettings /> },
           { path: "reports", element: <Reports /> },

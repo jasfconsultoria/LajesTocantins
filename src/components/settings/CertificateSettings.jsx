@@ -3,12 +3,12 @@ import { Upload, FileCheck2, Save, Loader2, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/SupabaseAuthContext'; // Still needed for user.id in storage path
 import { v4 as uuidv4 } from 'uuid';
 
-const CertificateSettings = () => {
+const CertificateSettings = ({ companyId }) => {
     const { toast } = useToast();
-    const { user } = useAuth();
+    const { user } = useAuth(); // Keep useAuth to get user.id for storage path
     
     const [certificateFile, setCertificateFile] = useState(null);
     const [password, setPassword] = useState('');
@@ -18,13 +18,16 @@ const CertificateSettings = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const fetchCertificateData = useCallback(async () => {
-        if (!user) return;
+        if (!companyId) {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
 
         const { data, error } = await supabase
             .from('digital_certificates')
             .select('file_name, password_encrypted')
-            .eq('user_id', user.id)
+            .eq('emitente_id', companyId) // Use emitente_id instead of user_id
             .limit(1)
             .single();
 
@@ -40,7 +43,7 @@ const CertificateSettings = () => {
             });
         }
         setIsLoading(false);
-    }, [user, toast]);
+    }, [companyId, toast]);
 
     useEffect(() => {
         fetchCertificateData();
@@ -68,6 +71,10 @@ const CertificateSettings = () => {
     };
 
     const handleSaveCertificate = async () => {
+        if (!companyId) {
+            toast({ variant: "destructive", title: "Erro", description: "Nenhuma empresa selecionada para salvar o certificado." });
+            return;
+        }
         if (!fileName || !password) {
             toast({ variant: "destructive", title: "Campos obrigatórios", description: "É necessário um arquivo e uma senha." });
             return;
@@ -77,9 +84,10 @@ const CertificateSettings = () => {
         
         let newStoragePath = null;
         if (certificateFile) {
-            const filePath = `${user.id}/${uuidv4()}.pfx`;
+            // Use companyId for storage path organization
+            const filePath = `company_certificates/${companyId}/${uuidv4()}.pfx`; 
             const { error: uploadError } = await supabase.storage
-                .from('certificates')
+                .from('certificates') // Assuming 'certificates' bucket exists
                 .upload(filePath, certificateFile, { upsert: true });
 
             if (uploadError) {
@@ -93,7 +101,7 @@ const CertificateSettings = () => {
         const { data: existingData, error: fetchError } = await supabase
             .from('digital_certificates')
             .select('id, storage_path')
-            .eq('user_id', user.id)
+            .eq('emitente_id', companyId) // Use emitente_id
             .limit(1)
             .single();
 
@@ -104,7 +112,7 @@ const CertificateSettings = () => {
         }
 
         const upsertData = {
-            user_id: user.id,
+            emitente_id: companyId, // Use emitente_id
             file_name: fileName,
             password_encrypted: password, 
             storage_path: newStoragePath || (existingData ? existingData.storage_path : undefined),
@@ -125,7 +133,7 @@ const CertificateSettings = () => {
         
         const { error: dbError } = await supabase
             .from('digital_certificates')
-            .upsert(upsertData, { onConflict: 'user_id' });
+            .upsert(upsertData, { onConflict: 'emitente_id' }); // Conflict on emitente_id
 
         if (dbError) {
             toast({ variant: 'destructive', title: "Erro ao Salvar", description: dbError.message });

@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
     setSession(session);
     const currentUser = session?.user ?? null;
     setUser(currentUser);
-    setActiveCompany(null);
+    setActiveCompany(null); // Reset active company on session change
 
     if (currentUser) {
       try {
@@ -47,6 +47,16 @@ export const AuthProvider = ({ children }) => {
           
           if (companyError) throw companyError;
           setActiveCompany(company);
+        } else {
+          // If no default company, try to set the first associated company as default
+          const { data: associatedCompanies, error: assocError } = await supabase.functions.invoke('get-all-companies');
+          if (assocError) throw assocError;
+
+          if (associatedCompanies && associatedCompanies.length > 0) {
+            const firstCompany = associatedCompanies[0];
+            await supabase.from('profiles').update({ default_emitente_id: firstCompany.id }).eq('id', currentUser.id);
+            setActiveCompany(firstCompany);
+          }
         }
 
       } catch (error) {
@@ -128,6 +138,30 @@ export const AuthProvider = ({ children }) => {
     return { error };
   }, [toast, handleSession]);
 
+  const setActiveCompany = useCallback(async (companyId) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ default_emitente_id: companyId })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      const { data: company, error: companyError } = await supabase
+        .from('emitente')
+        .select('id, razao_social, logo_sistema_url')
+        .eq('id', companyId)
+        .single();
+      
+      if (companyError) throw companyError;
+      setActiveCompany(company);
+      toast({ title: "Empresa ativa alterada!", description: `Agora você está gerenciando ${company.razao_social}.` });
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erro ao mudar empresa", description: error.message });
+    }
+  }, [user, toast]);
+
   const value = useMemo(() => ({
     user,
     session,
@@ -137,7 +171,8 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
-  }), [user, session, role, loading, activeCompany, signUp, signIn, signOut]);
+    setActiveCompany,
+  }), [user, session, role, loading, activeCompany, signUp, signIn, signOut, setActiveCompany]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

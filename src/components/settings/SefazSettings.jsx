@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useOutletContext } from 'react-router-dom'; // Import useOutletContext
 
 const SefazSettings = () => {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { activeCompanyId } = useOutletContext(); // Get activeCompanyId from context
+
     const [sefazConfig, setSefazConfig] = useState({
         ambiente: 'homologacao',
         serie: '',
@@ -26,13 +29,16 @@ const SefazSettings = () => {
     });
 
     const fetchSefazData = useCallback(async () => {
-        if (!user) return;
+        if (!user || !activeCompanyId) { // Check for activeCompanyId
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
 
         const { data, error } = await supabase
             .from('nfce_settings')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('emitente_id', activeCompanyId) // Filter by emitente_id
             .limit(1)
             .single();
 
@@ -49,7 +55,7 @@ const SefazSettings = () => {
             });
         }
         setIsLoading(false);
-    }, [user, toast]);
+    }, [user, activeCompanyId, toast]); // Add activeCompanyId to dependencies
 
     useEffect(() => {
         fetchSefazData();
@@ -62,18 +68,41 @@ const SefazSettings = () => {
     };
 
     const handleSave = async () => {
-        if (!user) return;
+        if (!user || !activeCompanyId) return; // Check for activeCompanyId
         setIsSaving(true);
-        const { error } = await supabase
+
+        const upsertData = {
+            emitente_id: activeCompanyId, // Use emitente_id
+            ambiente: sefazConfig.ambiente,
+            serie: sefazConfig.serie,
+            numero_inicial: sefazConfig.numero_inicial,
+            csc: sefazConfig.csc,
+            csc_id: sefazConfig.csc_id,
+            updated_at: new Date().toISOString(),
+        };
+
+        // Check if a record already exists for this emitente_id
+        const { data: existingRecord, error: fetchError } = await supabase
             .from('nfce_settings')
-            .update({
-                ambiente: sefazConfig.ambiente,
-                serie: sefazConfig.serie,
-                numero_inicial: sefazConfig.numero_inicial,
-                csc: sefazConfig.csc,
-                csc_id: sefazConfig.csc_id
-            })
-            .eq('user_id', user.id);
+            .select('id')
+            .eq('emitente_id', activeCompanyId)
+            .single();
+
+        let error;
+        if (existingRecord) {
+            // Update existing record
+            const { error: updateError } = await supabase
+                .from('nfce_settings')
+                .update(upsertData)
+                .eq('emitente_id', activeCompanyId);
+            error = updateError;
+        } else {
+            // Insert new record
+            const { error: insertError } = await supabase
+                .from('nfce_settings')
+                .insert([upsertData]);
+            error = insertError;
+        }
 
         if (error) {
              toast({
@@ -136,6 +165,16 @@ const SefazSettings = () => {
         return (
             <div className="flex justify-center items-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            </div>
+        );
+    }
+
+    if (!activeCompanyId) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
+                <Shield className="w-16 h-16 text-blue-500 mb-4" />
+                <h2 className="text-2xl font-bold text-slate-800">Nenhuma Empresa Ativa</h2>
+                <p className="text-slate-600">Selecione uma empresa para configurar as opções da SEFAZ.</p>
             </div>
         );
     }
