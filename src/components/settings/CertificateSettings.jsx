@@ -3,12 +3,13 @@ import { Upload, FileCheck2, Save, Loader2, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext'; // Still needed for user.id in storage path
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { v4 as uuidv4 } from 'uuid';
+import { logAction } from '@/lib/log'; // Import logAction
 
 const CertificateSettings = ({ companyId }) => {
     const { toast } = useToast();
-    const { user } = useAuth(); // Keep useAuth to get user.id for storage path
+    const { user } = useAuth();
     
     const [certificateFile, setCertificateFile] = useState(null);
     const [password, setPassword] = useState('');
@@ -27,13 +28,13 @@ const CertificateSettings = ({ companyId }) => {
         const { data, error } = await supabase
             .from('digital_certificates')
             .select('file_name, password_encrypted')
-            .eq('emitente_id', companyId) // Use emitente_id instead of user_id
+            .eq('emitente_id', companyId)
             .limit(1)
             .single();
 
         if (data) {
             setFileName(data.file_name);
-            setPassword(data.password_encrypted || ''); // In a real app, this would be handled differently
+            setPassword(data.password_encrypted || '');
             setIsConfigured(true);
         } else if (error && error.code !== 'PGRST116') {
              toast({
@@ -55,7 +56,7 @@ const CertificateSettings = ({ companyId }) => {
             if (file.name.endsWith('.pfx')) {
                 setCertificateFile(file);
                 setFileName(file.name);
-                setIsConfigured(true); // Allow saving right away
+                setIsConfigured(true);
             } else {
                 toast({
                     variant: "destructive",
@@ -84,10 +85,9 @@ const CertificateSettings = ({ companyId }) => {
         
         let newStoragePath = null;
         if (certificateFile) {
-            // Use companyId for storage path organization
             const filePath = `company_certificates/${companyId}/${uuidv4()}.pfx`; 
             const { error: uploadError } = await supabase.storage
-                .from('certificates') // Assuming 'certificates' bucket exists
+                .from('certificates')
                 .upload(filePath, certificateFile, { upsert: true });
 
             if (uploadError) {
@@ -101,7 +101,7 @@ const CertificateSettings = ({ companyId }) => {
         const { data: existingData, error: fetchError } = await supabase
             .from('digital_certificates')
             .select('id, storage_path')
-            .eq('emitente_id', companyId) // Use emitente_id
+            .eq('emitente_id', companyId)
             .limit(1)
             .single();
 
@@ -112,7 +112,7 @@ const CertificateSettings = ({ companyId }) => {
         }
 
         const upsertData = {
-            emitente_id: companyId, // Use emitente_id
+            emitente_id: companyId,
             file_name: fileName,
             password_encrypted: password, 
             storage_path: newStoragePath || (existingData ? existingData.storage_path : undefined),
@@ -133,7 +133,7 @@ const CertificateSettings = ({ companyId }) => {
         
         const { error: dbError } = await supabase
             .from('digital_certificates')
-            .upsert(upsertData, { onConflict: 'emitente_id' }); // Conflict on emitente_id
+            .upsert(upsertData, { onConflict: 'emitente_id' });
 
         if (dbError) {
             toast({ variant: 'destructive', title: "Erro ao Salvar", description: dbError.message });
@@ -141,6 +141,13 @@ const CertificateSettings = ({ companyId }) => {
             setIsConfigured(true);
             setCertificateFile(null);
             toast({ title: "Certificado Salvo!", description: "As configurações foram salvas com sucesso." });
+            
+            if (user) {
+                const actionType = existingData ? 'certificate_update' : 'certificate_upload';
+                const description = `Certificado digital para empresa (ID: ${companyId}) ${existingData ? 'atualizado' : 'enviado'}.`;
+                await logAction(user.id, actionType, description, companyId);
+            }
+
             await fetchCertificateData();
         }
         

@@ -12,9 +12,12 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2, Star } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext'; // Import useAuth
+import { logAction } from '@/lib/log'; // Import logAction
 
 const CompanyUserDialog = ({ company, isOpen, setIsOpen }) => {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth(); // Get the current logged-in user
   const [users, setUsers] = useState([]);
   const [associatedUserIds, setAssociatedUserIds] = useState(new Set());
   const [defaultUserId, setDefaultUserId] = useState(null);
@@ -62,6 +65,9 @@ const CompanyUserDialog = ({ company, isOpen, setIsOpen }) => {
         if (error) throw error;
         setAssociatedUserIds(prev => new Set(prev).add(userId));
         toast({ title: "Usuário associado!" });
+        if (currentUser) {
+            await logAction(currentUser.id, 'user_associate_company', `Usuário (ID: ${userId}) associado à empresa ${company.razao_social} (ID: ${company.id}).`, company.id, userId);
+        }
       } else {
         const { error } = await supabase.from('emitente_users').delete().match({ emitente_id: company.id, user_id: userId });
         if (error) throw error;
@@ -71,13 +77,15 @@ const CompanyUserDialog = ({ company, isOpen, setIsOpen }) => {
           return newSet;
         });
         if (userId === defaultUserId) {
-            // If disassociating the default company, also unset it as default
             await supabase.functions.invoke('set-user-default-company', {
                 body: { userId, companyId: null }
             });
             setDefaultUserId(null);
         }
         toast({ title: "Associação removida." });
+        if (currentUser) {
+            await logAction(currentUser.id, 'user_disassociate_company', `Usuário (ID: ${userId}) desassociado da empresa ${company.razao_social} (ID: ${company.id}).`, company.id, userId);
+        }
       }
     } catch (error) {
       toast({ variant: "destructive", title: "Erro ao atualizar associação", description: error.message });
@@ -92,6 +100,9 @@ const CompanyUserDialog = ({ company, isOpen, setIsOpen }) => {
       if (error) throw error;
       setDefaultUserId(userId);
       toast({ title: 'Empresa padrão definida com sucesso!' });
+      if (currentUser) {
+          await logAction(currentUser.id, 'user_set_default_company', `Empresa ${company.razao_social} (ID: ${company.id}) definida como padrão para o usuário (ID: ${userId}).`, company.id, userId);
+      }
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erro ao definir empresa padrão', description: error.message });
     }

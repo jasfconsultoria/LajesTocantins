@@ -15,10 +15,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import UserForm from './UserForm';
+import { logAction } from '@/lib/log'; // Import logAction
 
 const UserManagement = () => {
     const { handleNotImplemented } = useOutletContext();
-    const { user, role } = useAuth();
+    const { user: currentUser, role } = useAuth(); // Get the current logged-in user
     const { toast } = useToast();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -84,6 +85,36 @@ const UserManagement = () => {
 
     const handleSaveSuccess = () => {
         fetchUsers();
+    };
+
+    const handleUserAction = (action, targetUser) => {
+        if (currentUser) {
+            let description = '';
+            let actionType = '';
+            switch (action) {
+                case 'Visualizar Usuário':
+                    actionType = 'user_view';
+                    description = `Visualizou detalhes do usuário ${targetUser.email} (ID: ${targetUser.id}).`;
+                    break;
+                case 'Editar Permissões':
+                    actionType = 'user_edit_permissions';
+                    description = `Tentou editar permissões do usuário ${targetUser.email} (ID: ${targetUser.id}).`;
+                    break;
+                case 'Editar Usuário':
+                    actionType = 'user_edit';
+                    description = `Tentou editar informações do usuário ${targetUser.email} (ID: ${targetUser.id}).`;
+                    break;
+                case 'Excluir Usuário':
+                    actionType = 'user_delete';
+                    description = `Tentou excluir o usuário ${targetUser.email} (ID: ${targetUser.id}).`;
+                    break;
+                default:
+                    actionType = 'unknown_user_action';
+                    description = `Ação desconhecida em usuário (ID: ${targetUser.id}).`;
+            }
+            logAction(currentUser.id, actionType, description, null, targetUser.id);
+        }
+        handleNotImplemented(action);
     };
 
     const getRoleBadge = (roleName) => {
@@ -160,16 +191,16 @@ const UserManagement = () => {
                                     <TableCell>{getRoleBadge(u.role)}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Visualizar Usuário')}>
+                                            <Button variant="ghost" size="icon" onClick={() => handleUserAction('Visualizar Usuário', u)}>
                                                 <Eye className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Editar Permissões')}>
+                                            <Button variant="ghost" size="icon" onClick={() => handleUserAction('Editar Permissões', u)}>
                                                 <Shield className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleNotImplemented('Editar Usuário')}>
+                                            <Button variant="ghost" size="icon" onClick={() => handleUserAction('Editar Usuário', u)}>
                                                 <Edit className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleNotImplemented('Excluir Usuário')}>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleUserAction('Excluir Usuário', u)}>
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>

@@ -3,10 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, Building } from 'lucide-react'; // Removed KeyRound
+import { Save, Loader2, ArrowLeft, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LogoUploader from '@/components/LogoUploader';
-// Removed import for CertificateSettings
+import { logAction } from '@/lib/log'; // Import logAction
 
 const initialCompanyState = {
     razao_social: '', nome_fantasia: '', cnpj: '', inscricao_estadual: '',
@@ -67,6 +67,8 @@ const CompanyEditorPage = () => {
         try {
             const saveData = { ...company, updated_at: new Date().toISOString() };
             let error;
+            let actionType;
+            let description;
 
             if (id) {
                 const { error: updateError } = await supabase
@@ -74,15 +76,27 @@ const CompanyEditorPage = () => {
                     .update(saveData)
                     .eq('id', id);
                 error = updateError;
+                actionType = 'company_update';
+                description = `Empresa ${company.razao_social} (ID: ${id}) atualizada.`;
             } else {
                 delete saveData.id;
-                const { error: insertError } = await supabase
+                const { data: newCompanyData, error: insertError } = await supabase
                     .from('emitente')
-                    .insert([saveData]);
+                    .insert([saveData])
+                    .select(); // Select the inserted data to get the new ID
                 error = insertError;
+                actionType = 'company_create';
+                description = `Nova empresa ${saveData.razao_social} (ID: ${newCompanyData?.[0]?.id}) criada.`;
+                if (newCompanyData && newCompanyData.length > 0) {
+                    saveData.id = newCompanyData[0].id; // Set the ID for logging
+                }
             }
 
             if (error) throw error;
+
+            if (user) {
+                await logAction(user.id, actionType, description, saveData.id);
+            }
 
             toast({ title: 'Sucesso!', description: `Empresa ${id ? 'atualizada' : 'criada'} com sucesso.` });
             navigate('/app/companies');

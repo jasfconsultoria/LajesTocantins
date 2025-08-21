@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useOutletContext } from 'react-router-dom';
+import { logAction } from '@/lib/log'; // Import logAction
 
 const SefazSettings = ({ companyId }) => {
     const { toast } = useToast();
@@ -89,6 +90,9 @@ const SefazSettings = ({ companyId }) => {
             .single();
 
         let error;
+        let actionType = 'sefaz_config_update';
+        let description = `Configurações SEFAZ para empresa (ID: ${activeCompanyId}) atualizadas.`;
+
         if (existingRecord) {
             const { error: updateError } = await supabase
                 .from('nfce_settings')
@@ -100,6 +104,8 @@ const SefazSettings = ({ companyId }) => {
                 .from('nfce_settings')
                 .insert([upsertData]);
             error = insertError;
+            actionType = 'sefaz_config_create';
+            description = `Configurações SEFAZ para empresa (ID: ${activeCompanyId}) criadas.`;
         }
 
         if (error) {
@@ -116,6 +122,9 @@ const SefazSettings = ({ companyId }) => {
                 title: "Configurações Salvas!",
                 description: "Os dados da SEFAZ foram atualizados com sucesso.",
             });
+            if (user) {
+                await logAction(user.id, actionType, description, activeCompanyId);
+            }
         }
         setIsSaving(false);
     };
@@ -136,6 +145,9 @@ const SefazSettings = ({ companyId }) => {
                 description: "A comunicação com os serviços da SEFAZ foi estabelecida.",
                 className: "bg-green-100 border-green-300 text-green-800"
             });
+            if (user) {
+                logAction(user.id, 'sefaz_test_connection', `Teste de conexão SEFAZ para empresa (ID: ${activeCompanyId}) realizado com sucesso.`, activeCompanyId);
+            }
         }, 2000);
     };
 

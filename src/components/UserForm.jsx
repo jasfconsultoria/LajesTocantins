@@ -20,9 +20,12 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/SupabaseAuthContext'; // Import useAuth
+import { logAction } from '@/lib/log'; // Import logAction
 
 const UserForm = ({ isOpen, setIsOpen, onSave }) => {
   const { toast } = useToast();
+  const { user: currentUser } = useAuth(); // Get the current logged-in user
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -54,7 +57,7 @@ const UserForm = ({ isOpen, setIsOpen, onSave }) => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('create-user', {
+      const { data, error } = await supabase.functions.invoke('create-user', {
         body: formData,
       });
 
@@ -64,6 +67,11 @@ const UserForm = ({ isOpen, setIsOpen, onSave }) => {
         title: 'Usuário Criado!',
         description: 'O novo usuário foi adicionado com sucesso.',
       });
+      
+      if (currentUser && data?.user) {
+          await logAction(currentUser.id, 'user_create', `Novo usuário ${data.user.email} (ID: ${data.user.id}) criado com perfil ${formData.role_name}.`, null, data.user.id);
+      }
+
       onSave();
       setIsOpen(false);
       setFormData({ full_name: '', email: '', password: '', role_name: 'user' });

@@ -118,14 +118,15 @@ const CompanyList = () => {
                     </h1>
                     <p className="text-slate-600 mt-2">Visualize e gerencie as empresas (emitentes) cadastradas.</p>
                 </div>
-                <Button 
-                    onClick={() => navigate('/app/companies/new')} 
-                    className="save-button"
-                    disabled={role !== 'admin'}
-                >
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    Nova Empresa
-                </Button>
+                {role === 'admin' && (
+                    <Button 
+                        onClick={() => navigate('/app/companies/new')} 
+                        className="save-button"
+                    >
+                        <PlusCircle className="w-4 h-4 mr-2" />
+                        Nova Empresa
+                    </Button>
+                )}
             </div>
 
             <div className="bg-white/80 p-4 rounded-xl shadow-sm border border-white">
