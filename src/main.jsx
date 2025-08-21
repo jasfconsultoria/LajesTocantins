@@ -13,13 +13,14 @@ import Dashboard from '@/components/Dashboard';
 import CompanyList from '@/components/CompanyList';
 import CompanyEditorPage from '@/pages/CompanyEditorPage';
 import SefazSettings from '@/components/settings/SefazSettings';
-// Removed import for CertificateSettings
 import TechRespSettings from '@/components/settings/TechRespSettings';
 import Reports from '@/components/Reports';
 import Logs from '@/components/Logs';
 import Help from '@/components/Help';
 import Versions from '@/components/Versions';
 import UserManagement from '@/components/UserManagement';
+import PeopleList from '@/pages/PeopleList'; // Import new PeopleList
+import PersonEditorPage from '@/pages/PersonEditorPage'; // Import new PersonEditorPage
 
 const ProtectedRoute = () => {
   const { session, loading } = useAuth();
@@ -56,8 +57,10 @@ const router = createBrowserRouter([
           { path: "companies", element: <CompanyList /> },
           { path: "companies/new", element: <CompanyEditorPage /> },
           { path: "companies/:id/edit", element: <CompanyEditorPage /> },
+          { path: "people", element: <PeopleList /> }, {/* New route for PeopleList */}
+          { path: "people/new", element: <PersonEditorPage /> }, {/* New route for New Person */}
+          { path: "people/:id/edit", element: <PersonEditorPage /> }, {/* New route for Edit Person */}
           { path: "users", element: <UserManagement /> },
-          // Removed { path: "certificate", element: <CertificateSettings /> },
           { path: "sefaz", element: <SefazSettings /> },
           { path: "techResp", element: <TechRespSettings /> },
           { path: "reports", element: <Reports /> },

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, 
-  HelpCircle, Lock, UserCheck, LogOut, History, Users
+  HelpCircle, Lock, UserCheck, LogOut, History, Users, UserRoundSearch // Added UserRoundSearch for Pessoas
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,6 +30,7 @@ function MainLayout() {
   const baseSidebarItems = [
     { to: '/app', label: 'Dashboard', icon: Home },
     { to: '/app/companies', label: 'Empresas', icon: Building },
+    { to: '/app/people', label: 'Pessoas', icon: UserRoundSearch }, // New menu item
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
     { to: '/app/logs', label: 'Logs', icon: Database },
     { to: '/app/help', label: 'Ajuda', icon: HelpCircle },
@@ -39,8 +40,6 @@ function MainLayout() {
   const adminOnlyItems = [
     { to: '/app/users', label: 'Usuários', icon: Users },
     { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck },
-    // SEFAZ is now configured per company via the CompanyList, so it's removed from the main menu.
-    // If a direct SEFAZ page is still needed for global settings, it would be added here.
   ];
 
   const sidebarItems = role === 'admin' 
