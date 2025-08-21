@@ -30,7 +30,7 @@ const LogoUploader = ({ label, description, currentLogoUrl, onUpload, onRemove }
             const filePath = `${user.id}/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('logos')
+                .from('company_logos')
                 .upload(filePath, file);
 
             if (uploadError) {
@@ -38,13 +38,13 @@ const LogoUploader = ({ label, description, currentLogoUrl, onUpload, onRemove }
             }
 
             const { data: { publicUrl } } = supabase.storage
-                .from('logos')
+                .from('company_logos')
                 .getPublicUrl(filePath);
 
             setLogoUrl(publicUrl);
             onUpload(publicUrl);
             toast({ title: 'Logo enviado com sucesso!' });
-        } catch (error) {
+        } catch (error) => {
             toast({ variant: 'destructive', title: 'Erro no upload', description: error.message });
         } finally {
             setUploading(false);
