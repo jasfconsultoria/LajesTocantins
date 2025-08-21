@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, 
-  HelpCircle, Lock, UserCheck, LogOut, History, Users // Removed UserRoundSearch
+  HelpCircle, Lock, UserCheck, LogOut, History, Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,7 +30,7 @@ function MainLayout() {
   const baseSidebarItems = [
     { to: '/app', label: 'Dashboard', icon: Home },
     { to: '/app/companies', label: 'Empresas', icon: Building },
-    { to: '/app/people', label: 'Pessoas', icon: Users }, // Changed to Users
+    { to: '/app/people', label: 'Pessoas', icon: Users },
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
     { to: '/app/logs', label: 'Logs', icon: Database },
     { to: '/app/help', label: 'Ajuda', icon: HelpCircle },
@@ -54,8 +54,8 @@ function MainLayout() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 text-sm">
       <Helmet>
-        <title>{activeCompany ? activeCompany.razao_social : 'App'} | NFC-e Plus</title>
-        <meta name="description" content="Painel de controle para emissão automática de NFC-e." />
+        <title>{activeCompany ? activeCompany.razao_social : 'App'} | Lajes Tocantins</title>
+        <meta name="description" content="Painel de controle para o sistema de gerenciamento Lajes Tocantins." />
       </Helmet>
 
       <header className="glass-effect border-b border-white/20 sticky top-0 z-40">
@@ -116,8 +116,8 @@ function MainLayout() {
                       Sair
                     </button>
                   <div className="text-xs text-slate-500 text-center mt-4">
-                    NFC-e Plus v{appVersion}<br/>
-                    Desenvolvido para nfceplus.com
+                    Lajes Tocantins v{appVersion}<br/>
+                    Sistema de Gerenciamento
                   </div>
                 </div>
               </div>

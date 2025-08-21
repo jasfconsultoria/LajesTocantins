@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, UserRound, Building2 } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, User, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -189,7 +189,7 @@ const PersonEditorPage = () => {
             <div className="config-card max-w-5xl mx-auto">
                 <div className="config-header">
                     <div className="flex items-center gap-3">
-                        {person.pessoa_tipo === 1 ? <UserRound className="w-6 h-6 text-blue-600" /> : <Building2 className="w-6 h-6 text-purple-600" />}
+                        {person.pessoa_tipo === 1 ? <User className="w-6 h-6 text-blue-600" /> : <Building2 className="w-6 h-6 text-purple-600" />}
                         <div>
                             <h3 className="config-title">Informações Cadastrais</h3>
                             <p className="config-description">Dados principais da pessoa física ou jurídica.</p>

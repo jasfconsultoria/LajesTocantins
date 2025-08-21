@@ -46,7 +46,7 @@ const CompanySwitcher = () => {
     return (
       <div className="flex items-center space-x-2 text-slate-600">
         <Loader2 className="w-4 h-4 animate-spin" />
-        <span>Carregando empresas...</span>
+        <span>Carregando...</span>
       </div>
     );
   }
@@ -54,13 +54,7 @@ const CompanySwitcher = () => {
   if (!user || companies.length === 0) {
     return (
       <div className="flex items-center space-x-3">
-        <div className="w-9 h-9 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-            <Building className="w-5 h-5 text-white" />
-        </div>
-        <div>
-            <h1 className="text-lg font-bold gradient-text">NFC-e Plus</h1>
-            <p className="text-xs text-slate-600">Painel de Controle</p>
-        </div>
+        <img src="/lajes-tocantins-logo.jpg" alt="Lajes Tocantins Logo" className="h-10" />
       </div>
     );
   }

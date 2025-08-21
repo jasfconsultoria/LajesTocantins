@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { FileText, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -46,15 +46,7 @@ const Auth = () => {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
             <div className="w-full max-w-md mx-auto">
                 <div className="flex justify-center mb-8">
-                     <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
-                            <FileText className="w-7 h-7 text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold gradient-text">NFC-e Plus</h1>
-                            <p className="text-sm text-slate-600">Emissão fácil para sua loja</p>
-                        </div>
-                    </div>
+                     <img src="/lajes-tocantins-logo.jpg" alt="Lajes Tocantins Logo" className="h-20" />
                 </div>
 
                 <div className="bg-white/80 backdrop-blur-xl p-8 rounded-xl shadow-lg border border-white">
@@ -70,7 +62,7 @@ const Auth = () => {
                                 {isLogin ? 'Bem-vindo de volta!' : 'Crie sua conta'}
                             </h2>
                             <p className="text-sm text-center text-slate-500 mb-6">
-                                {isLogin ? 'Faça login para continuar' : 'Preencha os dados para se registrar'}
+                                {isLogin ? 'Faça login para acessar o sistema' : 'Preencha os dados para se registrar'}
                             </p>
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-2">
@@ -118,7 +110,7 @@ const Auth = () => {
                 </div>
 
                  <div className="text-xs text-slate-500 text-center mt-8">
-                    NFC-e Plus v1.0.0 | Desenvolvido para nfceplus.com
+                    Sistema de Gerenciamento Lajes Tocantins
                 </div>
             </div>
         </div>

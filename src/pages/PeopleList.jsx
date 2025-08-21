@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, Users, ChevronLeft, ChevronRight, UserRound, Building2 } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Users, ChevronLeft, ChevronRight, User, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -99,7 +99,7 @@ const PeopleList = () => {
     };
 
     const getPessoaTipoIcon = (tipo) => {
-        if (tipo === 1) return <UserRound className="w-4 h-4 mr-1 text-blue-500" />;
+        if (tipo === 1) return <User className="w-4 h-4 mr-1 text-blue-500" />;
         if (tipo === 2) return <Building2 className="w-4 h-4 mr-1 text-purple-500" />;
         return null;
     };

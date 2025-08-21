@@ -30,7 +30,7 @@ const LogoUploader = ({ label, description, currentLogoUrl, onUpload, onRemove }
             const filePath = `${user.id}/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
-                .from('company_logos')
+                .from('logos')
                 .upload(filePath, file);
 
             if (uploadError) {
@@ -38,7 +38,7 @@ const LogoUploader = ({ label, description, currentLogoUrl, onUpload, onRemove }
             }
 
             const { data: { publicUrl } } = supabase.storage
-                .from('company_logos')
+                .from('logos')
                 .getPublicUrl(filePath);
 
             setLogoUrl(publicUrl);
