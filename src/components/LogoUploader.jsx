@@ -44,7 +44,7 @@ const LogoUploader = ({ label, description, currentLogoUrl, onUpload, onRemove }
             setLogoUrl(publicUrl);
             onUpload(publicUrl);
             toast({ title: 'Logo enviado com sucesso!' });
-        } catch (error) => {
+        } catch (error) {
             toast({ variant: 'destructive', title: 'Erro no upload', description: error.message });
         } finally {
             setUploading(false);
