@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, 
-  HelpCircle, Lock, UserCheck, LogOut, History, Users, UserRoundSearch // Added UserRoundSearch for Pessoas
+  HelpCircle, Lock, UserCheck, LogOut, History, Users // Removed UserRoundSearch
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useApp } from '@/contexts/AppContext';
-import CompanySwitcher from '@/components/CompanySwitcher'; // Import CompanySwitcher
+import CompanySwitcher from '@/components/CompanySwitcher';
 
 function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,7 +30,7 @@ function MainLayout() {
   const baseSidebarItems = [
     { to: '/app', label: 'Dashboard', icon: Home },
     { to: '/app/companies', label: 'Empresas', icon: Building },
-    { to: '/app/people', label: 'Pessoas', icon: UserRoundSearch }, // New menu item
+    { to: '/app/people', label: 'Pessoas', icon: Users }, // Changed to Users
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
     { to: '/app/logs', label: 'Logs', icon: Database },
     { to: '/app/help', label: 'Ajuda', icon: HelpCircle },
@@ -64,7 +64,7 @@ function MainLayout() {
             <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)} className="lg:hidden">
               <Menu className="w-5 h-5" />
             </Button>
-            <CompanySwitcher /> {/* Integrated CompanySwitcher here */}
+            <CompanySwitcher />
           </div>
           
           <div className="flex items-center space-x-4">
@@ -126,7 +126,7 @@ function MainLayout() {
         </AnimatePresence>
 
         <main className="flex-1 p-4 lg:p-6">
-          <Outlet context={{ handleNotImplemented, activeCompanyId: activeCompany?.id }} /> {/* Pass activeCompanyId */}
+          <Outlet context={{ handleNotImplemented, activeCompanyId: activeCompany?.id }} />
         </main>
       </div>
 
