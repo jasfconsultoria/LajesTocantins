@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ShieldAlert, Search, PlusCircle, Edit, Trash2, Eye, Shield, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Loader2, ShieldAlert, Search, PlusCircle, Edit, Trash2, Eye, Shield, ChevronLeft, ChevronRight, Users, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -15,17 +15,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import UserForm from './UserForm';
-import { logAction } from '@/lib/log'; // Import logAction
+import UserCompanyAccessDialog from './UserCompanyAccessDialog'; // Import the new dialog
+import { logAction } from '@/lib/log';
 
 const UserManagement = () => {
     const { handleNotImplemented } = useOutletContext();
-    const { user: currentUser, role } = useAuth(); // Get the current logged-in user
+    const { user: currentUser, role } = useAuth();
     const { toast } = useToast();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isCompanyAccessDialogOpen, setIsCompanyAccessDialogOpen] = useState(false); // New state for company access dialog
+    const [userToManageCompanies, setUserToManageCompanies] = useState(null); // New state to hold the user for company management
     const ITEMS_PER_PAGE = 10;
 
     const fetchUsers = useCallback(async () => {
@@ -117,6 +120,11 @@ const UserManagement = () => {
         handleNotImplemented(action);
     };
 
+    const handleOpenCompanyAccessDialog = (user) => {
+        setUserToManageCompanies(user);
+        setIsCompanyAccessDialogOpen(true);
+    };
+
     const getRoleBadge = (roleName) => {
         const lowerCaseRole = roleName?.toLowerCase();
         let colorClasses = 'bg-slate-200 text-slate-700';
@@ -194,6 +202,9 @@ const UserManagement = () => {
                                             <Button variant="ghost" size="icon" onClick={() => handleUserAction('Visualizar Usuário', u)}>
                                                 <Eye className="w-4 h-4" />
                                             </Button>
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenCompanyAccessDialog(u)}> {/* New button */}
+                                                <Building className="w-4 h-4" />
+                                            </Button>
                                             <Button variant="ghost" size="icon" onClick={() => handleUserAction('Editar Permissões', u)}>
                                                 <Shield className="w-4 h-4" />
                                             </Button>
@@ -234,6 +245,14 @@ const UserManagement = () => {
                 setIsOpen={setIsFormOpen}
                 onSave={handleSaveSuccess}
             />
+            {userToManageCompanies && (
+                <UserCompanyAccessDialog
+                    isOpen={isCompanyAccessDialogOpen}
+                    setIsOpen={setIsCompanyAccessDialogOpen}
+                    targetUser={userToManageCompanies}
+                    onUpdate={fetchUsers} // Pass fetchUsers to refresh the list after changes
+                />
+            )}
         </div>
     );
 };

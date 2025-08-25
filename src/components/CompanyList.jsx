@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, Users as UsersIcon, Building, ChevronLeft, ChevronRight, KeyRound, Shield } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Building, ChevronLeft, ChevronRight, KeyRound, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import CompanyUserDialog from './CompanyUserDialog';
+// import CompanyUserDialog from './CompanyUserDialog'; // Removed import
 import CertificateSettings from '@/components/settings/CertificateSettings';
 import SefazSettings from '@/components/settings/SefazSettings';
 
@@ -34,7 +34,7 @@ const CompanyList = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedCompany, setSelectedCompany] = useState(null);
+    // const [selectedCompany, setSelectedCompany] = useState(null); // Removed state
     const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
     const [companyForCertificate, setCompanyForCertificate] = useState(null);
     const [isSefazModalOpen, setIsSefazModalOpen] = useState(false);
@@ -166,11 +166,7 @@ const CompanyList = () => {
                                     <TableCell>{c.municipio}/{c.uf}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            {role === 'admin' && (
-                                                <Button variant="ghost" size="icon" onClick={() => setSelectedCompany(c)}>
-                                                    <UsersIcon className="w-4 h-4" />
-                                                </Button>
-                                            )}
+                                            {/* Removed UsersIcon button */}
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/companies/${c.id}/edit`)}>
                                                 <Edit className="w-4 h-4" />
                                             </Button>
@@ -212,13 +208,7 @@ const CompanyList = () => {
                 </div>
             </div>
             
-            {selectedCompany && role === 'admin' && (
-                <CompanyUserDialog
-                    company={selectedCompany}
-                    isOpen={!!selectedCompany}
-                    setIsOpen={() => setSelectedCompany(null)}
-                />
-            )}
+            {/* Removed CompanyUserDialog usage */}
 
             <Dialog open={isCertificateModalOpen} onOpenChange={setIsCertificateModalOpen}>
                 <DialogContent className="sm:max-w-[480px]">
