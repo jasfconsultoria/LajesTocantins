@@ -16,6 +16,12 @@ import {
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
 
+// Helper function for normalization (moved outside component)
+const normalizeString = (str) => {
+    if (typeof str !== 'string') return ''; // Handle non-string inputs
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+};
+
 const PeopleList = () => {
     const { handleNotImplemented } = useOutletContext();
     const { user: currentUser } = useAuth();
@@ -40,7 +46,7 @@ const PeopleList = () => {
                 const { data, error } = await supabase
                     .from('pessoas')
                     .select('*')
-                    .order('created_at', { ascending: false })
+                    .order('created_at', { ascending: false }) // Keep initial order for fetching
                     .range(offset, offset + limit - 1); // Busca um 'range' de registros
 
                 if (error) throw error;
@@ -55,7 +61,15 @@ const PeopleList = () => {
                     hasMore = false; // Não há mais dados
                 }
             }
-            setPeople(allPeople);
+
+            // Apply sorting after fetching all data
+            const sortedPeople = allPeople.sort((a, b) => {
+                const nameA = normalizeString(a.razao_social || a.nome_fantasia);
+                const nameB = normalizeString(b.razao_social || b.nome_fantasia);
+                return nameA.localeCompare(nameB);
+            });
+
+            setPeople(sortedPeople);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -72,22 +86,18 @@ const PeopleList = () => {
     }, [fetchPeople]);
 
     const filteredPeople = useMemo(() => {
-        const lowerCaseSearchTerm = searchTerm.toLowerCase();
-        
-        // Função para normalizar strings (remover acentos)
-        const normalizeString = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-        const normalizedSearchTerm = normalizeString(lowerCaseSearchTerm);
+        const normalizedSearchTerm = normalizeString(searchTerm);
+        const numericSearchTerm = searchTerm.replace(/[^\d]/g, '');
 
         return people.filter(p => {
-            const razaoSocial = p.razao_social ? normalizeString(p.razao_social.toLowerCase()) : '';
-            const nomeFantasia = p.nome_fantasia ? normalizeString(p.nome_fantasia.toLowerCase()) : '';
+            const normalizedRazaoSocial = normalizeString(p.razao_social);
+            const normalizedNomeFantasia = normalizeString(p.nome_fantasia);
             const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
 
             return (
-                razaoSocial.includes(normalizedSearchTerm) ||
-                nomeFantasia.includes(normalizedSearchTerm) ||
-                cpfCnpj.includes(lowerCaseSearchTerm.replace(/[^\d]/g, '')) // CPF/CNPJ não precisa de normalização de acentos
+                normalizedRazaoSocial.includes(normalizedSearchTerm) ||
+                normalizedNomeFantasia.includes(normalizedSearchTerm) ||
+                cpfCnpj.includes(numericSearchTerm)
             );
         });
     }, [people, searchTerm]);
