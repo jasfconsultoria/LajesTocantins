@@ -21,6 +21,8 @@ import Versions from '@/components/Versions';
 import UserManagement from '@/components/UserManagement';
 import PeopleList from '@/pages/PeopleList'; 
 import PersonEditorPage from '@/pages/PersonEditorPage'; 
+import ProductList from '@/pages/ProductList'; // Import ProductList
+import ProductEditorPage from '@/pages/ProductEditorPage'; // Import ProductEditorPage
 
 const ProtectedRoute = () => {
   const { session, loading } = useAuth();
@@ -57,6 +59,9 @@ const router = createBrowserRouter([
           { path: "companies", element: <CompanyList /> },
           { path: "companies/new", element: <CompanyEditorPage /> },
           { path: "companies/:id/edit", element: <CompanyEditorPage /> },
+          { path: "products", element: <ProductList /> }, // New Product List route
+          { path: "products/new", element: <ProductEditorPage /> }, // New Product Create route
+          { path: "products/:id/edit", element: <ProductEditorPage /> }, // New Product Edit route
           { path: "people", element: <PeopleList /> }, 
           { path: "people/new", element: <PersonEditorPage /> }, 
           { path: "people/:id/edit", element: <PersonEditorPage /> }, 

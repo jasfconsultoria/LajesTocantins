@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { 
   FileText, BarChart3, Shield, Building, Bell, Menu, Home, Database, 
-  HelpCircle, Lock, UserCheck, LogOut, History, Users
+  HelpCircle, Lock, UserCheck, LogOut, History, Users, Package // Import Package icon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -30,6 +30,7 @@ function MainLayout() {
   const baseSidebarItems = [
     { to: '/app', label: 'Dashboard', icon: Home },
     { to: '/app/companies', label: 'Empresas', icon: Building },
+    { to: '/app/products', label: 'Produtos', icon: Package }, // New Products item
     { to: '/app/people', label: 'Pessoas', icon: Users },
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
     { to: '/app/logs', label: 'Logs', icon: Database },
