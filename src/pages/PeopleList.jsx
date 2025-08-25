@@ -72,11 +72,24 @@ const PeopleList = () => {
     }, [fetchPeople]);
 
     const filteredPeople = useMemo(() => {
-        return people.filter(p =>
-            (p.razao_social?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (p.nome_fantasia?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (p.cpf_cnpj?.replace(/[^\d]/g, '').includes(searchTerm.replace(/[^\d]/g, '')))
-        );
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        
+        // Função para normalizar strings (remover acentos)
+        const normalizeString = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        const normalizedSearchTerm = normalizeString(lowerCaseSearchTerm);
+
+        return people.filter(p => {
+            const razaoSocial = p.razao_social ? normalizeString(p.razao_social.toLowerCase()) : '';
+            const nomeFantasia = p.nome_fantasia ? normalizeString(p.nome_fantasia.toLowerCase()) : '';
+            const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
+
+            return (
+                razaoSocial.includes(normalizedSearchTerm) ||
+                nomeFantasia.includes(normalizedSearchTerm) ||
+                cpfCnpj.includes(lowerCaseSearchTerm.replace(/[^\d]/g, '')) // CPF/CNPJ não precisa de normalização de acentos
+            );
+        });
     }, [people, searchTerm]);
 
     const paginatedPeople = useMemo(() => {
