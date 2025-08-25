@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { Hand } from 'lucide-react';
+import { Hand, Calendar, TrendingUp, Users, FileText } from 'lucide-react'; // Importar ícones necessários
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -26,6 +26,30 @@ const Dashboard = () => {
                     Selecione uma opção no menu ao lado para começar a configurar seu sistema de emissão de NFC-e.
                 </p>
             </motion.div>
+
+            {/* Novos cards de métricas */}
+            <div className="stats-grid">
+                <div className="metric-card">
+                    <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+                    <div className="metric-value">R$ 45.230</div>
+                    <div className="metric-label">Faturamento Mensal</div>
+                </div>
+                <div className="metric-card">
+                    <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-3" />
+                    <div className="metric-value">+12%</div>
+                    <div className="metric-label">Crescimento</div>
+                </div>
+                <div className="metric-card">
+                    <Users className="w-8 h-8 text-purple-600 mx-auto mb-3" />
+                    <div className="metric-value">847</div>
+                    <div className="metric-label">Clientes Únicos</div>
+                </div>
+                <div className="metric-card">
+                    <FileText className="w-8 h-8 text-orange-600 mx-auto mb-3" />
+                    <div className="metric-value">R$ 53,45</div>
+                    <div className="metric-label">Ticket Médio</div>
+                </div>
+            </div>
         </div>
     );
 };
