@@ -51,10 +51,19 @@ const CompanySwitcher = () => {
     );
   }
 
-  if (!user || companies.length === 0) {
+  if (!user) {
     return (
       <div className="flex items-center space-x-3">
         <img src="/lajes-tocantins-logo.jpg" alt="Lajes Tocantins Logo" className="h-10" />
+      </div>
+    );
+  }
+
+  if (companies.length === 0) {
+    return (
+      <div className="flex items-center space-x-2 text-slate-500 px-3 py-2 bg-white/60 border border-white/30 rounded-lg shadow-sm">
+        <Building className="w-5 h-5" />
+        <span>Nenhuma Empresa</span>
       </div>
     );
   }
