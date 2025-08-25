@@ -31,14 +31,31 @@ const PeopleList = () => {
     const fetchPeople = useCallback(async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('pessoas')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .limit(Number.MAX_SAFE_INTEGER); // Adicionado para buscar todos os registros
-            
-            if (error) throw error;
-            setPeople(data);
+            let allPeople = [];
+            let offset = 0;
+            const limit = 1000; // Limite de linhas por requisição do PostgREST
+            let hasMore = true;
+
+            while (hasMore) {
+                const { data, error } = await supabase
+                    .from('pessoas')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .range(offset, offset + limit - 1); // Busca um 'range' de registros
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    allPeople = allPeople.concat(data);
+                    offset += data.length;
+                    if (data.length < limit) { // Se retornou menos que o limite, é a última página
+                        hasMore = false;
+                    }
+                } else {
+                    hasMore = false; // Não há mais dados
+                }
+            }
+            setPeople(allPeople);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -71,7 +88,7 @@ const PeopleList = () => {
 
     const handleNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-    };
+    }
 
     const handlePrevPage = () => {
         if (currentPage > 1) setCurrentPage(currentPage - 1);
