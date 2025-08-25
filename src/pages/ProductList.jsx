@@ -32,28 +32,24 @@ const ProductList = () => {
         if (!activeCompanyId) {
             setProducts([]);
             setLoading(false);
-            console.log("ProductList: Nenhuma empresa ativa selecionada.");
             return;
         }
         setLoading(true);
-        console.log("ProductList: Buscando produtos para activeCompanyId:", activeCompanyId); // Log para depuração
         try {
             const { data, error } = await supabase
-                .from('produtos') // Corrigido para 'produtos' (minúsculas)
+                .from('produtos')
                 .select('*')
                 .eq('id_emit', activeCompanyId)
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
             setProducts(data);
-            console.log("ProductList: Produtos carregados:", data.length); // Log para depuração
         } catch (error) {
             toast({
                 variant: "destructive",
                 title: "Erro ao carregar produtos",
                 description: error.message,
             });
-            console.error("ProductList: Erro ao buscar produtos:", error.message); // Log para depuração
         } finally {
             setLoading(false);
         }
@@ -65,9 +61,9 @@ const ProductList = () => {
 
     const filteredProducts = useMemo(() => {
         return products.filter(p =>
-            (p.prod_xprod?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (p.prod_cprod?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (p.prod_cean?.replace(/[^\d]/g, '').includes(searchTerm.replace(/[^\d]/g, '')))
+            (p.prod_xProd?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (p.prod_cProd?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (p.prod_cEAN?.replace(/[^\d]/g, '').includes(searchTerm.replace(/[^\d]/g, '')))
         );
     }, [products, searchTerm]);
 
@@ -92,7 +88,7 @@ const ProductList = () => {
         }
         try {
             const { error } = await supabase
-                .from('produtos') // Corrigido para 'produtos' (minúsculas)
+                .from('produtos')
                 .delete()
                 .eq('id', productId);
 
@@ -170,16 +166,16 @@ const ProductList = () => {
                         <TableBody>
                             {paginatedProducts.map((p) => (
                                 <TableRow key={p.id}>
-                                    <TableCell className="font-medium">{p.prod_cprod}</TableCell>
-                                    <TableCell>{p.prod_xprod}</TableCell>
-                                    <TableCell>{p.prod_ncm}</TableCell>
-                                    <TableCell>{p.prod_ucom}</TableCell>
+                                    <TableCell className="font-medium">{p.prod_cProd}</TableCell>
+                                    <TableCell>{p.prod_xProd}</TableCell>
+                                    <TableCell>{p.prod_NCM}</TableCell>
+                                    <TableCell>{p.prod_uCOM}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/products/${p.id}/edit`)}>
                                                 <Edit className="w-4 h-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteProduct(p.id, p.prod_xprod)}>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteProduct(p.id, p.prod_xProd)}>
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
                                         </div>
