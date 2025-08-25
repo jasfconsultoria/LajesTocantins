@@ -34,7 +34,8 @@ const PeopleList = () => {
             const { data, error } = await supabase
                 .from('pessoas')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(Number.MAX_SAFE_INTEGER); // Adicionado para buscar todos os registros
             
             if (error) throw error;
             setPeople(data);
