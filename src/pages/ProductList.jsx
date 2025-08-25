@@ -32,9 +32,11 @@ const ProductList = () => {
         if (!activeCompanyId) {
             setProducts([]);
             setLoading(false);
+            console.log("ProductList: Nenhuma empresa ativa selecionada.");
             return;
         }
         setLoading(true);
+        console.log("ProductList: Buscando produtos para activeCompanyId:", activeCompanyId); // Log para depuração
         try {
             const { data, error } = await supabase
                 .from('produtos') // Corrigido para 'produtos' (minúsculas)
@@ -44,12 +46,14 @@ const ProductList = () => {
             
             if (error) throw error;
             setProducts(data);
+            console.log("ProductList: Produtos carregados:", data.length); // Log para depuração
         } catch (error) {
             toast({
                 variant: "destructive",
                 title: "Erro ao carregar produtos",
                 description: error.message,
             });
+            console.error("ProductList: Erro ao buscar produtos:", error.message); // Log para depuração
         } finally {
             setLoading(false);
         }
