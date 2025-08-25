@@ -37,7 +37,7 @@ const ProductList = () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('Produtos')
+                .from('produtos') // Corrigido para 'produtos' (minúsculas)
                 .select('*')
                 .eq('id_emit', activeCompanyId)
                 .order('created_at', { ascending: false });
@@ -88,7 +88,7 @@ const ProductList = () => {
         }
         try {
             const { error } = await supabase
-                .from('Produtos')
+                .from('produtos') // Corrigido para 'produtos' (minúsculas)
                 .delete()
                 .eq('id', productId);
 

@@ -70,7 +70,7 @@ const ProductEditorPage = () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('Produtos')
+                .from('produtos') // Corrigido para 'produtos' (minúsculas)
                 .select('*')
                 .eq('id', id)
                 .single();
@@ -114,7 +114,7 @@ const ProductEditorPage = () => {
 
             if (id) {
                 const { error: updateError } = await supabase
-                    .from('Produtos')
+                    .from('produtos') // Corrigido para 'produtos' (minúsculas)
                     .update(saveData)
                     .eq('id', id);
                 error = updateError;
@@ -123,7 +123,7 @@ const ProductEditorPage = () => {
             } else {
                 delete saveData.id; // Ensure ID is not sent for new inserts
                 const { data: newProductData, error: insertError } = await supabase
-                    .from('Produtos')
+                    .from('produtos') // Corrigido para 'produtos' (minúsculas)
                     .insert([saveData])
                     .select();
                 error = insertError;
