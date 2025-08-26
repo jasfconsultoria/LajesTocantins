@@ -245,14 +245,14 @@ const ProductEditorPage = () => {
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">ICMS</h3>
                 <div className="form-grid pt-6">
                     <div className="form-group"><Label htmlFor="icms_orig" className="form-label">Origem da Mercadoria</Label>
-                        <Select onValueChange={(value) => handleSelectChange('icms_orig', parseInt(value))} value={product.icms_orig.toString()}>
+                        <Select onValueChange={(value) => handleSelectChange('icms_orig', parseInt(value))} value={(product.icms_orig ?? 0).toString()}>
                             <SelectTrigger id="icms_orig" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{icmsOrigOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
                     <div className="form-group"><Label htmlFor="icms_CST" className="form-label">CST ICMS</Label><Input id="icms_CST" type="text" className="form-input" value={product.icms_CST} onChange={handleInputChange} /></div>
                     <div className="form-group"><Label htmlFor="icms_modBC" className="form-label">Modalidade BC ICMS</Label>
-                        <Select onValueChange={(value) => handleSelectChange('icms_modBC', parseInt(value))} value={product.icms_modBC.toString()}>
+                        <Select onValueChange={(value) => handleSelectChange('icms_modBC', parseInt(value))} value={(product.icms_modBC ?? 0).toString()}>
                             <SelectTrigger id="icms_modBC" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{icmsModbcOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
