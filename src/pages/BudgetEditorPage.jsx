@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj } from '@/lib/utils'; // Importar a função de normalização
-import ClientSearchDialog from '@/components/ClientSearchDialog'; // Novo import
+import { normalizeCnpj } from '@/lib/utils';
+import ClientSearchDialog from '@/components/ClientSearchDialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 const initialBudgetState = {
     data_orcamento: new Date().toISOString().split('T')[0], // YYYY-MM-DD
@@ -46,6 +54,7 @@ const initialBudgetState = {
     solicitante: '',
     telefone: '',
     codigo_antigo: null,
+    previsao_entrega: null, // Novo campo
 };
 
 const BudgetEditorPage = () => {
@@ -56,17 +65,15 @@ const BudgetEditorPage = () => {
     const { activeCompanyId } = useOutletContext();
 
     const [budget, setBudget] = useState(initialBudgetState);
-    const [compositions, setCompositions] = useState([]); // State for composition items
-    const [people, setPeople] = useState([]); // For cliente_id dropdown
+    const [compositions, setCompositions] = useState([]);
+    const [people, setPeople] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false); // Novo estado
+    const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
 
-    // Fetch existing budget data for editing
     const fetchBudget = useCallback(async () => {
         if (!id) {
             setLoading(false);
-            // Set default values for new budget
             setBudget(prev => ({
                 ...prev,
                 cnpj_empresa: activeCompany?.cnpj || '',
@@ -88,13 +95,13 @@ const BudgetEditorPage = () => {
                     ...data,
                     data_orcamento: data.data_orcamento ? data.data_orcamento.split('T')[0] : '',
                     data_venda: data.data_venda ? data.data_venda.split('T')[0] : null,
+                    previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null, // Carregar novo campo
                 });
             }
 
-            // Fetch compositions for this budget, including product details
             const { data: compData, error: compError } = await supabase
                 .from('orcamento_composicao')
-                .select('*, produtos!produto_id(prod_xProd, prod_uCOM)') // Corrigido: usando 'produto_id'
+                .select('*, produtos!produto_id(prod_xProd, prod_uCOM)')
                 .eq('orcamento_id', id);
             if (compError) throw compError;
             if (compData) setCompositions(compData);
@@ -106,7 +113,6 @@ const BudgetEditorPage = () => {
         }
     }, [id, user, activeCompany, toast]);
 
-    // Fetch people for client dropdown
     const fetchPeople = useCallback(async () => {
         try {
             let allPeople = [];
@@ -115,7 +121,7 @@ const BudgetEditorPage = () => {
             while (true) {
                 const { data, error } = await supabase
                     .from('pessoas')
-                    .select('id, razao_social, nome_fantasia, pessoa_tipo') // Adicionado pessoa_tipo
+                    .select('id, razao_social, nome_fantasia, pessoa_tipo')
                     .order('razao_social', { ascending: true })
                     .range(offset, offset + limit - 1);
                 if (error) throw error;
@@ -149,7 +155,6 @@ const BudgetEditorPage = () => {
 
     const handleSelectChange = (id, value) => {
         setBudget(prev => ({ ...prev, [id]: value }));
-        // A lógica de atualização de nome_cliente será movida para handleSelectClient
     };
 
     const handleSelectClient = (clientId, clientName) => {
@@ -170,10 +175,11 @@ const BudgetEditorPage = () => {
         try {
             const saveData = {
                 ...budget,
-                cnpj_empresa: normalizeCnpj(activeCompany.cnpj), // Normaliza o CNPJ aqui
-                funcionario_id: user?.id, // Ensure current user is set as func
+                cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
+                funcionario_id: user?.id,
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
+                previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null, // Salvar novo campo
                 updated_at: new Date().toISOString(),
             };
 
@@ -206,7 +212,6 @@ const BudgetEditorPage = () => {
 
             if (error) throw error;
 
-            // Log action
             if (user) {
                 await logAction(user.id, actionType, description, activeCompanyId, null);
             }
@@ -219,6 +224,13 @@ const BudgetEditorPage = () => {
             setSaving(false);
         }
     };
+
+    // Placeholder para cálculos de totais
+    const totalProdutos = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
+    const totalDescontoItens = compositions.reduce((sum, item) => sum + (item.desconto || 0), 0);
+    const totalGeralItens = totalProdutos - totalDescontoItens;
+    const totalPedido = totalGeralItens - (budget.desconto || 0) + (budget.acrescimo || 0);
+    const totalLiquidoPedido = totalPedido; // Simplificado para este exemplo
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
@@ -256,7 +268,7 @@ const BudgetEditorPage = () => {
                         </div>
                     </div>
                 </div>
-                <div className="form-grid pt-6">
+                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="form-group"><Label htmlFor="numero_pedido" className="form-label">Número do Pedido</Label><Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} onChange={handleInputChange} /></div>
                     <div className="form-group"><Label htmlFor="data_orcamento" className="form-label">Data do Orçamento *</Label><Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required /></div>
                     <div className="form-group">
@@ -275,7 +287,17 @@ const BudgetEditorPage = () => {
                             </Button>
                         </div>
                     </div>
+                    <div className="form-group"><Label htmlFor="solicitante" className="form-label">Solicitante</Label><Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} /></div>
+                    <div className="form-group"><Label htmlFor="telefone" className="form-label">Fone Solicitante</Label><Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} /></div>
                     <div className="form-group"><Label htmlFor="vendedor" className="form-label">Vendedor</Label><Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} /></div>
+                    
+                    <div className="form-group col-span-full"><Label htmlFor="endereco_entrega" className="form-label">Endereço Cliente</Label><Input id="endereco_entrega" type="text" className="form-input" value={budget.endereco_entrega || ''} onChange={handleInputChange} /></div>
+                    <div className="form-group"><Label htmlFor="municipio" className="form-label">Cidade</Label><Input id="municipio" type="text" className="form-input" value={budget.municipio || ''} onChange={handleInputChange} /></div>
+                    <div className="form-group"><Label htmlFor="uf" className="form-label">UF</Label><Input id="uf" type="text" className="form-input" value={budget.uf || ''} onChange={handleInputChange} /></div>
+                    <div className="form-group"><Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label><Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} /></div>
+
+                    <div className="form-group col-span-full"><Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label><Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} /></div>
+                    <div className="form-group"><Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label><Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} /></div>
                     <div className="form-group"><Label htmlFor="tipo" className="form-label">Tipo</Label>
                         <Select onValueChange={(value) => handleSelectChange('tipo', value)} value={budget.tipo}>
                             <SelectTrigger id="tipo" className="form-select"><SelectValue /></SelectTrigger>
@@ -285,88 +307,115 @@ const BudgetEditorPage = () => {
                             </SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group"><Label htmlFor="forma_pagamento" className="form-label">Forma de Pagamento</Label><Input id="forma_pagamento" type="text" className="form-input" value={budget.forma_pagamento || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label><Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="numero_parcelas" className="form-label">Número de Parcelas</Label><Input id="numero_parcelas" type="number" className="form-input" value={budget.numero_parcelas} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prazo_entrega" className="form-label">Prazo de Entrega (dias)</Label><Input id="prazo_entrega" type="number" className="form-input" value={budget.prazo_entrega} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="validade" className="form-label">Validade (dias)</Label><Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="solicitante" className="form-label">Solicitante</Label><Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="telefone" className="form-label">Telefone</Label><Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="obra" className="form-label">Obra</Label><Input id="obra" type="text" className="form-input" value={budget.obra || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="debito_credito" className="form-label">Débito/Crédito</Label>
-                        <Select onValueChange={(value) => handleSelectChange('debito_credito', value)} value={budget.debito_credito}>
-                            <SelectTrigger id="debito_credito" className="form-select"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="D">Débito</SelectItem>
-                                <SelectItem value="C">Crédito</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="form-group"><Label htmlFor="faturado" className="form-label">Faturado</Label>
-                        <div className="flex items-center h-10">
-                            <Checkbox id="faturado" checked={budget.faturado} onCheckedChange={(checked) => handleSelectChange('faturado', checked)} />
-                            <Label htmlFor="faturado" className="ml-2 text-sm font-medium text-slate-700">Marcar como faturado</Label>
-                        </div>
-                    </div>
-                    <div className="form-group"><Label htmlFor="data_venda" className="form-label">Data da Venda</Label><Input id="data_venda" type="date" className="form-input" value={budget.data_venda || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="numero_nfe" className="form-label">Número da NFE</Label><Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="total_venda" className="form-label">Total da Venda</Label><Input id="total_venda" type="number" step="0.01" className="form-input" value={budget.total_venda} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="total_fatura" className="form-label">Total da Fatura</Label><Input id="total_fatura" type="number" step="0.01" className="form-input" value={budget.total_fatura} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="desconto" className="form-label">Desconto</Label><Input id="desconto" type="number" step="0.01" className="form-input" value={budget.desconto} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="acrescimo" className="form-label">Acréscimo</Label><Input id="acrescimo" type="number" step="0.01" className="form-input" value={budget.acrescimo} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="cfop" className="form-label">CFOP</Label><Input id="cfop" type="text" className="form-input" value={budget.cfop || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="natureza" className="form-label">Natureza da Operação</Label><Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="codigo_antigo" className="form-label">Código Antigo</Label><Input id="codigo_antigo" type="number" className="form-input" value={budget.codigo_antigo || ''} onChange={handleInputChange} /></div>
-                </div>
-
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Endereço de Entrega</h3>
-                <div className="form-grid pt-6">
-                    <div className="form-group col-span-full"><Label htmlFor="endereco_entrega" className="form-label">Endereço de Entrega</Label><Input id="endereco_entrega" type="text" className="form-input" value={budget.endereco_entrega || ''} onChange={handleInputChange} /></div>
-                    <div className="form-group col-span-full"><Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega Completo</Label><Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={3} /></div>
-                </div>
-
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Histórico e Observações</h3>
-                <div className="form-grid pt-6">
-                    <div className="form-group col-span-full"><Label htmlFor="historico" className="form-label">Histórico</Label><Textarea id="historico" className="form-textarea" value={budget.historico || ''} onChange={handleInputChange} rows={3} /></div>
-                    <div className="form-group col-span-full"><Label htmlFor="observacao" className="form-label">Observação</Label><Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} /></div>
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200 flex items-center gap-2">
                     <Package className="w-5 h-5 text-blue-600" />
                     Itens de Composição do Orçamento
                 </h3>
-                <p className="config-description mt-2">
-                    Esta seção será desenvolvida para gerenciar os produtos e serviços que compõem este orçamento.
-                    Por enquanto, é um placeholder.
-                </p>
-                <div className="mt-4 p-4 border border-dashed border-slate-300 rounded-lg text-center text-slate-500">
-                    <p>Funcionalidade de gerenciamento de itens de composição (orcamento_composicao) será implementada aqui.</p>
-                    <Button variant="outline" className="mt-3" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de adicionar itens de composição será adicionada em breve!" })}>
-                        <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Item
-                    </Button>
-                    {compositions.length > 0 && (
-                        <div className="mt-4 text-left">
-                            <h4 className="font-semibold text-slate-700 mb-2">Itens Existentes:</h4>
-                            <ul className="list-disc list-inside space-y-1">
-                                {compositions.map(comp => (
-                                    <li key={comp.id} className="flex justify-between items-center py-2 px-3 bg-slate-50 rounded-md border border-slate-200">
-                                        <div className="flex flex-col">
-                                            <span className="font-medium text-slate-800">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</span>
-                                            <span className="text-sm text-slate-600">
-                                                {comp.quantidade} {comp.produtos?.prod_uCOM || 'un.'} @ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}
-                                            </span>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de excluir itens de composição será adicionada em breve!" })}>
-                                            <Trash2 className="w-4 h-4" />
-                                        </Button>
-                                    </li>
-                                ))}
-                            </ul>
+                <div className="mt-4 data-table-container">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Composição</TableHead>
+                                <TableHead>Unidade</TableHead>
+                                <TableHead>Qtde</TableHead>
+                                <TableHead>Observação</TableHead>
+                                <TableHead className="text-right">Unitário R$</TableHead>
+                                <TableHead className="text-right">Total R$</TableHead>
+                                <TableHead className="text-right">Desc. R$</TableHead>
+                                <TableHead className="text-right">Total Geral R$</TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {compositions.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={9} className="text-center text-slate-500 py-4">
+                                        Nenhum item de composição adicionado.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                compositions.map(comp => (
+                                    <TableRow key={comp.id}>
+                                        <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
+                                        <TableCell>{comp.produtos?.prod_uCOM || 'un.'}</TableCell>
+                                        <TableCell>{comp.quantidade}</TableCell>
+                                        <TableCell>{comp.observacao || '-'}</TableCell>
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.quantidade * comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.desconto || 0)}</TableCell>
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((comp.quantidade * comp.valor_venda) - (comp.desconto || 0))}</TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de excluir itens de composição será adicionada em breve!" })}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                    <div className="flex justify-center mt-4">
+                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de adicionar itens de composição será adicionada em breve!" })}>
+                            <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Item
+                        </Button>
+                    </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div>
+                        <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
+                        <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
+                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
                         </div>
-                    )}
+
+                        <h3 className="config-title mt-8 mb-4">Condições</h3>
+                        <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="form-group"><Label htmlFor="previsao_entrega" className="form-label">Previsão de Entrega</Label><Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} /></div>
+                            <div className="form-group"><Label htmlFor="status_orcamento" className="form-label">Status</Label>
+                                <Select onValueChange={(value) => handleSelectChange('faturado', value === 'true')} value={budget.faturado.toString()}>
+                                    <SelectTrigger id="status_orcamento" className="form-select"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="true">FATURADO</SelectItem>
+                                        <SelectItem value="false">PENDENTE</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="form-group"><Label htmlFor="forma_pagamento" className="form-label">Forma de Pagamento *</Label><Input id="forma_pagamento" type="text" className="form-input" value={budget.forma_pagamento || ''} onChange={handleInputChange} /></div>
+                            <div className="form-group"><Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label><Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} /></div>
+                            <div className="form-group"><Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label><Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} /></div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                        <h3 className="config-title mb-2">Resumo do Pedido</h3>
+                        <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalProdutos)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}</span></div> {/* Placeholder para serviços */}
+                        <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPedido)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((budget.desconto || 0) + totalDescontoItens)}</span></div>
+                        <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalLiquidoPedido)}</span></div>
+                    </div>
+                </div>
+
+                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Observação</h3>
+                <div className="form-grid pt-6">
+                    <div className="form-group col-span-full"><Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} /></div>
                 </div>
                 
-                <div className="flex justify-end mt-8">
+                <div className="flex justify-end space-x-2 mt-8">
+                    <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
+                    <Button variant="outline" onClick={() => handleSelectChange('faturado', true)}>Faturar</Button>
+                    <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Alterar será adicionada em breve!" })}>Alterar</Button>
+                    <Button variant="outline" onClick={() => navigate('/app/budgets')}>Cancelar</Button>
+                    <Select defaultValue="1_via">
+                        <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="1_via">1ª Via</SelectItem>
+                            <SelectItem value="2_via">2ª Via</SelectItem>
+                        </SelectContent>
+                    </Select>
                     <Button onClick={handleSave} className="save-button" disabled={saving}>
                         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                         Salvar Orçamento
