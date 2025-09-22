@@ -94,7 +94,7 @@ const BudgetEditorPage = () => {
             // Fetch compositions for this budget, including product details
             const { data: compData, error: compError } = await supabase
                 .from('orcamento_composicao')
-                .select('*, produtos!composicao_id(prod_xProd, prod_uCOM)') // Corrigido: especificando a chave estrangeira 'composicao_id'
+                .select('*, produtos!produto_id(prod_xProd, prod_uCOM)') // Corrigido: usando 'produto_id'
                 .eq('orcamento_id', id);
             if (compError) throw compError;
             if (compData) setCompositions(compData);
@@ -351,7 +351,7 @@ const BudgetEditorPage = () => {
                                 {compositions.map(comp => (
                                     <li key={comp.id} className="flex justify-between items-center py-2 px-3 bg-slate-50 rounded-md border border-slate-200">
                                         <div className="flex flex-col">
-                                            <span className="font-medium text-slate-800">{comp.produtos?.prod_xProd || `Produto ID: ${comp.composicao_id}`}</span>
+                                            <span className="font-medium text-slate-800">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</span>
                                             <span className="text-sm text-slate-600">
                                                 {comp.quantidade} {comp.produtos?.prod_uCOM || 'un.'} @ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}
                                             </span>
