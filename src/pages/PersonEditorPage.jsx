@@ -22,7 +22,7 @@ const initialPersonState = {
     complemento: '',
     bairro: '',
     municipio: '', // Stores municipio.codigo
-    uf: '',
+    uf: '', // Stores uf.sigla
     cep: '',
     pais: 'Brasil',
     telefone: '',
@@ -39,10 +39,50 @@ const PersonEditorPage = () => {
     const [person, setPerson] = useState(initialPersonState);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [ufs, setUfs] = useState([]);
-    const [municipalities, setMunicipalities] = useState([]);
-    const [selectedUf, setSelectedUf] = useState('');
+    const [ufs, setUfs] = useState([]); // Stores { uf: ID, sigla: 'AC', estado: 'Acre' }
+    const [municipalities, setMunicipalities] = useState([]); // Stores { codigo: '12345', municipio: 'Cidade' }
+    const [selectedUfSigla, setSelectedUfSigla] = useState(''); // Stores the selected UF abbreviation (e.g., 'TO')
+    const [selectedUfIdForMunicipalities, setSelectedUfIdForMunicipalities] = useState(null); // Stores the selected UF ID (e.g., 17)
 
+    const fetchUfs = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('estados') // Fetch from 'estados' table
+                .select('uf, sigla, estado') // Select ID, abbreviation, and full name
+                .order('sigla');
+            if (error) throw error;
+            setUfs(data);
+        } catch (error) {
+            console.error("Error fetching UFs:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as UFs.' });
+        }
+    }, [toast]);
+
+    const fetchMunicipalities = useCallback(async (ufId) => { // Takes the integer ID
+        if (!ufId) {
+            setMunicipalities([]);
+            return;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('municipios')
+                .select('codigo, municipio') // Select code and name
+                .eq('uf', ufId) // Filter by the integer UF ID
+                .order('municipio');
+            if (error) throw error;
+            setMunicipalities(data);
+        } catch (error) {
+            console.error("Error fetching municipalities:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os municípios.' });
+        }
+    }, [toast]);
+
+    // Fetch UFs on component mount
+    useEffect(() => {
+        fetchUfs();
+    }, [fetchUfs]);
+
+    // Fetch person data and set initial UF/Município
     const fetchPerson = useCallback(async () => {
         if (!id) {
             setLoading(false);
@@ -58,59 +98,38 @@ const PersonEditorPage = () => {
             if (error) throw error;
             if (data) {
                 setPerson(data);
-                setSelectedUf(data.uf || '');
+                // Find the UF ID based on the loaded UF sigla
+                const loadedUf = ufs.find(u => u.sigla === data.uf);
+                if (loadedUf) {
+                    setSelectedUfSigla(loadedUf.sigla);
+                    setSelectedUfIdForMunicipalities(loadedUf.uf); // Set the ID for filtering municipalities
+                } else {
+                    setSelectedUfSigla('');
+                    setSelectedUfIdForMunicipalities(null);
+                }
             }
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro ao carregar pessoa', description: error.message });
         } finally {
             setLoading(false);
         }
-    }, [id, toast]);
-
-    const fetchUfs = useCallback(async () => {
-        try {
-            const { data, error } = await supabase
-                .from('municipios')
-                .select('uf')
-                .distinct('uf')
-                .order('uf');
-            if (error) throw error;
-            setUfs(data.map(item => item.uf));
-        } catch (error) {
-            console.error("Error fetching UFs:", error.message);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as UFs.' });
-        }
-    }, [toast]);
-
-    const fetchMunicipalities = useCallback(async (uf) => {
-        if (!uf) {
-            setMunicipalities([]);
-            return;
-        }
-        try {
-            const { data, error } = await supabase
-                .from('municipios')
-                .select('codigo, nome')
-                .eq('uf', uf)
-                .order('nome');
-            if (error) throw error;
-            setMunicipalities(data);
-        } catch (error) {
-            console.error("Error fetching municipalities:", error.message);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar os municípios.' });
-        }
-    }, [toast]);
+    }, [id, toast, ufs]); // Add ufs to dependencies
 
     useEffect(() => {
-        fetchPerson();
-        fetchUfs();
-    }, [fetchPerson, fetchUfs]);
-
-    useEffect(() => {
-        if (selectedUf) {
-            fetchMunicipalities(selectedUf);
+        // Only fetch person if UFs are loaded (important for initial UF/Município setup)
+        if (ufs.length > 0 || !id) { // If no ID, it's a new person, no need to wait for UFs to load for initial person data
+            fetchPerson();
         }
-    }, [selectedUf, fetchMunicipalities]);
+    }, [fetchPerson, ufs, id]); // Depend on ufs and id
+
+    // Fetch municipalities when selectedUfIdForMunicipalities changes
+    useEffect(() => {
+        if (selectedUfIdForMunicipalities) {
+            fetchMunicipalities(selectedUfIdForMunicipalities);
+        } else {
+            setMunicipalities([]); // Clear municipalities if no UF is selected
+        }
+    }, [selectedUfIdForMunicipalities, fetchMunicipalities]);
 
     const handleInputChange = (e) => {
         const { id, value } = e.target;
@@ -120,7 +139,9 @@ const PersonEditorPage = () => {
     const handleSelectChange = (id, value) => {
         setPerson(prev => ({ ...prev, [id]: value }));
         if (id === 'uf') {
-            setSelectedUf(value);
+            const selectedState = ufs.find(u => u.sigla === value);
+            setSelectedUfSigla(value); // Store the sigla
+            setSelectedUfIdForMunicipalities(selectedState ? selectedState.uf : null); // Store the ID
             setPerson(prev => ({ ...prev, municipio: '' })); // Clear municipality when UF changes
         }
     };
@@ -265,13 +286,13 @@ const PersonEditorPage = () => {
                     </div>
                     <div className="form-group">
                         <Label htmlFor="uf" className="form-label">UF</Label>
-                        <Select onValueChange={(value) => handleSelectChange('uf', value)} value={person.uf}>
+                        <Select onValueChange={(value) => handleSelectChange('uf', value)} value={selectedUfSigla}>
                             <SelectTrigger id="uf" className="form-select">
                                 <SelectValue placeholder="Selecione a UF" />
                             </SelectTrigger>
                             <SelectContent>
                                 {ufs.map(uf => (
-                                    <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                                    <SelectItem key={uf.uf} value={uf.sigla}>{uf.sigla} - {uf.estado}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -279,12 +300,12 @@ const PersonEditorPage = () => {
                     <div className="form-group">
                         <Label htmlFor="municipio" className="form-label">Município</Label>
                         <Select onValueChange={(value) => handleSelectChange('municipio', value)} value={person.municipio}>
-                            <SelectTrigger id="municipio" className="form-select" disabled={!selectedUf}>
+                            <SelectTrigger id="municipio" className="form-select" disabled={!selectedUfIdForMunicipalities}>
                                 <SelectValue placeholder="Selecione o Município" />
                             </SelectTrigger>
                             <SelectContent>
                                 {municipalities.map(m => (
-                                    <SelectItem key={m.codigo} value={m.codigo}>{m.nome}</SelectItem>
+                                    <SelectItem key={m.codigo} value={m.codigo}>{m.municipio}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
