@@ -288,7 +288,7 @@ const PersonEditorPage = () => {
                         <Label htmlFor="uf" className="form-label">UF</Label>
                         <Select onValueChange={(value) => handleSelectChange('uf', value)} value={selectedUfSigla}>
                             <SelectTrigger id="uf" className="form-select">
-                                <SelectValue placeholder="Selecione a UF" />
+                                <SelectValue placeholder="Selecione a UF" className="text-left" />
                             </SelectTrigger>
                             <SelectContent>
                                 {ufs.map(uf => (
@@ -301,7 +301,7 @@ const PersonEditorPage = () => {
                         <Label htmlFor="municipio" className="form-label">Município</Label>
                         <Select onValueChange={(value) => handleSelectChange('municipio', value)} value={person.municipio}>
                             <SelectTrigger id="municipio" className="form-select" disabled={!selectedUfIdForMunicipalities}>
-                                <SelectValue placeholder="Selecione o Município" />
+                                <SelectValue placeholder="Selecione o Município" className="text-left" />
                             </SelectTrigger>
                             <SelectContent>
                                 {municipalities.map(m => (

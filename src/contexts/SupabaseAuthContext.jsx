@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { normalizeCnpj } from '@/lib/utils'; // Importar a função de normalização
 
 const AuthContext = createContext(undefined);
 
@@ -46,14 +47,17 @@ export const AuthProvider = ({ children }) => {
           // Try to fetch the default company
           const { data: defaultCompanyData, error: defaultCompanyError } = await supabase
             .from('emitente')
-            .select('id, razao_social, logo_sistema_url')
+            .select('id, razao_social, logo_sistema_url, cnpj')
             .eq('id', profile.default_emitente_id)
-            .limit(1); // Changed from .single()
+            .limit(1); 
           
           if (defaultCompanyError) throw defaultCompanyError;
 
           if (defaultCompanyData && defaultCompanyData.length > 0) {
-            companyToSet = defaultCompanyData[0];
+            companyToSet = {
+                ...defaultCompanyData[0],
+                cnpj: normalizeCnpj(defaultCompanyData[0].cnpj) // Normaliza o CNPJ aqui
+            };
           }
         }
 
@@ -64,7 +68,10 @@ export const AuthProvider = ({ children }) => {
           if (assocError) throw assocError;
 
           if (associatedCompanies && associatedCompanies.length > 0) {
-            const firstCompany = associatedCompanies[0];
+            const firstCompany = {
+                ...associatedCompanies[0],
+                cnpj: normalizeCnpj(associatedCompanies[0].cnpj) // Normaliza o CNPJ aqui
+            };
             // Only update if there's no default_emitente_id or if the previous one was invalid
             if (!profile?.default_emitente_id || (profile.default_emitente_id && !companyToSet)) {
                 await supabase.from('profiles').update({ default_emitente_id: firstCompany.id }).eq('id', currentUser.id);
@@ -162,14 +169,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data: companyData, error: companyError } = await supabase
         .from('emitente')
-        .select('id, razao_social, logo_sistema_url')
+        .select('id, razao_social, logo_sistema_url, cnpj')
         .eq('id', companyId)
-        .limit(1); // Changed from .single()
+        .limit(1); 
       
       if (companyError) throw companyError;
 
       if (companyData && companyData.length > 0) {
-        setActiveCompany(companyData[0]); // Use the state setter here
+        setActiveCompany({
+            ...companyData[0],
+            cnpj: normalizeCnpj(companyData[0].cnpj) // Normaliza o CNPJ aqui
+        }); // Use the state setter here
         toast({ title: "Empresa ativa alterada!", description: `Agora você está gerenciando ${companyData[0].razao_social}.` });
       } else {
         setActiveCompany(null); // If company not found after update, clear active company

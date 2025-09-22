@@ -6,7 +6,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { Save, Loader2, ArrowLeft, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import LogoUploader from '@/components/LogoUploader';
-import { logAction } from '@/lib/log'; // Import logAction
+import { logAction } from '@/lib/log';
+import { normalizeCnpj } from '@/lib/utils'; // Importar a função de normalização
 
 const initialCompanyState = {
     razao_social: '', nome_fantasia: '', cnpj: '', inscricao_estadual: '',
@@ -65,7 +66,11 @@ const CompanyEditorPage = () => {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const saveData = { ...company, updated_at: new Date().toISOString() };
+            const saveData = { 
+                ...company, 
+                cnpj: normalizeCnpj(company.cnpj), // Normaliza o CNPJ antes de salvar
+                updated_at: new Date().toISOString() 
+            };
             let error;
             let actionType;
             let description;

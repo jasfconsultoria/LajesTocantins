@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
+import { normalizeCnpj } from '@/lib/utils'; // Importar a função de normalização
 
 // Helper function for normalization (moved outside component)
 const normalizeString = (str) => {
@@ -23,8 +24,8 @@ const normalizeString = (str) => {
 };
 
 const BudgetList = () => {
-    const { handleNotImplemented, activeCompanyId } = useOutletContext();
-    const { user: currentUser } = useAuth();
+    const { handleNotImplemented } = useOutletContext();
+    const { user: currentUser, activeCompany } = useAuth(); // Get activeCompany from useAuth
     const { toast } = useToast();
     const navigate = useNavigate();
     const [budgets, setBudgets] = useState([]);
@@ -35,7 +36,7 @@ const BudgetList = () => {
     const ITEMS_PER_PAGE = 10;
 
     const fetchBudgets = useCallback(async () => {
-        if (!activeCompanyId) {
+        if (!activeCompany?.cnpj) { // Use activeCompany.cnpj for filtering
             setBudgets([]);
             setLoading(false);
             return;
@@ -50,7 +51,7 @@ const BudgetList = () => {
                 const { data, error } = await supabase
                     .from('orcamento')
                     .select('*')
-                    .eq('cnpj_empresa', activeCompanyId) // Filter by active company
+                    .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj)) // Normaliza o CNPJ aqui
                     .order('data_orcamento', { ascending: false })
                     .range(offset, offset + limit - 1);
 
@@ -84,7 +85,7 @@ const BudgetList = () => {
         } finally {
             setLoading(false);
         }
-    }, [activeCompanyId, toast]);
+    }, [activeCompany?.cnpj, toast]); // Depend on activeCompany.cnpj
 
     useEffect(() => {
         fetchBudgets();
@@ -144,7 +145,7 @@ const BudgetList = () => {
 
             toast({ title: 'Orçamento excluído!', description: `"${budgetNumber}" foi removido(a) com sucesso.` });
             if (currentUser) {
-                await logAction(currentUser.id, 'budget_delete', `Orçamento "${budgetNumber}" (ID: ${budgetId}) excluído.`, activeCompanyId, null);
+                await logAction(currentUser.id, 'budget_delete', `Orçamento "${budgetNumber}" (ID: ${budgetId}) excluído.`, activeCompany?.id, null);
             }
             fetchBudgets();
         } catch (error) {
@@ -160,18 +161,8 @@ const BudgetList = () => {
         return new Date(dateString).toLocaleDateString('pt-BR');
     };
 
-    if (!activeCompanyId) {
-        return (
-            <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
-                <ClipboardList className="w-16 h-16 text-blue-500 mb-4" />
-                <h2 className="text-2xl font-bold text-slate-800">Nenhuma Empresa Ativa</h2>
-                <p className="text-slate-600">Selecione uma empresa para visualizar e gerenciar seus orçamentos.</p>
-            </div>
-        );
-    }
-
     return (
-        <div className="space-y-6">
+        <div className="space-y-6"> {/* Este é o elemento raiz consistente */}
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold gradient-text flex items-center gap-2">
@@ -207,73 +198,81 @@ const BudgetList = () => {
             
             {loading ? (
                  <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+            ) : !activeCompany?.cnpj ? ( // Esta condição agora renderiza DENTRO do elemento raiz
+                <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
+                    <ClipboardList className="w-16 h-16 text-blue-500 mb-4" />
+                    <h2 className="text-2xl font-bold text-slate-800">Nenhuma Empresa Ativa</h2>
+                    <p className="text-slate-600">Selecione uma empresa para visualizar e gerenciar seus orçamentos.</p>
+                </div>
             ) : (
-                <div className="data-table-container">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nº Pedido</TableHead>
-                                <TableHead>Cliente</TableHead>
-                                <TableHead>Data</TableHead>
-                                <TableHead>Vendedor</TableHead>
-                                <TableHead>Total</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Ações</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {paginatedBudgets.map((b) => (
-                                <TableRow key={b.id}>
-                                    <TableCell className="font-medium">{b.numero_pedido || 'N/A'}</TableCell>
-                                    <TableCell>{b.nome_cliente || 'Cliente Não Informado'}</TableCell>
-                                    <TableCell>{formatDate(b.data_orcamento)}</TableCell>
-                                    <TableCell>{b.vendedor || 'N/A'}</TableCell>
-                                    <TableCell>{formatCurrency(b.total_venda)}</TableCell>
-                                    <TableCell>
-                                        {b.faturado ? (
-                                            <span className="status-badge bg-green-100 text-green-800">
-                                                <CheckCircle className="w-3 h-3 mr-1" /> Faturado
-                                            </span>
-                                        ) : (
-                                            <span className="status-badge bg-yellow-100 text-yellow-800">
-                                                <Clock className="w-3 h-3 mr-1" /> Pendente
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => navigate(`/app/budgets/${b.id}/edit`)}>
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteBudget(b.id, b.numero_pedido || b.id)}>
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
+                <> {/* Fragmento para o conteúdo real quando activeCompany.cnpj está presente */}
+                    <div className="data-table-container">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nº Pedido</TableHead>
+                                    <TableHead>Cliente</TableHead>
+                                    <TableHead>Data</TableHead>
+                                    <TableHead>Vendedor</TableHead>
+                                    <TableHead>Total</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            )}
+                            </TableHeader>
+                            <TableBody>
+                                {paginatedBudgets.map((b) => (
+                                    <TableRow key={b.id}>
+                                        <TableCell className="font-medium">{b.numero_pedido || 'N/A'}</TableCell>
+                                        <TableCell>{b.nome_cliente || 'Cliente Não Informado'}</TableCell>
+                                        <TableCell>{formatDate(b.data_orcamento)}</TableCell>
+                                        <TableCell>{b.vendedor || 'N/A'}</TableCell>
+                                        <TableCell>{formatCurrency(b.total_venda)}</TableCell>
+                                        <TableCell>
+                                            {b.faturado ? (
+                                                <span className="status-badge bg-green-100 text-green-800">
+                                                    <CheckCircle className="w-3 h-3 mr-1" /> Faturado
+                                                </span>
+                                            ) : (
+                                                <span className="status-badge bg-yellow-100 text-yellow-800">
+                                                    <Clock className="w-3 h-3 mr-1" /> Pendente
+                                                </span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => navigate(`/app/budgets/${b.id}/edit`)}>
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteBudget(b.id, b.numero_pedido || b.id)}>
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
 
-            <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
-                <div>
-                    Exibindo {paginatedBudgets.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredBudgets.length)} de {filteredBudgets.length} registros
-                </div>
-                <div className="flex items-center gap-2">
-                    <span>Página {currentPage} de {totalPages}</span>
-                    <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Anterior
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
-                        Próximo
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                </div>
-            </div>
+                    <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
+                        <div>
+                            Exibindo {paginatedBudgets.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
+                            {Math.min(currentPage * ITEMS_PER_PAGE, filteredBudgets.length)} de {filteredBudgets.length} registros
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span>Página {currentPage} de {totalPages}</span>
+                            <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                                <ChevronLeft className="w-4 h-4 mr-1" />
+                                Anterior
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                                Próximo
+                                <ChevronRight className="w-4 h-4 ml-1" />
+                            </Button>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };

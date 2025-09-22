@@ -26,3 +26,8 @@ export const getStatusBadge = (status) => {
     </span>
   );
 };
+
+export const normalizeCnpj = (cnpj) => {
+  if (!cnpj) return '';
+  return cnpj.replace(/[^\d]/g, ''); // Remove todos os caracteres não numéricos
+};

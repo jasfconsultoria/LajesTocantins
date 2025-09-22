@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2 } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
+import { normalizeCnpj } from '@/lib/utils'; // Importar a função de normalização
+import ClientSearchDialog from '@/components/ClientSearchDialog'; // Novo import
 
 const initialBudgetState = {
     data_orcamento: new Date().toISOString().split('T')[0], // YYYY-MM-DD
@@ -58,6 +60,7 @@ const BudgetEditorPage = () => {
     const [people, setPeople] = useState([]); // For cliente_id dropdown
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false); // Novo estado
 
     // Fetch existing budget data for editing
     const fetchBudget = useCallback(async () => {
@@ -88,10 +91,10 @@ const BudgetEditorPage = () => {
                 });
             }
 
-            // Fetch compositions for this budget
+            // Fetch compositions for this budget, including product details
             const { data: compData, error: compError } = await supabase
                 .from('orcamento_composicao')
-                .select('*')
+                .select('*, produtos!composicao_id(prod_xProd, prod_uCOM)') // Corrigido: especificando a chave estrangeira 'composicao_id'
                 .eq('orcamento_id', id);
             if (compError) throw compError;
             if (compData) setCompositions(compData);
@@ -112,7 +115,7 @@ const BudgetEditorPage = () => {
             while (true) {
                 const { data, error } = await supabase
                     .from('pessoas')
-                    .select('id, razao_social, nome_fantasia')
+                    .select('id, razao_social, nome_fantasia, pessoa_tipo') // Adicionado pessoa_tipo
                     .order('razao_social', { ascending: true })
                     .range(offset, offset + limit - 1);
                 if (error) throw error;
@@ -146,10 +149,15 @@ const BudgetEditorPage = () => {
 
     const handleSelectChange = (id, value) => {
         setBudget(prev => ({ ...prev, [id]: value }));
-        if (id === 'cliente_id') {
-            const selectedPerson = people.find(p => p.id.toString() === value);
-            setBudget(prev => ({ ...prev, nome_cliente: selectedPerson ? (selectedPerson.razao_social || selectedPerson.nome_fantasia) : '' }));
-        }
+        // A lógica de atualização de nome_cliente será movida para handleSelectClient
+    };
+
+    const handleSelectClient = (clientId, clientName) => {
+        setBudget(prev => ({
+            ...prev,
+            cliente_id: clientId,
+            nome_cliente: clientName,
+        }));
     };
 
     const handleSave = async () => {
@@ -162,7 +170,7 @@ const BudgetEditorPage = () => {
         try {
             const saveData = {
                 ...budget,
-                cnpj_empresa: activeCompany.cnpj, // Ensure current active company CNPJ is used
+                cnpj_empresa: normalizeCnpj(activeCompany.cnpj), // Normaliza o CNPJ aqui
                 funcionario_id: user?.id, // Ensure current user is set as func
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
@@ -251,15 +259,21 @@ const BudgetEditorPage = () => {
                 <div className="form-grid pt-6">
                     <div className="form-group"><Label htmlFor="numero_pedido" className="form-label">Número do Pedido</Label><Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} onChange={handleInputChange} /></div>
                     <div className="form-group"><Label htmlFor="data_orcamento" className="form-label">Data do Orçamento *</Label><Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required /></div>
-                    <div className="form-group"><Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
-                        <Select onValueChange={(value) => handleSelectChange('cliente_id', value)} value={budget.cliente_id?.toString() || ''}>
-                            <SelectTrigger id="cliente_id" className="form-select"><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
-                            <SelectContent>
-                                {people.map(p => (
-                                    <SelectItem key={p.id} value={p.id.toString()}>{p.razao_social || p.nome_fantasia}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <div className="form-group">
+                        <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                id="nome_cliente_display"
+                                type="text"
+                                className="form-input flex-1"
+                                value={budget.nome_cliente || ''}
+                                readOnly
+                                placeholder="Selecione um cliente"
+                            />
+                            <Button variant="outline" size="icon" onClick={() => setIsClientSearchDialogOpen(true)}>
+                                <Search className="w-4 h-4" />
+                            </Button>
+                        </div>
                     </div>
                     <div className="form-group"><Label htmlFor="vendedor" className="form-label">Vendedor</Label><Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} /></div>
                     <div className="form-group"><Label htmlFor="tipo" className="form-label">Tipo</Label>
@@ -335,8 +349,13 @@ const BudgetEditorPage = () => {
                             <h4 className="font-semibold text-slate-700 mb-2">Itens Existentes:</h4>
                             <ul className="list-disc list-inside space-y-1">
                                 {compositions.map(comp => (
-                                    <li key={comp.id} className="flex justify-between items-center">
-                                        <span>Composição ID: {comp.composicao_id} - Qtd: {comp.quantidade} - Valor: {comp.valor_venda}</span>
+                                    <li key={comp.id} className="flex justify-between items-center py-2 px-3 bg-slate-50 rounded-md border border-slate-200">
+                                        <div className="flex flex-col">
+                                            <span className="font-medium text-slate-800">{comp.produtos?.prod_xProd || `Produto ID: ${comp.composicao_id}`}</span>
+                                            <span className="text-sm text-slate-600">
+                                                {comp.quantidade} {comp.produtos?.prod_uCOM || 'un.'} @ {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}
+                                            </span>
+                                        </div>
                                         <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de excluir itens de composição será adicionada em breve!" })}>
                                             <Trash2 className="w-4 h-4" />
                                         </Button>
@@ -354,6 +373,13 @@ const BudgetEditorPage = () => {
                     </Button>
                 </div>
             </div>
+
+            <ClientSearchDialog
+                isOpen={isClientSearchDialogOpen}
+                setIsOpen={setIsClientSearchDialogOpen}
+                people={people}
+                onSelectClient={handleSelectClient}
+            />
         </div>
     );
 };
