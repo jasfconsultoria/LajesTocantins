@@ -2,12 +2,10 @@
 
 /* Estilos base da sidebar */
 .sidebar {
-  height: 100vh;
   background-color: #2c3e50; /* Cor de fundo, será sobreposta pelo glass-effect do Tailwind */
   color: white;
-  transition: all 0.3s ease-in-out;
-  z-index: 1000;
-  overflow-x: hidden;
+  z-index: 1000; /* Manter z-index alto para sobreposição ou contexto de empilhamento */
+  overflow-x: hidden; /* Importante para a animação de largura */
   box-shadow: 2px 0 5px rgba(0,0,0,0.1);
 }
 
