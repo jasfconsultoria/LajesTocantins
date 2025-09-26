@@ -73,29 +73,28 @@ function MainLayout() {
         <meta name="description" content="Painel de controle para o sistema de gerenciamento Lajes Tocantins." />
       </Helmet>
 
-      {/* Sidebar container animado */}
+      {/* Sidebar container animado - agora fixed e animando 'left' */}
       <motion.aside
-        initial={{ width: 0 }} // Começa com largura 0 (completamente escondida)
-        animate={{ width: sidebarOpen ? expandedSidebarWidth : 0 }} // Anima a largura
+        initial={{ left: -expandedSidebarWidth }} // Começa fora da tela
+        animate={{ left: sidebarOpen ? 0 : -expandedSidebarWidth }} // Anima para dentro/fora
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className={`sidebar flex-shrink-0 h-screen overflow-hidden glass-effect border-r border-white/20`}
+        className={`fixed top-0 h-screen w-64 glass-effect border-r border-white/20 z-30`} // Fixed width
       >
-        {sidebarOpen && ( // Renderiza o conteúdo da sidebar apenas se estiver aberta
-          <Sidebar 
-            closeSidebar={closeSidebar}
-            sidebarItems={sidebarItems}
-            handleSignOut={handleSignOut}
-            appVersion={appVersion}
-            user={user}
-            role={role}
-          />
-        )}
+        {/* Conteúdo da Sidebar */}
+        <Sidebar 
+          closeSidebar={closeSidebar}
+          sidebarItems={sidebarItems}
+          handleSignOut={handleSignOut}
+          appVersion={appVersion}
+          user={user}
+          role={role}
+        />
       </motion.aside>
 
       {/* Botão de Toggle Flutuante */}
       <motion.div
         initial={{ left: toggleButtonOffset }} // Posição inicial quando a sidebar está fechada
-        animate={{ left: sidebarOpen ? expandedSidebarWidth + toggleButtonOffset : toggleButtonOffset }} // Ajusta a posição quando a sidebar abre/fecha
+        animate={{ left: sidebarOpen ? expandedSidebarWidth + toggleButtonOffset : toggleButtonOffset }} // Ajusta a posição
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className="fixed top-4 z-40"
       >
@@ -118,8 +117,16 @@ function MainLayout() {
         </TooltipProvider>
       </motion.div>
 
-      {/* Área de conteúdo principal - ocupa o restante da largura disponível */}
-      <div className="flex-1 flex flex-col">
+      {/* Overlay para mobile quando a sidebar está aberta */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-20 lg:hidden" 
+          onClick={closeSidebar} 
+        />
+      )}
+
+      {/* Área de conteúdo principal - sempre ocupa 100% da largura disponível */}
+      <div className="flex-1 flex flex-col"> {/* Removed flex-row from parent, this is the main content */}
         <header className="glass-effect border-b border-white/20 sticky top-0 z-40">
           <div className="flex items-center justify-between px-6 py-3">
             <div className="flex items-center space-x-4">
