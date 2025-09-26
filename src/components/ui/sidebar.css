@@ -1,0 +1,34 @@
+/* src/components/ui/sidebar.css */
+
+/* Estilos base da sidebar */
+.sidebar {
+  height: 100vh;
+  background-color: #2c3e50; /* Cor de fundo, será sobreposta pelo glass-effect do Tailwind */
+  color: white;
+  transition: all 0.3s ease-in-out;
+  z-index: 1000;
+  overflow-x: hidden;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+/* Estilos para os itens de navegação */
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  color: #e0e0e0;
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.sidebar-item.active {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  font-weight: 600;
+}
