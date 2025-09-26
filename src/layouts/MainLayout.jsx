@@ -22,7 +22,6 @@ function MainLayout() {
   const navigate = useNavigate();
 
   const expandedSidebarWidth = 256; // w-64 em Tailwind é 256px
-  const toggleButtonOffset = 16; // Espaçamento do canto superior/esquerdo
 
   const handleNotImplemented = (feature) => {
     toast({
@@ -73,7 +72,7 @@ function MainLayout() {
         <meta name="description" content="Painel de controle para o sistema de gerenciamento Lajes Tocantins." />
       </Helmet>
 
-      {/* Sidebar container animado - agora fixed e animando 'left' */}
+      {/* Sidebar container animado - fixed e animando 'left' */}
       <motion.aside
         initial={{ left: -expandedSidebarWidth }} // Começa fora da tela
         animate={{ left: sidebarOpen ? 0 : -expandedSidebarWidth }} // Anima para dentro/fora
@@ -91,32 +90,6 @@ function MainLayout() {
         />
       </motion.aside>
 
-      {/* Botão de Toggle Flutuante */}
-      <motion.div
-        initial={{ left: toggleButtonOffset }} // Posição inicial quando a sidebar está fechada
-        animate={{ left: sidebarOpen ? expandedSidebarWidth + toggleButtonOffset : toggleButtonOffset }} // Ajusta a posição
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="fixed top-4 z-40"
-      >
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="text-slate-700 hover:bg-slate-200 bg-white/80 backdrop-blur-sm rounded-full shadow-md"
-              >
-                {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{sidebarOpen ? "Fechar Sidebar" : "Abrir Sidebar"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </motion.div>
-
       {/* Overlay para mobile quando a sidebar está aberta */}
       {sidebarOpen && (
         <div 
@@ -125,11 +98,34 @@ function MainLayout() {
         />
       )}
 
-      {/* Área de conteúdo principal - sempre ocupa 100% da largura disponível */}
-      <div className="flex-1 flex flex-col"> {/* Removed flex-row from parent, this is the main content */}
+      {/* Área de conteúdo principal - anima o margin-left para 'empurrar' o conteúdo */}
+      <motion.div
+        initial={{ marginLeft: 0 }}
+        animate={{ marginLeft: sidebarOpen ? expandedSidebarWidth : 0 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+        className="flex-1 flex flex-col"
+      >
         <header className="glass-effect border-b border-white/20 sticky top-0 z-40">
           <div className="flex items-center justify-between px-6 py-3">
             <div className="flex items-center space-x-4">
+              {/* Botão de Toggle no cabeçalho */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleSidebar}
+                      className="text-slate-700 hover:bg-slate-200 bg-white/80 backdrop-blur-sm rounded-full shadow-md"
+                    >
+                      {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{sidebarOpen ? "Fechar Sidebar" : "Abrir Sidebar"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <CompanySwitcher />
             </div>
             
@@ -153,7 +149,7 @@ function MainLayout() {
         <main className="flex-1 p-4 lg:p-6">
           <Outlet context={{ handleNotImplemented, activeCompanyId: activeCompany?.id }} />
         </main>
-      </div>
+      </motion.div>
     </div>
   );
 }
