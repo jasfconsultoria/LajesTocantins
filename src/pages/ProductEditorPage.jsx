@@ -208,41 +208,39 @@ const ProductEditorPage = () => {
                         <Input id="prod_xProd" type="text" className="form-input" value={product.prod_xProd} onChange={handleInputChange} required />
                     </div>
 
-                    {/* Row 3: NCM, CFOP, CEST (Opcional) */}
-                    <div className="form-group lg:col-span-4">
+                    {/* Combined Row for NCM, CFOP, CEST, Rastreável, Alerta, Nível Máximo, Ativo */}
+                    <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_NCM" className="form-label">NCM</Label>
                         <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-4">
+                    <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_CFOP" className="form-label">CFOP</Label>
                         <Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} />
                         {/* TODO: Adicionar funcionalidade de 'buscar na tabela "cfop" mostrar as duas colunas' */}
                     </div>
-                    <div className="form-group lg:col-span-4">
+                    <div className="form-group lg:col-span-2">
                         <Label htmlFor="prod_CEST_Opc" className="form-label">CEST (Opcional)</Label>
                         <Input id="prod_CEST_Opc" type="text" className="form-input" value={product.prod_CEST_Opc} onChange={handleInputChange} />
                     </div>
-
-                    {/* Row 4: Rastreável, Alerta, Nível Máximo, Ativo */}
-                    <div className="form-group lg:col-span-3">
+                    <div className="form-group lg:col-span-1">
                         <Label htmlFor="prod_rastro" className="form-label">Rastreável</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_rastro', value)} value={product.prod_rastro}>
                             <SelectTrigger id="prod_rastro" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group lg:col-span-3">
+                    <div className="form-group lg:col-span-1">
                         <Label htmlFor="prod_alert" className="form-label">Alerta</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_alert', value)} value={product.prod_alert}>
                             <SelectTrigger id="prod_alert" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group lg:col-span-3">
+                    <div className="form-group lg:col-span-1">
                         <Label htmlFor="prod_nivelm" className="form-label">Nível Máximo</Label>
                         <Input id="prod_nivelm" type="number" className="form-input" value={product.prod_nivelm} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-3">
+                    <div className="form-group lg:col-span-1">
                         <Label htmlFor="prod_ativo" className="form-label">Ativo</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_ativo', value)} value={product.prod_ativo}>
                             <SelectTrigger id="prod_ativo" className="form-select"><SelectValue /></SelectTrigger>
