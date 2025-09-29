@@ -31,3 +31,40 @@ export const normalizeCnpj = (cnpj) => {
   if (!cnpj) return '';
   return cnpj.replace(/[^\d]/g, ''); // Remove todos os caracteres não numéricos
 };
+
+// Função para validar CPF
+export const validateCPF = (cpf) => {
+  cpf = cpf.replace(/[^\d]+/g, '');
+  if (cpf.length !== 11 || !!cpf.match(/(\d)\1{10}/)) return false;
+  cpf = cpf.split('');
+  const validator = cpf.filter((digit, index, array) => index >= array.length - 2 && digit).map((digit) => parseInt(digit));
+  const rest = (count) => {
+    const sum = cpf.filter((digit, index) => index < count).map((digit) => parseInt(digit)).reduce((sum, digit, index) => sum + digit * (count + 1 - index), 0);
+    return (((sum * 10) % 11) % 10);
+  };
+  return rest(9) === validator[0] && rest(10) === validator[1];
+};
+
+// Função para validar CNPJ
+export const validateCNPJ = (cnpj) => {
+  cnpj = cnpj.replace(/[^\d]+/g, '');
+  if (cnpj.length !== 14 || !!cnpj.match(/(\d)\1{13}/)) return false;
+  cnpj = cnpj.split('');
+  const validator = cnpj.filter((digit, index, array) => index >= array.length - 2 && digit).map((digit) => parseInt(digit));
+  const rest = (count) => {
+    const sum = cnpj.filter((digit, index) => index < count).map((digit) => parseInt(digit)).reduce((sum, digit, index) => sum + digit * ((count + 1) - (index % ((count + 1) - 1))), 0);
+    return (((sum * 10) % 11) % 10);
+  };
+  return rest(12) === validator[0] && rest(13) === validator[1];
+};
+
+// Função para validar CPF ou CNPJ
+export const validateCpfCnpj = (doc, type) => {
+  if (!doc) return false;
+  if (type === 1) { // Pessoa Física (CPF)
+    return validateCPF(doc);
+  } else if (type === 2) { // Pessoa Jurídica (CNPJ)
+    return validateCNPJ(doc);
+  }
+  return false; // Invalid type
+};

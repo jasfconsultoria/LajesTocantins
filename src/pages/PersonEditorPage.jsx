@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { logAction } from '@/lib/log';
-import { cn } from '@/lib/utils'; // Importar cn
+import { cn, validateCpfCnpj } from '@/lib/utils'; // Importar cn e validateCpfCnpj
+import InputMask from 'react-input-mask'; // Importar InputMask
+import MunicipalitySearchSelect from '@/components/MunicipalitySearchSelect'; // Importar o novo componente
 
 const initialPersonState = {
     pessoa_tipo: 1, // 1 for PF, 2 for PJ
@@ -44,6 +46,7 @@ const PersonEditorPage = () => {
     const [municipalities, setMunicipalities] = useState([]); // Stores { codigo: '12345', municipio: 'Cidade' }
     const [selectedUfSigla, setSelectedUfSigla] = useState(''); // Stores the selected UF abbreviation (e.g., 'TO')
     const [selectedUfIdForMunicipalities, setSelectedUfIdForMunicipalities] = useState(null); // Stores the selected UF ID (e.g., 17)
+    const [cpfCnpjError, setCpfCnpjError] = useState(''); // State for CPF/CNPJ validation error
 
     const fetchUfs = useCallback(async () => {
         try {
@@ -135,6 +138,24 @@ const PersonEditorPage = () => {
     const handleInputChange = (e) => {
         const { id, value } = e.target;
         setPerson(prev => ({ ...prev, [id]: value }));
+
+        if (id === 'cpf_cnpj') {
+            // Clear error on change, re-validate on blur
+            setCpfCnpjError('');
+        }
+    };
+
+    const handleCpfCnpjBlur = () => {
+        if (person.cpf_cnpj) {
+            const isValid = validateCpfCnpj(person.cpf_cnpj, person.pessoa_tipo);
+            if (!isValid) {
+                setCpfCnpjError(`CPF/CNPJ inválido para ${person.pessoa_tipo === 1 ? 'Pessoa Física' : 'Pessoa Jurídica'}.`);
+            } else {
+                setCpfCnpjError('');
+            }
+        } else {
+            setCpfCnpjError('');
+        }
     };
 
     const handleSelectChange = (id, value) => {
@@ -145,9 +166,25 @@ const PersonEditorPage = () => {
             setSelectedUfIdForMunicipalities(selectedState ? selectedState.uf : null); // Store the ID
             setPerson(prev => ({ ...prev, municipio: '' })); // Clear municipality when UF changes
         }
+        if (id === 'pessoa_tipo') {
+            // Re-validate CPF/CNPJ if type changes and field is not empty
+            if (person.cpf_cnpj) {
+                const isValid = validateCpfCnpj(person.cpf_cnpj, parseInt(value));
+                if (!isValid) {
+                    setCpfCnpjError(`CPF/CNPJ inválido para ${parseInt(value) === 1 ? 'Pessoa Física' : 'Pessoa Jurídica'}.`);
+                } else {
+                    setCpfCnpjError('');
+                }
+            }
+        }
     };
 
     const handleSave = async () => {
+        if (cpfCnpjError) {
+            toast({ variant: 'destructive', title: 'Erro de Validação', description: 'Corrija o CPF/CNPJ antes de salvar.' });
+            return;
+        }
+
         setSaving(true);
         try {
             const saveData = { ...person, updated_at: new Date().toISOString() };
@@ -196,6 +233,10 @@ const PersonEditorPage = () => {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
     }
 
+    const cpfCnpjMask = person.pessoa_tipo === 1 ? '999.999.999-99' : '99.999.999/9999-99';
+    const cepMask = '99999-999';
+    const phoneMask = '(99) 99999-9999'; // Assuming mobile phone format
+
     return (
         <div className="space-y-6">
             <div className="flex items-center gap-4">
@@ -221,7 +262,7 @@ const PersonEditorPage = () => {
                 <div className="pt-6 space-y-4"> {/* Outer div for vertical spacing between grid rows */}
                     {/* Row 1: Tipo de Pessoa, CNPJ, Razão Social */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                        <div className="form-group lg:col-span-3">
+                        <div className="form-group lg:col-span-2"> {/* Tipo de Pessoa: 2/12 */}
                             <Label htmlFor="pessoa_tipo" className="form-label">Tipo de Pessoa *</Label>
                             <Select onValueChange={(value) => handleSelectChange('pessoa_tipo', parseInt(value))} value={person.pessoa_tipo.toString()}>
                                 <SelectTrigger id="pessoa_tipo" className={cn("form-select")}>
@@ -233,11 +274,20 @@ const PersonEditorPage = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="form-group lg:col-span-3">
+                        <div className="form-group lg:col-span-3"> {/* CPF/CNPJ: 3/12 */}
                             <Label htmlFor="cpf_cnpj" className="form-label">{person.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} *</Label>
-                            <Input id="cpf_cnpj" type="text" className="form-input" value={person.cpf_cnpj} onChange={handleInputChange} />
+                            <InputMask
+                                mask={cpfCnpjMask}
+                                value={person.cpf_cnpj}
+                                onChange={handleInputChange}
+                                onBlur={handleCpfCnpjBlur}
+                                disabled={saving}
+                            >
+                                {(inputProps) => <Input {...inputProps} id="cpf_cnpj" type="text" className={cn("form-input", cpfCnpjError && "border-red-500")} />}
+                            </InputMask>
+                            {cpfCnpjError && <p className="text-red-500 text-xs mt-1">{cpfCnpjError}</p>}
                         </div>
-                        <div className="form-group lg:col-span-6">
+                        <div className="form-group lg:col-span-7"> {/* Razão Social: 7/12 */}
                             <Label htmlFor="razao_social" className="form-label">{person.pessoa_tipo === 1 ? 'Nome Completo' : 'Razão Social'} *</Label>
                             <Input id="razao_social" type="text" className="form-input" value={person.razao_social} onChange={handleInputChange} />
                         </div>
@@ -245,29 +295,36 @@ const PersonEditorPage = () => {
 
                     {/* Row 2: Nome Fantasia, Insc. Estadual, Telefone */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                        <div className="form-group lg:col-span-6">
+                        <div className="form-group lg:col-span-6"> {/* Nome Fantasia: 6/12 */}
                             <Label htmlFor="nome_fantasia" className="form-label">{person.pessoa_tipo === 1 ? 'Apelido' : 'Nome Fantasia'}</Label>
                             <Input id="nome_fantasia" type="text" className="form-input" value={person.nome_fantasia} onChange={handleInputChange} />
                         </div>
                         {person.pessoa_tipo === 2 && (
-                            <div className="form-group lg:col-span-3">
+                            <div className="form-group lg:col-span-3"> {/* Inscrição Estadual: 3/12 */}
                                 <Label htmlFor="insc_estadual" className="form-label">Inscrição Estadual</Label>
                                 <Input id="insc_estadual" type="text" className="form-input" value={person.insc_estadual} onChange={handleInputChange} />
                             </div>
                         )}
-                        <div className="form-group lg:col-span-3">
+                        <div className="form-group lg:col-span-3"> {/* Telefone: 3/12 */}
                             <Label htmlFor="telefone" className="form-label">Telefone</Label>
-                            <Input id="telefone" type="text" className="form-input" value={person.telefone} onChange={handleInputChange} />
+                            <InputMask
+                                mask={phoneMask}
+                                value={person.telefone}
+                                onChange={handleInputChange}
+                                disabled={saving}
+                            >
+                                {(inputProps) => <Input {...inputProps} id="telefone" type="text" className="form-input" />}
+                            </InputMask>
                         </div>
                     </div>
 
                     {/* Row 3: Email, Contato */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                        <div className="form-group lg:col-span-6">
+                        <div className="form-group lg:col-span-6"> {/* Email: 6/12 */}
                             <Label htmlFor="email" className="form-label">Email</Label>
                             <Input id="email" type="email" className="form-input" value={person.email} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group lg:col-span-6">
+                        <div className="form-group lg:col-span-6"> {/* Contato: 6/12 */}
                             <Label htmlFor="contato" className="form-label">Contato</Label>
                             <Input id="contato" type="text" className="form-input" value={person.contato} onChange={handleInputChange} />
                         </div>
@@ -278,7 +335,7 @@ const PersonEditorPage = () => {
                 <div className="pt-6 space-y-4"> {/* Outer div for vertical spacing between grid rows */}
                     {/* Row 1: UF, Município, País */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                        <div className="form-group lg:col-span-2">
+                        <div className="form-group lg:col-span-2"> {/* UF: 2/12 */}
                             <Label htmlFor="uf" className="form-label">UF</Label>
                             <Select onValueChange={(value) => handleSelectChange('uf', value)} value={selectedUfSigla}>
                                 <SelectTrigger id="uf" className={cn("form-select")}>
@@ -291,20 +348,16 @@ const PersonEditorPage = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="form-group lg:col-span-7">
+                        <div className="form-group lg:col-span-7"> {/* Município: 7/12 */}
                             <Label htmlFor="municipio" className="form-label">Município</Label>
-                            <Select onValueChange={(value) => handleSelectChange('municipio', value)} value={person.municipio}>
-                                <SelectTrigger id="municipio" className={cn("form-select")} disabled={!selectedUfIdForMunicipalities}>
-                                    <SelectValue placeholder="Selecione o Município" className="text-left" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {municipalities.map(m => (
-                                        <SelectItem key={m.codigo} value={m.codigo}>{m.municipio}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <MunicipalitySearchSelect
+                                value={person.municipio}
+                                onValueChange={(value) => handleSelectChange('municipio', value)}
+                                municipalities={municipalities}
+                                disabled={!selectedUfIdForMunicipalities}
+                            />
                         </div>
-                        <div className="form-group lg:col-span-3">
+                        <div className="form-group lg:col-span-3"> {/* País: 3/12 */}
                             <Label htmlFor="pais" className="form-label">País</Label>
                             <Input id="pais" type="text" className="form-input" value={person.pais} onChange={handleInputChange} />
                         </div>
@@ -312,15 +365,22 @@ const PersonEditorPage = () => {
 
                     {/* Row 2: CEP, Logradouro, Número */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                        <div className="form-group lg:col-span-3">
+                        <div className="form-group lg:col-span-3"> {/* CEP: 3/12 */}
                             <Label htmlFor="cep" className="form-label">CEP</Label>
-                            <Input id="cep" type="text" className="form-input" value={person.cep} onChange={handleInputChange} />
+                            <InputMask
+                                mask={cepMask}
+                                value={person.cep}
+                                onChange={handleInputChange}
+                                disabled={saving}
+                            >
+                                {(inputProps) => <Input {...inputProps} id="cep" type="text" className="form-input" />}
+                            </InputMask>
                         </div>
-                        <div className="form-group lg:col-span-6">
+                        <div className="form-group lg:col-span-7"> {/* Logradouro: 7/12 */}
                             <Label htmlFor="logradouro" className="form-label">Logradouro</Label>
                             <Input id="logradouro" type="text" className="form-input" value={person.logradouro} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group lg:col-span-3">
+                        <div className="form-group lg:col-span-2"> {/* Número: 2/12 */}
                             <Label htmlFor="numero" className="form-label">Número</Label>
                             <Input id="numero" type="text" className="form-input" value={person.numero} onChange={handleInputChange} />
                         </div>
@@ -328,11 +388,11 @@ const PersonEditorPage = () => {
 
                     {/* Row 3: Bairro, Complemento */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                        <div className="form-group lg:col-span-9">
+                        <div className="form-group lg:col-span-9"> {/* Bairro: 9/12 */}
                             <Label htmlFor="bairro" className="form-label">Bairro</Label>
                             <Input id="bairro" type="text" className="form-input" value={person.bairro} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group lg:col-span-3">
+                        <div className="form-group lg:col-span-3"> {/* Complemento: 3/12 */}
                             <Label htmlFor="complemento" className="form-label">Complemento</Label>
                             <Input id="complemento" type="text" className="form-input" value={person.complemento} onChange={handleInputChange} />
                         </div>
@@ -348,7 +408,7 @@ const PersonEditorPage = () => {
                 </div>
                 
                 <div className="flex justify-end mt-8">
-                    <Button onClick={handleSave} className="save-button" disabled={saving}>
+                    <Button onClick={handleSave} className="save-button" disabled={saving || !!cpfCnpjError}>
                         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                         Salvar Pessoa
                     </Button>
