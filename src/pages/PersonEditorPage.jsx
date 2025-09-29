@@ -187,7 +187,7 @@ const PersonEditorPage = () => {
 
         setSaving(true);
         try {
-            const saveData = { ...person, updated_at: new Date().toISOString() };
+            const saveData = { ...person }; // Removed updated_at: new Date().toISOString()
             let error;
             let actionType;
             let description;
