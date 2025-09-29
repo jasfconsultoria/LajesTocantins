@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { logAction } from '@/lib/log';
+import { cn } from '@/lib/utils'; // Importar cn
 
 const initialPersonState = {
     pessoa_tipo: 1, // 1 for PF, 2 for PJ
@@ -223,7 +224,7 @@ const PersonEditorPage = () => {
                         <div className="form-group">
                             <Label htmlFor="pessoa_tipo" className="form-label">Tipo de Pessoa *</Label>
                             <Select onValueChange={(value) => handleSelectChange('pessoa_tipo', parseInt(value))} value={person.pessoa_tipo.toString()}>
-                                <SelectTrigger id="pessoa_tipo" className="form-select">
+                                <SelectTrigger id="pessoa_tipo" className={cn("form-select", "flex-row-reverse justify-between items-center")}>
                                     <SelectValue placeholder="Selecione o tipo" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -282,7 +283,7 @@ const PersonEditorPage = () => {
                         <div className="form-group">
                             <Label htmlFor="uf" className="form-label">UF</Label>
                             <Select onValueChange={(value) => handleSelectChange('uf', value)} value={selectedUfSigla}>
-                                <SelectTrigger id="uf" className="form-select">
+                                <SelectTrigger id="uf" className={cn("form-select", "flex-row-reverse justify-between items-center")}>
                                     <SelectValue placeholder="Selecione a UF" className="text-left" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -295,7 +296,7 @@ const PersonEditorPage = () => {
                         <div className="form-group">
                             <Label htmlFor="municipio" className="form-label">Município</Label>
                             <Select onValueChange={(value) => handleSelectChange('municipio', value)} value={person.municipio}>
-                                <SelectTrigger id="municipio" className="form-select" disabled={!selectedUfIdForMunicipalities}>
+                                <SelectTrigger id="municipio" className={cn("form-select", "flex-row-reverse justify-between items-center")} disabled={!selectedUfIdForMunicipalities}>
                                     <SelectValue placeholder="Selecione o Município" className="text-left" />
                                 </SelectTrigger>
                                 <SelectContent>
