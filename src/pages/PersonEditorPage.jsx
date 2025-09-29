@@ -220,11 +220,11 @@ const PersonEditorPage = () => {
                 </div>
                 <div className="pt-6 space-y-4"> {/* Outer div for vertical spacing between grid rows */}
                     {/* Row 1: Tipo de Pessoa, CNPJ, Razão Social */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="form-group">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                        <div className="form-group lg:col-span-3">
                             <Label htmlFor="pessoa_tipo" className="form-label">Tipo de Pessoa *</Label>
                             <Select onValueChange={(value) => handleSelectChange('pessoa_tipo', parseInt(value))} value={person.pessoa_tipo.toString()}>
-                                <SelectTrigger id="pessoa_tipo" className={cn("form-select", "flex-row-reverse justify-between items-center")}>
+                                <SelectTrigger id="pessoa_tipo" className={cn("form-select")}>
                                     <SelectValue placeholder="Selecione o tipo" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -233,43 +233,41 @@ const PersonEditorPage = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="form-group">
+                        <div className="form-group lg:col-span-3">
                             <Label htmlFor="cpf_cnpj" className="form-label">{person.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} *</Label>
                             <Input id="cpf_cnpj" type="text" className="form-input" value={person.cpf_cnpj} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group lg:col-span-6">
                             <Label htmlFor="razao_social" className="form-label">{person.pessoa_tipo === 1 ? 'Nome Completo' : 'Razão Social'} *</Label>
                             <Input id="razao_social" type="text" className="form-input" value={person.razao_social} onChange={handleInputChange} />
                         </div>
                     </div>
 
-                    {/* Row 2: Nome Fantasia (2/3), Insc. Estadual (1/6), Telefone (1/6) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="form-group col-span-2"> {/* Nome Fantasia takes 2/3 */}
+                    {/* Row 2: Nome Fantasia, Insc. Estadual, Telefone */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                        <div className="form-group lg:col-span-6">
                             <Label htmlFor="nome_fantasia" className="form-label">{person.pessoa_tipo === 1 ? 'Apelido' : 'Nome Fantasia'}</Label>
                             <Input id="nome_fantasia" type="text" className="form-input" value={person.nome_fantasia} onChange={handleInputChange} />
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Nested grid for Insc. Estadual and Telefone */}
-                            {person.pessoa_tipo === 2 && (
-                                <div className="form-group">
-                                    <Label htmlFor="insc_estadual" className="form-label">Inscrição Estadual</Label>
-                                    <Input id="insc_estadual" type="text" className="form-input" value={person.insc_estadual} onChange={handleInputChange} />
-                                </div>
-                            )}
-                            <div className="form-group">
-                                <Label htmlFor="telefone" className="form-label">Telefone</Label>
-                                <Input id="telefone" type="text" className="form-input" value={person.telefone} onChange={handleInputChange} />
+                        {person.pessoa_tipo === 2 && (
+                            <div className="form-group lg:col-span-3">
+                                <Label htmlFor="insc_estadual" className="form-label">Inscrição Estadual</Label>
+                                <Input id="insc_estadual" type="text" className="form-input" value={person.insc_estadual} onChange={handleInputChange} />
                             </div>
+                        )}
+                        <div className="form-group lg:col-span-3">
+                            <Label htmlFor="telefone" className="form-label">Telefone</Label>
+                            <Input id="telefone" type="text" className="form-input" value={person.telefone} onChange={handleInputChange} />
                         </div>
                     </div>
 
-                    {/* Row 3: Email (1/2), Contato (1/2) */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* This row is 2 columns */}
-                        <div className="form-group">
+                    {/* Row 3: Email, Contato */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                        <div className="form-group lg:col-span-6">
                             <Label htmlFor="email" className="form-label">Email</Label>
                             <Input id="email" type="email" className="form-input" value={person.email} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group lg:col-span-6">
                             <Label htmlFor="contato" className="form-label">Contato</Label>
                             <Input id="contato" type="text" className="form-input" value={person.contato} onChange={handleInputChange} />
                         </div>
@@ -279,11 +277,11 @@ const PersonEditorPage = () => {
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Endereço</h3>
                 <div className="pt-6 space-y-4"> {/* Outer div for vertical spacing between grid rows */}
                     {/* Row 1: UF, Município, País */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="form-group">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                        <div className="form-group lg:col-span-2">
                             <Label htmlFor="uf" className="form-label">UF</Label>
                             <Select onValueChange={(value) => handleSelectChange('uf', value)} value={selectedUfSigla}>
-                                <SelectTrigger id="uf" className={cn("form-select", "flex-row-reverse justify-between items-center")}>
+                                <SelectTrigger id="uf" className={cn("form-select")}>
                                     <SelectValue placeholder="Selecione a UF" className="text-left" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -293,10 +291,10 @@ const PersonEditorPage = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="form-group">
+                        <div className="form-group lg:col-span-7">
                             <Label htmlFor="municipio" className="form-label">Município</Label>
                             <Select onValueChange={(value) => handleSelectChange('municipio', value)} value={person.municipio}>
-                                <SelectTrigger id="municipio" className={cn("form-select", "flex-row-reverse justify-between items-center")} disabled={!selectedUfIdForMunicipalities}>
+                                <SelectTrigger id="municipio" className={cn("form-select")} disabled={!selectedUfIdForMunicipalities}>
                                     <SelectValue placeholder="Selecione o Município" className="text-left" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -306,35 +304,35 @@ const PersonEditorPage = () => {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="form-group">
+                        <div className="form-group lg:col-span-3">
                             <Label htmlFor="pais" className="form-label">País</Label>
                             <Input id="pais" type="text" className="form-input" value={person.pais} onChange={handleInputChange} />
                         </div>
                     </div>
 
                     {/* Row 2: CEP, Logradouro, Número */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="form-group">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                        <div className="form-group lg:col-span-3">
                             <Label htmlFor="cep" className="form-label">CEP</Label>
                             <Input id="cep" type="text" className="form-input" value={person.cep} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group lg:col-span-6">
                             <Label htmlFor="logradouro" className="form-label">Logradouro</Label>
                             <Input id="logradouro" type="text" className="form-input" value={person.logradouro} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group">
+                        <div className="form-group lg:col-span-3">
                             <Label htmlFor="numero" className="form-label">Número</Label>
                             <Input id="numero" type="text" className="form-input" value={person.numero} onChange={handleInputChange} />
                         </div>
                     </div>
 
                     {/* Row 3: Bairro, Complemento */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="form-group col-span-2"> {/* Bairro takes 2/3 width */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                        <div className="form-group lg:col-span-9">
                             <Label htmlFor="bairro" className="form-label">Bairro</Label>
                             <Input id="bairro" type="text" className="form-input" value={person.bairro} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group"> {/* Complemento takes 1/3 width */}
+                        <div className="form-group lg:col-span-3">
                             <Label htmlFor="complemento" className="form-label">Complemento</Label>
                             <Input id="complemento" type="text" className="form-input" value={person.complemento} onChange={handleInputChange} />
                         </div>
