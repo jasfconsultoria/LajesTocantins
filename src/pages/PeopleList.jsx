@@ -97,38 +97,15 @@ const PeopleList = () => {
 
     const sortedAndFilteredPeople = useMemo(() => {
         const normalizedSearchTerm = normalizeString(searchTerm);
-        const rawNumericSearchTerm = searchTerm.replace(/[^\d]/g, '');
 
         let currentFilteredPeople = people;
 
         // 1. Aplicar filtragem se houver termo de busca
-        if (normalizedSearchTerm || rawNumericSearchTerm) {
+        if (normalizedSearchTerm) {
             currentFilteredPeople = people.filter(p => {
-                const normalizedNomeCompletoBusca = normalizeString(p.nome_completo_busca);
-                const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
-                const municipioNome = p.municipio_nome ? normalizeString(p.municipio_nome) : '';
-                const ufNormalized = p.uf ? normalizeString(p.uf) : '';
-
-                const textMatches = normalizedNomeCompletoBusca.includes(normalizedSearchTerm) ||
-                                    municipioNome.includes(normalizedSearchTerm) ||
-                                    ufNormalized.includes(normalizedSearchTerm);
-
-                const numericMatches = cpfCnpj.includes(rawNumericSearchTerm);
-
-                // Lógica de filtragem aprimorada:
-                // Se ambos (texto e numérico) estão presentes no termo de busca, ambos devem corresponder.
-                if (normalizedSearchTerm && rawNumericSearchTerm) {
-                    return textMatches && numericMatches;
-                } 
-                // Se apenas o termo de busca de texto está presente, apenas os campos de texto precisam corresponder.
-                else if (normalizedSearchTerm) {
-                    return textMatches;
-                } 
-                // Se apenas o termo de busca numérico está presente, apenas os campos numéricos precisam corresponder.
-                else if (rawNumericSearchTerm) {
-                    return numericMatches;
-                }
-                return false; // Não deve ser alcançado se houver termo de busca
+                // Usar a nova coluna 'busca_completa' para filtrar
+                const normalizedBuscaCompleta = normalizeString(p.busca_completa || '');
+                return normalizedBuscaCompleta.includes(normalizedSearchTerm);
             });
         }
 
@@ -250,7 +227,7 @@ const PeopleList = () => {
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
-                            setCurrentPage(1); // Resetar página ao mudar o termo de busca
+                            setCurrentPage(1);
                         }}
                     />
                 </div>
