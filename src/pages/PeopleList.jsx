@@ -97,38 +97,43 @@ const PeopleList = () => {
 
     const sortedAndFilteredPeople = useMemo(() => {
         const normalizedSearchTerm = normalizeString(searchTerm);
-        const numericSearchTerm = searchTerm.replace(/[^\d]/g, '');
+        const rawNumericSearchTerm = searchTerm.replace(/[^\d]/g, '');
 
-        const filtered = people.filter(p => {
-            const normalizedNomeCompletoBusca = normalizeString(p.nome_completo_busca); // Usar a nova coluna
-            const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
-            const municipioNome = p.municipio_nome ? normalizeString(p.municipio_nome) : '';
-            const ufNormalized = p.uf ? normalizeString(p.uf) : '';
+        let currentFilteredPeople = people;
 
-            let matches = false;
+        // 1. Aplicar filtragem se houver termo de busca
+        if (normalizedSearchTerm || rawNumericSearchTerm) {
+            currentFilteredPeople = people.filter(p => {
+                const normalizedNomeCompletoBusca = normalizeString(p.nome_completo_busca);
+                const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
+                const municipioNome = p.municipio_nome ? normalizeString(p.municipio_nome) : '';
+                const ufNormalized = p.uf ? normalizeString(p.uf) : '';
 
-            // Only attempt text matching if normalizedSearchTerm is not empty
-            if (normalizedSearchTerm) {
-                if (normalizedNomeCompletoBusca.includes(normalizedSearchTerm)) matches = true; // Buscar na nova coluna
-                if (municipioNome.includes(normalizedSearchTerm)) matches = true;
-                if (ufNormalized.includes(normalizedSearchTerm)) matches = true;
-            }
+                const textMatches = normalizedNomeCompletoBusca.includes(normalizedSearchTerm) ||
+                                    municipioNome.includes(normalizedSearchTerm) ||
+                                    ufNormalized.includes(normalizedSearchTerm);
 
-            // Only attempt numeric matching if numericSearchTerm is not empty
-            if (numericSearchTerm) {
-                if (cpfCnpj.includes(numericSearchTerm)) matches = true;
-            }
-            
-            // If both search terms are empty, show all.
-            if (!normalizedSearchTerm && !numericSearchTerm) {
-                return true;
-            }
+                const numericMatches = cpfCnpj.includes(rawNumericSearchTerm);
 
-            return matches;
-        });
+                // Lógica de filtragem aprimorada:
+                // Se ambos (texto e numérico) estão presentes no termo de busca, ambos devem corresponder.
+                if (normalizedSearchTerm && rawNumericSearchTerm) {
+                    return textMatches && numericMatches;
+                } 
+                // Se apenas o termo de busca de texto está presente, apenas os campos de texto precisam corresponder.
+                else if (normalizedSearchTerm) {
+                    return textMatches;
+                } 
+                // Se apenas o termo de busca numérico está presente, apenas os campos numéricos precisam corresponder.
+                else if (rawNumericSearchTerm) {
+                    return numericMatches;
+                }
+                return false; // Não deve ser alcançado se houver termo de busca
+            });
+        }
 
-        // Apply sorting
-        return filtered.sort((a, b) => {
+        // 2. Aplicar ordenação aos resultados filtrados (ou à lista completa se não houver busca)
+        return [...currentFilteredPeople].sort((a, b) => { // Cria uma cópia para não modificar o array original
             let aValue, bValue;
 
             switch (sortColumn) {
@@ -136,7 +141,7 @@ const PeopleList = () => {
                     aValue = a.pessoa_tipo;
                     bValue = b.pessoa_tipo;
                     break;
-                case 'nome_completo_busca': // Usar a nova coluna para ordenação
+                case 'nome_completo_busca':
                     aValue = normalizeString(a.nome_completo_busca);
                     bValue = normalizeString(b.nome_completo_busca);
                     break;
@@ -245,7 +250,7 @@ const PeopleList = () => {
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
-                            setCurrentPage(1);
+                            setCurrentPage(1); // Resetar página ao mudar o termo de busca
                         }}
                     />
                 </div>
@@ -261,8 +266,8 @@ const PeopleList = () => {
                                 <TableHead className="cursor-pointer" onClick={() => handleSort('tipo')}>
                                     <div className="flex items-center">Tipo {renderSortIcon('tipo')}</div>
                                 </TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => handleSort('nome_completo_busca')}> {/* Usar a nova coluna para ordenação */}
-                                    <div className="flex items-center">Nome Fantasia/Razão Social {renderSortIcon('nome_completo_busca')}</div> {/* Cabeçalho renomeado */}
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('nome_completo_busca')}>
+                                    <div className="flex items-center">Nome Fantasia/Razão Social {renderSortIcon('nome_completo_busca')}</div>
                                 </TableHead>
                                 <TableHead className="cursor-pointer" onClick={() => handleSort('cpf_cnpj')}>
                                     <div className="flex items-center">CPF/CNPJ {renderSortIcon('cpf_cnpj')}</div>
@@ -280,9 +285,9 @@ const PeopleList = () => {
                                         {getPessoaTipoIcon(p.pessoa_tipo)}
                                         {getPessoaTipoText(p.pessoa_tipo)}
                                     </TableCell>
-                                    <TableCell>{p.nome_completo_busca}</TableCell> {/* Exibe a nova coluna concatenada */}
+                                    <TableCell>{p.nome_completo_busca}</TableCell>
                                     <TableCell>{p.cpf_cnpj}</TableCell>
-                                    <TableCell>{p.municipio_nome || p.municipio_codigo}/{p.uf}</TableCell> {/* Exibe o nome do município da VIEW */}
+                                    <TableCell>{p.municipio_nome || p.municipio_codigo}/{p.uf}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/people/${p.id}/edit`)}>
