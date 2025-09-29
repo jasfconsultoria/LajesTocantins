@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, Users, ChevronLeft, ChevronRight, User, Building2 } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Users, ChevronLeft, ChevronRight, User, Building2, ArrowUp, ArrowDown } from 'lucide-react'; // Importar ArrowUp e ArrowDown
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -31,6 +31,8 @@ const PeopleList = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [sortColumn, setSortColumn] = useState('razao_social'); // Estado para a coluna de ordenação
+    const [sortDirection, setSortDirection] = useState('asc'); // Estado para a direção da ordenação ('asc' ou 'desc')
 
     const ITEMS_PER_PAGE = 10;
 
@@ -62,14 +64,7 @@ const PeopleList = () => {
                 }
             }
 
-            // Apply sorting after fetching all data
-            const sortedPeople = allPeople.sort((a, b) => {
-                const nameA = normalizeString(a.razao_social || a.nome_fantasia);
-                const nameB = normalizeString(b.razao_social || b.nome_fantasia);
-                return nameA.localeCompare(nameB);
-            });
-
-            setPeople(sortedPeople);
+            setPeople(allPeople);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -85,11 +80,20 @@ const PeopleList = () => {
         fetchPeople();
     }, [fetchPeople]);
 
-    const filteredPeople = useMemo(() => {
+    const handleSort = (column) => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc');
+        }
+    };
+
+    const sortedAndFilteredPeople = useMemo(() => {
         const normalizedSearchTerm = normalizeString(searchTerm);
         const numericSearchTerm = searchTerm.replace(/[^\d]/g, '');
 
-        return people.filter(p => {
+        const filtered = people.filter(p => {
             const normalizedRazaoSocial = normalizeString(p.razao_social);
             const normalizedNomeFantasia = normalizeString(p.nome_fantasia);
             const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
@@ -103,14 +107,45 @@ const PeopleList = () => {
                 p.uf?.toLowerCase().includes(normalizedSearchTerm) // Adicionar busca por UF
             );
         });
-    }, [people, searchTerm]);
+
+        // Apply sorting
+        return filtered.sort((a, b) => {
+            let aValue, bValue;
+
+            switch (sortColumn) {
+                case 'tipo':
+                    aValue = a.pessoa_tipo;
+                    bValue = b.pessoa_tipo;
+                    break;
+                case 'nome_razao_social':
+                    aValue = normalizeString(a.razao_social || a.nome_fantasia);
+                    bValue = normalizeString(b.razao_social || b.nome_fantasia);
+                    break;
+                case 'cpf_cnpj':
+                    aValue = a.cpf_cnpj ? a.cpf_cnpj.replace(/[^\d]/g, '') : '';
+                    bValue = b.cpf_cnpj ? b.cpf_cnpj.replace(/[^\d]/g, '') : '';
+                    break;
+                case 'cidade_uf':
+                    aValue = normalizeString(`${a.municipio_nome || a.municipio_codigo}/${a.uf}`);
+                    bValue = normalizeString(`${b.municipio_nome || b.municipio_codigo}/${b.uf}`);
+                    break;
+                default:
+                    aValue = normalizeString(a[sortColumn] || '');
+                    bValue = normalizeString(b[sortColumn] || '');
+            }
+
+            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [people, searchTerm, sortColumn, sortDirection]);
 
     const paginatedPeople = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredPeople.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredPeople, currentPage]);
+        return sortedAndFilteredPeople.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [sortedAndFilteredPeople, currentPage]);
 
-    const totalPages = Math.ceil(filteredPeople.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(sortedAndFilteredPeople.length / ITEMS_PER_PAGE);
 
     const handleNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
@@ -155,6 +190,13 @@ const PeopleList = () => {
         return 'Desconhecido';
     };
 
+    const renderSortIcon = (column) => {
+        if (sortColumn === column) {
+            return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+        }
+        return null;
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -197,10 +239,18 @@ const PeopleList = () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Tipo</TableHead>
-                                <TableHead>Nome/Razão Social</TableHead>
-                                <TableHead>CPF/CNPJ</TableHead>
-                                <TableHead>Cidade/UF</TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('tipo')}>
+                                    <div className="flex items-center">Tipo {renderSortIcon('tipo')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('nome_razao_social')}>
+                                    <div className="flex items-center">Nome/Razão Social {renderSortIcon('nome_razao_social')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('cpf_cnpj')}>
+                                    <div className="flex items-center">CPF/CNPJ {renderSortIcon('cpf_cnpj')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('cidade_uf')}>
+                                    <div className="flex items-center">Cidade/UF {renderSortIcon('cidade_uf')}</div>
+                                </TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -234,7 +284,7 @@ const PeopleList = () => {
             <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
                 <div>
                     Exibindo {paginatedPeople.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredPeople.length)} de {filteredPeople.length} registros
+                    {Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredPeople.length)} de {sortedAndFilteredPeople.length} registros
                 </div>
                 <div className="flex items-center gap-2">
                     <span>Página {currentPage} de {totalPages}</span>
