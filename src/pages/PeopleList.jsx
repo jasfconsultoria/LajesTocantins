@@ -19,7 +19,13 @@ import { logAction } from '@/lib/log';
 // Helper function for normalization (moved outside component)
 const normalizeString = (str) => {
     if (typeof str !== 'string') return ''; // Handle non-string inputs
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return str
+        .normalize("NFD") // Normalize diacritics
+        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+        .toLowerCase() // Convert to lowercase
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"") // Remove common punctuation
+        .replace(/\s{2,}/g," ") // Replace multiple spaces with a single space
+        .trim(); // Trim leading/trailing whitespace
 };
 
 const PeopleList = () => {
@@ -284,7 +290,7 @@ const PeopleList = () => {
             <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
                 <div>
                     Exibindo {paginatedPeople.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-                    {Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredPeople.length)} de {sortedAndFilteredPeople.length} registros
+                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredPeople.length)} de {filteredPeople.length} registros
                 </div>
                 <div className="flex items-center gap-2">
                     <span>Página {currentPage} de {totalPages}</span>

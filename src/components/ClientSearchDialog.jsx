@@ -15,7 +15,13 @@ import { User, Building2, Search } from 'lucide-react';
 // Helper function for normalization (copied from PeopleList.jsx)
 const normalizeString = (str) => {
     if (typeof str !== 'string') return '';
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return str
+        .normalize("NFD") // Normalize diacritics
+        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+        .toLowerCase() // Convert to lowercase
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"") // Remove common punctuation
+        .replace(/\s{2,}/g," ") // Replace multiple spaces with a single space
+        .trim(); // Trim leading/trailing whitespace
 };
 
 const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
