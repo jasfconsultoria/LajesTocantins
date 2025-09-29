@@ -45,7 +45,7 @@ const PeopleList = () => {
             while (hasMore) {
                 const { data, error } = await supabase
                     .from('pessoas')
-                    .select('*')
+                    .select('*, municipios(municipio)') // Seleciona todos os campos de 'pessoas' e o nome do município de 'municipios'
                     .order('created_at', { ascending: false }) // Keep initial order for fetching
                     .range(offset, offset + limit - 1); // Busca um 'range' de registros
 
@@ -93,11 +93,14 @@ const PeopleList = () => {
             const normalizedRazaoSocial = normalizeString(p.razao_social);
             const normalizedNomeFantasia = normalizeString(p.nome_fantasia);
             const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
+            const municipioName = p.municipios?.municipio ? normalizeString(p.municipios.municipio) : ''; // Incluir nome do município na busca
 
             return (
                 normalizedRazaoSocial.includes(normalizedSearchTerm) ||
                 normalizedNomeFantasia.includes(normalizedSearchTerm) ||
-                cpfCnpj.includes(numericSearchTerm)
+                cpfCnpj.includes(numericSearchTerm) ||
+                municipioName.includes(normalizedSearchTerm) || // Adicionar busca por nome do município
+                p.uf?.toLowerCase().includes(normalizedSearchTerm) // Adicionar busca por UF
             );
         });
     }, [people, searchTerm]);
@@ -175,7 +178,7 @@ const PeopleList = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                         type="text"
-                        placeholder="Buscar por nome, CPF/CNPJ..."
+                        placeholder="Buscar por nome, CPF/CNPJ, município ou UF..."
                         className="pl-10"
                         value={searchTerm}
                         onChange={(e) => {
@@ -209,7 +212,7 @@ const PeopleList = () => {
                                     </TableCell>
                                     <TableCell>{p.razao_social || p.nome_fantasia}</TableCell>
                                     <TableCell>{p.cpf_cnpj}</TableCell>
-                                    <TableCell>{p.municipio}/{p.uf}</TableCell>
+                                    <TableCell>{p.municipios?.municipio || p.municipio}/{p.uf}</TableCell> {/* Exibe o nome do município */}
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/people/${p.id}/edit`)}>
