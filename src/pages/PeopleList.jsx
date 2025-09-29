@@ -103,15 +103,30 @@ const PeopleList = () => {
             const normalizedRazaoSocial = normalizeString(p.razao_social);
             const normalizedNomeFantasia = normalizeString(p.nome_fantasia);
             const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
-            const municipioNome = p.municipio_nome ? normalizeString(p.municipio_nome) : ''; // Usar municipio_nome da VIEW
+            const municipioNome = p.municipio_nome ? normalizeString(p.municipio_nome) : '';
+            const ufNormalized = p.uf ? normalizeString(p.uf) : '';
 
-            return (
-                normalizedRazaoSocial.includes(normalizedSearchTerm) ||
-                normalizedNomeFantasia.includes(normalizedSearchTerm) ||
-                cpfCnpj.includes(numericSearchTerm) ||
-                municipioNome.includes(normalizedSearchTerm) || // Adicionar busca por nome do município
-                p.uf?.toLowerCase().includes(normalizedSearchTerm) // Adicionar busca por UF
-            );
+            let matches = false;
+
+            // Only attempt text matching if normalizedSearchTerm is not empty
+            if (normalizedSearchTerm) {
+                if (normalizedRazaoSocial.includes(normalizedSearchTerm)) matches = true;
+                if (normalizedNomeFantasia.includes(normalizedSearchTerm)) matches = true;
+                if (municipioNome.includes(normalizedSearchTerm)) matches = true;
+                if (ufNormalized.includes(normalizedSearchTerm)) matches = true;
+            }
+
+            // Only attempt numeric matching if numericSearchTerm is not empty
+            if (numericSearchTerm) {
+                if (cpfCnpj.includes(numericSearchTerm)) matches = true;
+            }
+            
+            // If both search terms are empty, show all.
+            if (!normalizedSearchTerm && !numericSearchTerm) {
+                return true;
+            }
+
+            return matches;
         });
 
         // Apply sorting
@@ -149,7 +164,7 @@ const PeopleList = () => {
     const paginatedPeople = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
         return sortedAndFilteredPeople.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [sortedAndFilteredPeople, currentPage]); // <-- Corrigido aqui
+    }, [sortedAndFilteredPeople, currentPage]);
 
     const totalPages = Math.ceil(sortedAndFilteredPeople.length / ITEMS_PER_PAGE);
 
