@@ -37,7 +37,7 @@ const PeopleList = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [sortColumn, setSortColumn] = useState('razao_social'); // Estado para a coluna de ordenação
+    const [sortColumn, setSortColumn] = useState('nome_completo_busca'); // Estado para a coluna de ordenação
     const [sortDirection, setSortDirection] = useState('asc'); // Estado para a direção da ordenação ('asc' ou 'desc')
 
     const ITEMS_PER_PAGE = 10;
@@ -100,8 +100,7 @@ const PeopleList = () => {
         const numericSearchTerm = searchTerm.replace(/[^\d]/g, '');
 
         const filtered = people.filter(p => {
-            const normalizedRazaoSocial = normalizeString(p.razao_social);
-            const normalizedNomeFantasia = normalizeString(p.nome_fantasia);
+            const normalizedNomeCompletoBusca = normalizeString(p.nome_completo_busca); // Usar a nova coluna
             const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
             const municipioNome = p.municipio_nome ? normalizeString(p.municipio_nome) : '';
             const ufNormalized = p.uf ? normalizeString(p.uf) : '';
@@ -110,8 +109,7 @@ const PeopleList = () => {
 
             // Only attempt text matching if normalizedSearchTerm is not empty
             if (normalizedSearchTerm) {
-                if (normalizedRazaoSocial.includes(normalizedSearchTerm)) matches = true;
-                if (normalizedNomeFantasia.includes(normalizedSearchTerm)) matches = true;
+                if (normalizedNomeCompletoBusca.includes(normalizedSearchTerm)) matches = true; // Buscar na nova coluna
                 if (municipioNome.includes(normalizedSearchTerm)) matches = true;
                 if (ufNormalized.includes(normalizedSearchTerm)) matches = true;
             }
@@ -138,17 +136,17 @@ const PeopleList = () => {
                     aValue = a.pessoa_tipo;
                     bValue = b.pessoa_tipo;
                     break;
-                case 'nome_razao_social':
-                    aValue = normalizeString(a.razao_social || a.nome_fantasia);
-                    bValue = normalizeString(b.razao_social || b.nome_fantasia);
+                case 'nome_completo_busca': // Usar a nova coluna para ordenação
+                    aValue = normalizeString(a.nome_completo_busca);
+                    bValue = normalizeString(b.nome_completo_busca);
                     break;
                 case 'cpf_cnpj':
                     aValue = a.cpf_cnpj ? a.cpf_cnpj.replace(/[^\d]/g, '') : '';
                     bValue = b.cpf_cnpj ? b.cpf_cnpj.replace(/[^\d]/g, '') : '';
                     break;
                 case 'cidade_uf':
-                    aValue = normalizeString(`${a.municipio_nome || a.municipio_codigo}/${a.uf}`);
-                    bValue = normalizeString(`${b.municipio_nome || b.municipio_codigo}/${b.uf}`);
+                    aValue = normalizeString(`${a.municipio_nome || p.municipio_codigo}/${a.uf}`);
+                    bValue = normalizeString(`${b.municipio_nome || p.municipio_codigo}/${b.uf}`);
                     break;
                 default:
                     aValue = normalizeString(a[sortColumn] || '');
@@ -263,8 +261,8 @@ const PeopleList = () => {
                                 <TableHead className="cursor-pointer" onClick={() => handleSort('tipo')}>
                                     <div className="flex items-center">Tipo {renderSortIcon('tipo')}</div>
                                 </TableHead>
-                                <TableHead className="cursor-pointer" onClick={() => handleSort('nome_razao_social')}>
-                                    <div className="flex items-center">Nome/Razão Social {renderSortIcon('nome_razao_social')}</div>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('nome_completo_busca')}> {/* Usar a nova coluna para ordenação */}
+                                    <div className="flex items-center">Nome/Razão Social {renderSortIcon('nome_completo_busca')}</div>
                                 </TableHead>
                                 <TableHead className="cursor-pointer" onClick={() => handleSort('cpf_cnpj')}>
                                     <div className="flex items-center">CPF/CNPJ {renderSortIcon('cpf_cnpj')}</div>
