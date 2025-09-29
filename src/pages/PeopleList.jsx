@@ -149,7 +149,7 @@ const PeopleList = () => {
     const paginatedPeople = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
         return sortedAndFilteredPeople.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [sortedAndFilteredPeople, currentPage]);
+    }, [sortedAndFilteredPeople, currentPage]); // <-- Corrigido aqui
 
     const totalPages = Math.ceil(sortedAndFilteredPeople.length / ITEMS_PER_PAGE);
 
@@ -290,7 +290,7 @@ const PeopleList = () => {
             <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
                 <div>
                     Exibindo {paginatedPeople.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredPeople.length)} de {filteredPeople.length} registros
+                    {Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredPeople.length)} de {sortedAndFilteredPeople.length} registros
                 </div>
                 <div className="flex items-center gap-2">
                     <span>Página {currentPage} de {totalPages}</span>
