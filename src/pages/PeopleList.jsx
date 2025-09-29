@@ -262,7 +262,7 @@ const PeopleList = () => {
                                     <div className="flex items-center">Tipo {renderSortIcon('tipo')}</div>
                                 </TableHead>
                                 <TableHead className="cursor-pointer" onClick={() => handleSort('nome_completo_busca')}> {/* Usar a nova coluna para ordenação */}
-                                    <div className="flex items-center">Nome/Razão Social {renderSortIcon('nome_completo_busca')}</div>
+                                    <div className="flex items-center">Nome Fantasia/Razão Social {renderSortIcon('nome_completo_busca')}</div> {/* Cabeçalho renomeado */}
                                 </TableHead>
                                 <TableHead className="cursor-pointer" onClick={() => handleSort('cpf_cnpj')}>
                                     <div className="flex items-center">CPF/CNPJ {renderSortIcon('cpf_cnpj')}</div>
