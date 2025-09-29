@@ -265,8 +265,8 @@ const PersonEditorPage = () => {
                         <div className="form-group lg:col-span-2"> {/* Tipo de Pessoa: 2/12 */}
                             <Label htmlFor="pessoa_tipo" className="form-label">Tipo de Pessoa *</Label>
                             <Select onValueChange={(value) => handleSelectChange('pessoa_tipo', parseInt(value))} value={person.pessoa_tipo.toString()}>
-                                <SelectTrigger id="pessoa_tipo" className={cn("form-select")}>
-                                    <SelectValue placeholder="Selecione o tipo" />
+                                <SelectTrigger id="pessoa_tipo" className={cn("form-select", "flex-row-reverse justify-between items-center")}>
+                                    <SelectValue placeholder="Selecione o tipo" className="text-left flex-1" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="1">Pessoa Física</SelectItem>
@@ -338,8 +338,8 @@ const PersonEditorPage = () => {
                         <div className="form-group lg:col-span-2"> {/* UF: 2/12 */}
                             <Label htmlFor="uf" className="form-label">UF</Label>
                             <Select onValueChange={(value) => handleSelectChange('uf', value)} value={selectedUfSigla}>
-                                <SelectTrigger id="uf" className={cn("form-select")}>
-                                    <SelectValue placeholder="Selecione a UF" className="text-left" />
+                                <SelectTrigger id="uf" className={cn("form-select", "flex-row-reverse justify-between items-center")}>
+                                    <SelectValue placeholder="Selecione a UF" className="text-left flex-1" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {ufs.map(uf => (
@@ -376,11 +376,11 @@ const PersonEditorPage = () => {
                                 {(inputProps) => <Input {...inputProps} id="cep" type="text" className="form-input" />}
                             </InputMask>
                         </div>
-                        <div className="form-group lg:col-span-7"> {/* Logradouro: 7/12 */}
+                        <div className="form-group lg:col-span-6"> {/* Logradouro: 6/12 */}
                             <Label htmlFor="logradouro" className="form-label">Logradouro</Label>
                             <Input id="logradouro" type="text" className="form-input" value={person.logradouro} onChange={handleInputChange} />
                         </div>
-                        <div className="form-group lg:col-span-2"> {/* Número: 2/12 */}
+                        <div className="form-group lg:col-span-3"> {/* Número: 3/12 */}
                             <Label htmlFor="numero" className="form-label">Número</Label>
                             <Input id="numero" type="text" className="form-input" value={person.numero} onChange={handleInputChange} />
                         </div>
