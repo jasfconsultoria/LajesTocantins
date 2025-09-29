@@ -13,15 +13,12 @@ import { logAction } from '@/lib/log';
 
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
-    prod_NVE_Opc: '', prod_CEST_Opc: '', prod_EXTIPI: '', prod_CFOP: '',
-    prod_uCOM: '', prod_qCOM: 1.0, prod_vUnCOM: 0.0, prod_vProd: 0.0,
-    prod_cEANTrib: '', prod_uTrib: '', prod_qTrib: 1.0, prod_vUnTrib: 0.0,
-    prod_nFCI_Opc: '', icms_pICMS: 0.0, icms_pRedBC: 0.0, icms_modBC: 0,
-    icms_CST: '', pis_CST: '', pis_pPIS: 0.0, cofins_CST: '',
-    cofins_pCOFINS: 0.0, IPI_clEnq: '', IPI_CNPJProd: '', IPI_cEnq: '',
-    IPI_CST: '', IPI_pIPI: 0.0, prod_indEscala: 'N', prod_CNPJFab: '',
-    prod_cBenef: '', prod_sujST: 'N', icms_pMVAST: 0.0, icms_orig: 0,
-    prod_ativo: 'S', prod_rastro: 'N', prod_nivelm: 0, prod_alert: 'N',
+    prod_CEST_Opc: '', prod_CFOP: '', prod_uCOM: '', prod_vUnCOM: 0.0,
+    icms_pICMS: 0.0, icms_pRedBC: 0.0, icms_modBC: 0, icms_CST: '',
+    pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
+    IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
+    prod_rastro: 'N', prod_nivelm: 0, prod_alert: 'N',
+    prod_descricao_detalhada: '', // Novo campo para descrição detalhada
 };
 
 const icmsModbcOptions = [
@@ -185,102 +182,145 @@ const ProductEditorPage = () => {
                         </div>
                     </div>
                 </div>
-                <div className="form-grid pt-6">
-                    <div className="form-group"><Label htmlFor="prod_cProd" className="form-label">Código do Produto *</Label><Input id="prod_cProd" type="text" className="form-input" value={product.prod_cProd} onChange={handleInputChange} required /></div>
-                    <div className="form-group"><Label htmlFor="prod_cEAN" className="form-label">GTIN/EAN</Label><Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEAN} onChange={handleInputChange} /></div>
-                    <div className="form-group col-span-full"><Label htmlFor="prod_xProd" className="form-label">Descrição do Produto *</Label><Input id="prod_xProd" type="text" className="form-input" value={product.prod_xProd} onChange={handleInputChange} required /></div>
-                    <div className="form-group"><Label htmlFor="prod_NCM" className="form-label">NCM</Label><Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_CEST_Opc" className="form-label">CEST (Opcional)</Label><Input id="prod_CEST_Opc" type="text" className="form-input" value={product.prod_CEST_Opc} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_CFOP" className="form-label">CFOP</Label><Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial</Label><Input id="prod_uCOM" type="text" className="form-input" value={product.prod_uCOM} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_qCOM" className="form-label">Quantidade Comercial</Label><Input id="prod_qCOM" type="number" step="0.0001" className="form-input" value={product.prod_qCOM} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_vUnCOM" className="form-label">Valor Unitário Comercial</Label><Input id="prod_vUnCOM" type="number" step="0.0001" className="form-input" value={product.prod_vUnCOM} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_vProd" className="form-label">Valor Total Produto</Label><Input id="prod_vProd" type="number" step="0.0001" className="form-input" value={product.prod_vProd} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_indEscala" className="form-label">Indicador de Escala Relevante</Label>
-                        <Select onValueChange={(value) => handleSelectChange('prod_indEscala', value)} value={product.prod_indEscala}>
-                            <SelectTrigger id="prod_indEscala" className="form-select"><SelectValue /></SelectTrigger>
-                            <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
-                        </Select>
+                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                    {/* Row 1: Código do Produto, GTIN/EAN, Unidade Comercial, Valor Unitário Comercial */}
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_cProd" className="form-label">Código do Produto *</Label>
+                        <Input id="prod_cProd" type="text" className="form-input" value={product.prod_cProd} onChange={handleInputChange} required />
                     </div>
-                    <div className="form-group"><Label htmlFor="prod_ativo" className="form-label">Ativo</Label>
-                        <Select onValueChange={(value) => handleSelectChange('prod_ativo', value)} value={product.prod_ativo}>
-                            <SelectTrigger id="prod_ativo" className="form-select"><SelectValue /></SelectTrigger>
-                            <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
-                        </Select>
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_cEAN" className="form-label">GTIN/EAN</Label>
+                        <Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEAN} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group"><Label htmlFor="prod_rastro" className="form-label">Rastreável</Label>
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial</Label>
+                        <Input id="prod_uCOM" type="text" className="form-input" value={product.prod_uCOM} onChange={handleInputChange} />
+                        {/* TODO: Adicionar funcionalidade de 'buscar na tabela Unidade Código mostrar Unidade' */}
+                    </div>
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_vUnCOM" className="form-label">Valor Unitário Comercial</Label>
+                        <Input id="prod_vUnCOM" type="number" step="0.0001" className="form-input" value={product.prod_vUnCOM} onChange={handleInputChange} />
+                    </div>
+
+                    {/* Row 2: Nome do Produto (prod_xProd) */}
+                    <div className="form-group lg:col-span-12">
+                        <Label htmlFor="prod_xProd" className="form-label">Nome do Produto *</Label>
+                        <Input id="prod_xProd" type="text" className="form-input" value={product.prod_xProd} onChange={handleInputChange} required />
+                    </div>
+
+                    {/* Row 3: NCM, CFOP, CEST (Opcional) */}
+                    <div className="form-group lg:col-span-4">
+                        <Label htmlFor="prod_NCM" className="form-label">NCM</Label>
+                        <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group lg:col-span-4">
+                        <Label htmlFor="prod_CFOP" className="form-label">CFOP</Label>
+                        <Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} />
+                        {/* TODO: Adicionar funcionalidade de 'buscar na tabela "cfop" mostrar as duas colunas' */}
+                    </div>
+                    <div className="form-group lg:col-span-4">
+                        <Label htmlFor="prod_CEST_Opc" className="form-label">CEST (Opcional)</Label>
+                        <Input id="prod_CEST_Opc" type="text" className="form-input" value={product.prod_CEST_Opc} onChange={handleInputChange} />
+                    </div>
+
+                    {/* Row 4: Rastreável, Alerta, Nível Máximo, Ativo */}
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_rastro" className="form-label">Rastreável</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_rastro', value)} value={product.prod_rastro}>
                             <SelectTrigger id="prod_rastro" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group"><Label htmlFor="prod_alert" className="form-label">Alerta</Label>
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_alert" className="form-label">Alerta</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_alert', value)} value={product.prod_alert}>
                             <SelectTrigger id="prod_alert" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group"><Label htmlFor="prod_nivelm" className="form-label">Nível Máximo</Label><Input id="prod_nivelm" type="number" className="form-input" value={product.prod_nivelm} onChange={handleInputChange} /></div>
-                </div>
-
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Dados Tributáveis</h3>
-                <div className="form-grid pt-6">
-                    <div className="form-group"><Label htmlFor="prod_cEANTrib" className="form-label">GTIN/EAN Tributável</Label><Input id="prod_cEANTrib" type="text" className="form-input" value={product.prod_cEANTrib} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_uTrib" className="form-label">Unidade Tributável</Label><Input id="prod_uTrib" type="text" className="form-input" value={product.prod_uTrib} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_qTrib" className="form-label">Quantidade Tributável</Label><Input id="prod_qTrib" type="number" step="0.0001" className="form-input" value={product.prod_qTrib} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_vUnTrib" className="form-label">Valor Unitário Tributável</Label><Input id="prod_vUnTrib" type="number" step="0.0001" className="form-input" value={product.prod_vUnTrib} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_nFCI_Opc" className="form-label">NFC-e (Opcional)</Label><Input id="prod_nFCI_Opc" type="text" className="form-input" value={product.prod_nFCI_Opc} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_NVE_Opc" className="form-label">NVE (Opcional)</Label><Input id="prod_NVE_Opc" type="text" className="form-input" value={product.prod_NVE_Opc} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_EXTIPI" className="form-label">EX TIPI</Label><Input id="prod_EXTIPI" type="text" className="form-input" value={product.prod_EXTIPI} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_CNPJFab" className="form-label">CNPJ Fabricante</Label><Input id="prod_CNPJFab" type="text" className="form-input" value={product.prod_CNPJFab} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_cBenef" className="form-label">Código Benefício Fiscal</Label><Input id="prod_cBenef" type="text" className="form-input" value={product.prod_cBenef} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="prod_sujST" className="form-label">Sujeito a ST</Label>
-                        <Select onValueChange={(value) => handleSelectChange('prod_sujST', value)} value={product.prod_sujST}>
-                            <SelectTrigger id="prod_sujST" className="form-select"><SelectValue /></SelectTrigger>
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_nivelm" className="form-label">Nível Máximo</Label>
+                        <Input id="prod_nivelm" type="number" className="form-input" value={product.prod_nivelm} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="prod_ativo" className="form-label">Ativo</Label>
+                        <Select onValueChange={(value) => handleSelectChange('prod_ativo', value)} value={product.prod_ativo}>
+                            <SelectTrigger id="prod_ativo" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
+                    </div>
+
+                    {/* Row 5: Descrição do Produto (prod_descricao_detalhada) */}
+                    <div className="form-group lg:col-span-12">
+                        <Label htmlFor="prod_descricao_detalhada" className="form-label">Descrição do Produto</Label>
+                        <Textarea id="prod_descricao_detalhada" className="form-textarea" value={product.prod_descricao_detalhada} onChange={handleInputChange} rows={3} />
                     </div>
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">ICMS</h3>
-                <div className="form-grid pt-6">
-                    <div className="form-group"><Label htmlFor="icms_orig" className="form-label">Origem da Mercadoria</Label>
+                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="form-group">
+                        <Label htmlFor="icms_orig" className="form-label">Origem da Mercadoria</Label>
                         <Select onValueChange={(value) => handleSelectChange('icms_orig', parseInt(value))} value={(product.icms_orig ?? 0).toString()}>
                             <SelectTrigger id="icms_orig" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{icmsOrigOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group"><Label htmlFor="icms_CST" className="form-label">CST ICMS</Label><Input id="icms_CST" type="text" className="form-input" value={product.icms_CST} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="icms_modBC" className="form-label">Modalidade BC ICMS</Label>
+                    <div className="form-group">
+                        <Label htmlFor="icms_CST" className="form-label">CST ICMS</Label>
+                        <Input id="icms_CST" type="text" className="form-input" value={product.icms_CST} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="icms_modBC" className="form-label">Modalidade BC ICMS</Label>
                         <Select onValueChange={(value) => handleSelectChange('icms_modBC', parseInt(value))} value={(product.icms_modBC ?? 0).toString()}>
                             <SelectTrigger id="icms_modBC" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{icmsModbcOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group"><Label htmlFor="icms_pRedBC" className="form-label">% Redução BC ICMS</Label><Input id="icms_pRedBC" type="number" step="0.01" className="form-input" value={product.icms_pRedBC} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="icms_pICMS" className="form-label">% Alíquota ICMS</Label><Input id="icms_pICMS" type="number" step="0.01" className="form-input" value={product.icms_pICMS} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="icms_pMVAST" className="form-label">% MVA ST</Label><Input id="icms_pMVAST" type="number" step="0.01" className="form-input" value={product.icms_pMVAST} onChange={handleInputChange} /></div>
+                    <div className="form-group">
+                        <Label htmlFor="icms_pRedBC" className="form-label">% Redução BC ICMS</Label>
+                        <Input id="icms_pRedBC" type="number" step="0.01" className="form-input" value={product.icms_pRedBC} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="icms_pICMS" className="form-label">% Alíquota ICMS</Label>
+                        <Input id="icms_pICMS" type="number" step="0.01" className="form-input" value={product.icms_pICMS} onChange={handleInputChange} />
+                    </div>
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">PIS</h3>
-                <div className="form-grid pt-6">
-                    <div className="form-group"><Label htmlFor="pis_CST" className="form-label">CST PIS</Label><Input id="pis_CST" type="text" className="form-input" value={product.pis_CST} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="pis_pPIS" className="form-label">% Alíquota PIS</Label><Input id="pis_pPIS" type="number" step="0.01" className="form-input" value={product.pis_pPIS} onChange={handleInputChange} /></div>
+                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group">
+                        <Label htmlFor="pis_CST" className="form-label">CST PIS</Label>
+                        <Input id="pis_CST" type="text" className="form-input" value={product.pis_CST} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="pis_pPIS" className="form-label">% Alíquota PIS</Label>
+                        <Input id="pis_pPIS" type="number" step="0.01" className="form-input" value={product.pis_pPIS} onChange={handleInputChange} />
+                    </div>
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">COFINS</h3>
-                <div className="form-grid pt-6">
-                    <div className="form-group"><Label htmlFor="cofins_CST" className="form-label">CST COFINS</Label><Input id="cofins_CST" type="text" className="form-input" value={product.cofins_CST} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="cofins_pCOFINS" className="form-label">% Alíquota COFINS</Label><Input id="cofins_pCOFINS" type="number" step="0.01" className="form-input" value={product.cofins_pCOFINS} onChange={handleInputChange} /></div>
+                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group">
+                        <Label htmlFor="cofins_CST" className="form-label">CST COFINS</Label>
+                        <Input id="cofins_CST" type="text" className="form-input" value={product.cofins_CST} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="cofins_pCOFINS" className="form-label">% Alíquota COFINS</Label>
+                        <Input id="cofins_pCOFINS" type="number" step="0.01" className="form-input" value={product.cofins_pCOFINS} onChange={handleInputChange} />
+                    </div>
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">IPI</h3>
-                <div className="form-grid pt-6">
-                    <div className="form-group"><Label htmlFor="IPI_CST" className="form-label">CST IPI</Label><Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="IPI_pIPI" className="form-label">% Alíquota IPI</Label><Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="IPI_clEnq" className="form-label">Classe Enquadramento IPI</Label><Input id="IPI_clEnq" type="text" className="form-input" value={product.IPI_clEnq} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="IPI_CNPJProd" className="form-label">CNPJ Produtor IPI</Label><Input id="IPI_CNPJProd" type="text" className="form-input" value={product.IPI_CNPJProd} onChange={handleInputChange} /></div>
-                    <div className="form-group"><Label htmlFor="IPI_cEnq" className="form-label">Código Enquadramento IPI</Label><Input id="IPI_cEnq" type="text" className="form-input" value={product.IPI_cEnq} onChange={handleInputChange} /></div>
+                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group">
+                        <Label htmlFor="IPI_CST" className="form-label">CST IPI</Label>
+                        <Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="IPI_pIPI" className="form-label">% Alíquota IPI</Label>
+                        <Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} />
+                    </div>
                 </div>
                 
                 <div className="flex justify-end mt-8">
