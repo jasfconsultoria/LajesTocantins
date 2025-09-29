@@ -44,8 +44,8 @@ const PeopleList = () => {
 
             while (hasMore) {
                 const { data, error } = await supabase
-                    .from('pessoas')
-                    .select('*, municipios(municipio)') // Seleciona todos os campos de 'pessoas' e o nome do município de 'municipios'
+                    .from('pessoas_com_municipio') // Consulta a nova VIEW
+                    .select('*') // Seleciona todos os campos da VIEW
                     .order('created_at', { ascending: false }) // Keep initial order for fetching
                     .range(offset, offset + limit - 1); // Busca um 'range' de registros
 
@@ -93,13 +93,13 @@ const PeopleList = () => {
             const normalizedRazaoSocial = normalizeString(p.razao_social);
             const normalizedNomeFantasia = normalizeString(p.nome_fantasia);
             const cpfCnpj = p.cpf_cnpj ? p.cpf_cnpj.replace(/[^\d]/g, '') : '';
-            const municipioName = p.municipios?.municipio ? normalizeString(p.municipios.municipio) : ''; // Incluir nome do município na busca
+            const municipioNome = p.municipio_nome ? normalizeString(p.municipio_nome) : ''; // Usar municipio_nome da VIEW
 
             return (
                 normalizedRazaoSocial.includes(normalizedSearchTerm) ||
                 normalizedNomeFantasia.includes(normalizedSearchTerm) ||
                 cpfCnpj.includes(numericSearchTerm) ||
-                municipioName.includes(normalizedSearchTerm) || // Adicionar busca por nome do município
+                municipioNome.includes(normalizedSearchTerm) || // Adicionar busca por nome do município
                 p.uf?.toLowerCase().includes(normalizedSearchTerm) // Adicionar busca por UF
             );
         });
@@ -125,6 +125,7 @@ const PeopleList = () => {
             return;
         }
         try {
+            // Ao deletar, ainda precisamos deletar da tabela 'pessoas' original, não da VIEW
             const { error } = await supabase
                 .from('pessoas')
                 .delete()
@@ -212,7 +213,7 @@ const PeopleList = () => {
                                     </TableCell>
                                     <TableCell>{p.razao_social || p.nome_fantasia}</TableCell>
                                     <TableCell>{p.cpf_cnpj}</TableCell>
-                                    <TableCell>{p.municipios?.municipio || p.municipio}/{p.uf}</TableCell> {/* Exibe o nome do município */}
+                                    <TableCell>{p.municipio_nome || p.municipio_codigo}/{p.uf}</TableCell> {/* Exibe o nome do município da VIEW */}
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/people/${p.id}/edit`)}>
