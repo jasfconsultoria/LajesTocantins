@@ -145,8 +145,8 @@ const PeopleList = () => {
                     bValue = b.cpf_cnpj ? b.cpf_cnpj.replace(/[^\d]/g, '') : '';
                     break;
                 case 'cidade_uf':
-                    aValue = normalizeString(`${a.municipio_nome || p.municipio_codigo}/${a.uf}`);
-                    bValue = normalizeString(`${b.municipio_nome || p.municipio_codigo}/${b.uf}`);
+                    aValue = normalizeString(`${a.municipio_nome || a.municipio_codigo}/${a.uf}`);
+                    bValue = normalizeString(`${b.municipio_nome || b.municipio_codigo}/${b.uf}`);
                     break;
                 default:
                     aValue = normalizeString(a[sortColumn] || '');
@@ -280,7 +280,7 @@ const PeopleList = () => {
                                         {getPessoaTipoIcon(p.pessoa_tipo)}
                                         {getPessoaTipoText(p.pessoa_tipo)}
                                     </TableCell>
-                                    <TableCell>{p.razao_social || p.nome_fantasia}</TableCell>
+                                    <TableCell>{p.nome_completo_busca}</TableCell> {/* Exibe a nova coluna concatenada */}
                                     <TableCell>{p.cpf_cnpj}</TableCell>
                                     <TableCell>{p.municipio_nome || p.municipio_codigo}/{p.uf}</TableCell> {/* Exibe o nome do município da VIEW */}
                                     <TableCell className="text-right">
