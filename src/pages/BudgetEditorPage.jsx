@@ -404,8 +404,8 @@ const BudgetEditorPage = () => {
                     </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div>
+                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8"> {/* Alterado para lg:grid-cols-3 */}
+                    <div className="lg:col-span-2"> {/* Ocupa 2/3 da largura */}
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
@@ -441,11 +441,10 @@ const BudgetEditorPage = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            {/* Condição de Pagamento e Validade Proposta (dias) removidos daqui */}
                         </div>
                     </div>
 
-                    <div className="space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="lg:col-span-1 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200"> {/* Ocupa 1/3 da largura */}
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalProdutos)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}</span></div> {/* Placeholder para serviços */}
