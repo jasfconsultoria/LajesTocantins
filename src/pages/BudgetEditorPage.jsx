@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -70,6 +70,7 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
+    const [unitsMap, setUnitsMap] = useState(new Map()); // Novo estado para o mapa de unidades
 
     const fetchBudget = useCallback(async () => {
         if (!id) {
@@ -140,10 +141,26 @@ const BudgetEditorPage = () => {
         }
     }, [toast]);
 
+    const fetchUnits = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('unidade')
+                .select('codigo, unidade')
+                .order('unidade', { ascending: true });
+            if (error) throw error;
+            const map = new Map(data.map(unit => [unit.codigo, unit.unidade]));
+            setUnitsMap(map);
+        } catch (error) {
+            console.error("Error fetching units:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as unidades comerciais.' });
+        }
+    }, [toast]);
+
     useEffect(() => {
         fetchBudget();
         fetchPeople();
-    }, [fetchBudget, fetchPeople]);
+        fetchUnits(); // Chamar a busca de unidades
+    }, [fetchBudget, fetchPeople, fetchUnits]);
 
     const handleInputChange = (e) => {
         const { id, value, type, checked } = e.target;
@@ -361,7 +378,7 @@ const BudgetEditorPage = () => {
                                 <TableHead>Composição</TableHead>
                                 <TableHead>Unidade</TableHead>
                                 <TableHead>Qtde</TableHead>
-                                <TableHead>Observação</TableHead>
+                                {/* <TableHead>Observação</TableHead> REMOVIDO */}
                                 <TableHead className="text-right">Unitário R$</TableHead>
                                 <TableHead className="text-right">Total R$</TableHead>
                                 <TableHead className="text-right">Desc. R$</TableHead>
@@ -372,7 +389,7 @@ const BudgetEditorPage = () => {
                         <TableBody>
                             {compositions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={9} className="text-center text-slate-500 py-4">
+                                    <TableCell colSpan={8} className="text-center text-slate-500 py-4"> {/* colSpan ajustado */}
                                         Nenhum item de composição adicionado.
                                     </TableCell>
                                 </TableRow>
@@ -380,17 +397,22 @@ const BudgetEditorPage = () => {
                                 compositions.map(comp => (
                                     <TableRow key={comp.id}>
                                         <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
-                                        <TableCell>{comp.produtos?.prod_uCOM || 'un.'}</TableCell>
+                                        <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell> {/* Usando unitsMap */}
                                         <TableCell>{comp.quantidade}</TableCell>
-                                        <TableCell>{comp.observacao || '-'}</TableCell>
+                                        {/* <TableCell>{comp.observacao || '-'}</TableCell> REMOVIDO */}
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}</TableCell>
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.quantidade * comp.valor_venda)}</TableCell>
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.desconto || 0)}</TableCell>
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((comp.quantidade * comp.valor_venda) - (comp.desconto || 0))}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de excluir itens de composição será adicionada em breve!" })}>
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" })}>
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de excluir itens de composição será adicionada em breve!" })}>
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
