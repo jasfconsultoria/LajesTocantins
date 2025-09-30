@@ -109,7 +109,10 @@ const ProductEditorPage = () => {
     };
 
     const handleSelectChange = (id, value) => {
-        setProduct(prev => ({ ...prev, [id]: value }));
+        setProduct(prev => ({
+            ...prev,
+            [id]: id === 'prod_uCOM' ? parseInt(value, 10) : value // Converte para inteiro para prod_uCOM
+        }));
     };
 
     const handleSave = async () => {
@@ -201,7 +204,7 @@ const ProductEditorPage = () => {
                 <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                     {/* Row 1: Código do Produto, GTIN/EAN, Unidade Comercial, Valor Unitário Comercial */}
                     <div className="form-group lg:col-span-3">
-                        <Label htmlFor="prod_cProd" className="form-label">Código Interno</Label> {/* Alterado para 'Código Interno' */}
+                        <Label htmlFor="prod_cProd" className="form-label">Código Interno</Label>
                         <Input id="prod_cProd" type="text" className="form-input" value={product.prod_cProd} onChange={handleInputChange} placeholder="Ex: PROD001" />
                     </div>
                     <div className="form-group lg:col-span-3">
@@ -211,7 +214,7 @@ const ProductEditorPage = () => {
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial *</Label>
                         <UnitSearchSelect
-                            value={product.prod_uCOM}
+                            value={product.prod_uCOM?.toString()} // Garante que o valor seja uma string para o componente
                             onValueChange={(value) => handleSelectChange('prod_uCOM', value)}
                             units={units}
                             disabled={saving}

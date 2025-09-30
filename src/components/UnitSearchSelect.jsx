@@ -32,8 +32,9 @@ const UnitSearchSelect = ({
 
   // Update display value when `value` or `units` change
   useEffect(() => {
-    if (value && units.length > 0) {
-      const selected = units.find(u => u.codigo === value);
+    if (value !== undefined && value !== null && units.length > 0) {
+      // Converte o valor para número para comparação, já que u.codigo é int4
+      const selected = units.find(u => u.codigo === parseInt(value, 10));
       if (selected) {
         setDisplayValue(selected.unidade); // Alterado para mostrar apenas a unidade
       } else {
@@ -50,14 +51,14 @@ const UnitSearchSelect = ({
       return units;
     }
     return units.filter(u => {
-      const normalizedCodigo = normalizeString(u.codigo);
+      const normalizedCodigo = normalizeString(u.codigo.toString()); // Converte para string para normalizar
       const normalizedUnidade = normalizeString(u.unidade);
       return normalizedCodigo.includes(normalizedSearchTerm) || normalizedUnidade.includes(normalizedSearchTerm);
     });
   }, [units, searchTerm]);
 
   const handleSelect = (unitCode) => {
-    onValueChange(unitCode);
+    onValueChange(unitCode.toString()); // Passa o código como string para onValueChange
     setIsOpen(false);
     setSearchTerm(''); // Clear search term on close
   };
