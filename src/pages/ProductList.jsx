@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -15,6 +17,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
+
+// Helper function for normalization (copied from PeopleList.jsx)
+const normalizeString = (str) => {
+    if (typeof str !== 'string') return '';
+    return str
+        .normalize("NFD") // Normalize diacritics
+        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+        .toLowerCase() // Convert to lowercase
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"") // Remove common punctuation
+        .replace(/\s{2,}/g," ") // Replace multiple spaces with a single space
+        .trim(); // Trim leading/trailing whitespace
+};
 
 const ProductList = () => {
     const { handleNotImplemented, activeCompanyId } = useOutletContext();
@@ -36,9 +50,10 @@ const ProductList = () => {
         }
         setLoading(true);
         try {
+            // Consulta a VIEW 'produtos_com_unidade' em vez da tabela 'produtos'
             const { data, error } = await supabase
-                .from('produtos')
-                .select('*')
+                .from('produtos_com_unidade')
+                .select('*') // Seleciona todos os campos da VIEW
                 .eq('id_emit', activeCompanyId)
                 .order('created_at', { ascending: false });
             
@@ -60,10 +75,13 @@ const ProductList = () => {
     }, [fetchProducts]);
 
     const filteredProducts = useMemo(() => {
+        const normalizedSearchTerm = normalizeString(searchTerm);
+        if (!normalizedSearchTerm) {
+            return products;
+        }
         return products.filter(p =>
-            (p.prod_xProd?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (p.prod_cProd?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-            (p.prod_cEAN?.replace(/[^\d]/g, '').includes(searchTerm.replace(/[^\d]/g, '')))
+            // Usa a nova coluna 'busca_completa' da VIEW para a pesquisa
+            normalizeString(p.busca_completa || '').includes(normalizedSearchTerm)
         );
     }, [products, searchTerm]);
 
@@ -87,6 +105,7 @@ const ProductList = () => {
             return;
         }
         try {
+            // A exclusão ainda deve ser feita na tabela 'produtos' original
             const { error } = await supabase
                 .from('produtos')
                 .delete()
@@ -156,20 +175,20 @@ const ProductList = () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Código</TableHead>
+                                <TableHead>ID</TableHead> {/* Alterado para exibir o ID */}
                                 <TableHead>Descrição</TableHead>
                                 <TableHead>NCM</TableHead>
-                                <TableHead>Un. Com.</TableHead>
+                                <TableHead>Un. Com.</TableHead> {/* Exibirá a descrição da unidade */}
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paginatedProducts.map((p) => (
                                 <TableRow key={p.id}>
-                                    <TableCell className="font-medium">{p.prod_cProd}</TableCell>
+                                    <TableCell className="font-medium">{p.id}</TableCell> {/* Exibe o ID */}
                                     <TableCell>{p.prod_xProd}</TableCell>
                                     <TableCell>{p.prod_NCM}</TableCell>
-                                    <TableCell>{p.prod_uCOM}</TableCell>
+                                    <TableCell>{p.prod_uCOM_descricao}</TableCell> {/* Exibe a descrição da unidade */}
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/products/${p.id}/edit`)}>
@@ -190,7 +209,7 @@ const ProductList = () => {
             <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
                 <div>
                     Exibindo {paginatedProducts.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} de {filteredProducts.length} de {filteredProducts.length} registros
+                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} de {filteredProducts.length} registros
                 </div>
                 <div className="flex items-center gap-2">
                     <span>Página {currentPage} de {totalPages}</span>
