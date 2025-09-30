@@ -424,7 +424,19 @@ const BudgetEditorPage = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="form-group"><Label htmlFor="forma_pagamento" className="form-label">Forma de Pagamento *</Label><Input id="forma_pagamento" type="text" className="form-input" value={budget.forma_pagamento || ''} onChange={handleInputChange} /></div>
+                            <div className="form-group">
+                                <Label htmlFor="forma_pagamento" className="form-label">Forma de Pagamento *</Label>
+                                <Select onValueChange={(value) => handleSelectChange('forma_pagamento', value)} value={budget.forma_pagamento}>
+                                    <SelectTrigger id="forma_pagamento" className="form-select">
+                                        <SelectValue placeholder="Selecione a forma" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="0">0 - A Vista</SelectItem>
+                                        <SelectItem value="1">1 - A Prazo</SelectItem>
+                                        <SelectItem value="2">2 - Outros</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <div className="form-group"><Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label><Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} /></div>
                             <div className="form-group"><Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label><Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} /></div>
                         </div>
