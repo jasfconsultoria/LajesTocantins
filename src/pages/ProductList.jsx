@@ -184,10 +184,10 @@ const ProductList = () => {
 
     const paginatedProducts = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return sortedAndFilteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [sortedAndFilteredProducts, currentPage]);
+        return sortedAndFilteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE); // Corrigido
+    }, [sortedAndFilteredProducts, currentPage]); // Corrigido
 
-    const totalPages = Math.ceil(sortedAndFilteredProducts.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(sortedAndFilteredProducts.length / ITEMS_PER_PAGE); // Corrigido
 
     const handleNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
@@ -321,7 +321,7 @@ const ProductList = () => {
             <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
                 <div>
                     Exibindo {paginatedProducts.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-                    {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} de {filteredProducts.length} registros
+                    {Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredProducts.length)} de {sortedAndFilteredProducts.length} registros
                 </div>
                 <div className="flex items-center gap-2">
                     <span>Página {currentPage} de {totalPages}</span>
