@@ -36,11 +36,19 @@ const ProductList = () => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
     const ITEMS_PER_PAGE = 10;
+
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('pt-BR', { 
+            style: 'decimal', // Usar 'decimal' para não incluir o símbolo da moeda
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value);
+    };
 
     const fetchProducts = useCallback(async () => {
         if (!activeCompanyId) {
@@ -217,7 +225,8 @@ const ProductList = () => {
                                 <TableHead>Código</TableHead>
                                 <TableHead>Descrição</TableHead>
                                 <TableHead>NCM</TableHead>
-                                <TableHead>Unidade Comercial</TableHead> {/* Exibirá a descrição da unidade */}
+                                <TableHead>Unidade Comercial</TableHead>
+                                <TableHead className="text-right">Valor Unitário Comercial</TableHead> {/* Nova coluna */}
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -228,7 +237,8 @@ const ProductList = () => {
                                     <TableCell>{p.prod_cProd}</TableCell>
                                     <TableCell>{p.prod_xProd}</TableCell>
                                     <TableCell>{p.prod_NCM}</TableCell>
-                                    <TableCell>{p.prod_uCOM_descricao || 'N/A'}</TableCell> {/* Agora exibe a descrição ou 'N/A' */}
+                                    <TableCell>{p.prod_uCOM_descricao || 'N/A'}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(p.prod_vUnCOM)}</TableCell> {/* Valor formatado */}
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/products/${p.id}/edit`)}>
