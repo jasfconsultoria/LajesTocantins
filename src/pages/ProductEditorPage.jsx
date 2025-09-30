@@ -209,11 +209,11 @@ const ProductEditorPage = () => {
                     </div>
 
                     {/* Combined Row for NCM, CFOP, CEST, Rastreável, Alerta, Nível Máximo, Ativo */}
-                    <div className="form-group lg:col-span-3">
+                    <div className="form-group lg:col-span-4"> {/* NCM agora ocupa 4 colunas */}
                         <Label htmlFor="prod_NCM" className="form-label">NCM</Label>
                         <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-3">
+                    <div className="form-group lg:col-span-2"> {/* CFOP agora ocupa 2 colunas */}
                         <Label htmlFor="prod_CFOP" className="form-label">CFOP</Label>
                         <Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} />
                         {/* TODO: Adicionar funcionalidade de 'buscar na tabela "cfop" mostrar as duas colunas' */}
