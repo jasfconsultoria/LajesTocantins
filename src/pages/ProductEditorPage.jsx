@@ -201,8 +201,8 @@ const ProductEditorPage = () => {
                 <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                     {/* Row 1: Código do Produto, GTIN/EAN, Unidade Comercial, Valor Unitário Comercial */}
                     <div className="form-group lg:col-span-3">
-                        <Label htmlFor="prod_cProd" className="form-label">Código do Produto *</Label>
-                        <Input id="prod_cProd" type="text" className="form-input" value={product.prod_cProd} onChange={handleInputChange} placeholder="Ex: PROD001" required />
+                        <Label htmlFor="prod_cProd" className="form-label">Código Interno</Label> {/* Alterado para 'Código Interno' */}
+                        <Input id="prod_cProd" type="text" className="form-input" value={product.prod_cProd} onChange={handleInputChange} placeholder="Ex: PROD001" />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_cEAN" className="form-label">GTIN/EAN</Label>

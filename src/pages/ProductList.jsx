@@ -46,11 +46,12 @@ const ProductList = () => {
         if (!activeCompanyId) {
             setProducts([]);
             setLoading(false);
+            console.log("ProductList: No active company ID, skipping product fetch.");
             return;
         }
         setLoading(true);
         try {
-            // Consulta a VIEW 'produtos_com_unidade' em vez da tabela 'produtos'
+            console.log(`ProductList: Fetching products for activeCompanyId: ${activeCompanyId}`);
             const { data, error } = await supabase
                 .from('produtos_com_unidade')
                 .select('*') // Seleciona todos os campos da VIEW
@@ -58,6 +59,7 @@ const ProductList = () => {
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
+            console.log(`ProductList: Fetched ${data ? data.length : 0} products.`);
             setProducts(data);
         } catch (error) {
             toast({
@@ -65,6 +67,7 @@ const ProductList = () => {
                 title: "Erro ao carregar produtos",
                 description: error.message,
             });
+            console.error("ProductList: Error fetching products:", error.message);
         } finally {
             setLoading(false);
         }
@@ -175,7 +178,8 @@ const ProductList = () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Código</TableHead> {/* Alterado para exibir o Código do Produto */}
+                                <TableHead>ID</TableHead> {/* Alterado para exibir o ID */}
+                                <TableHead>Código</TableHead> {/* Nova coluna para prod_cProd */}
                                 <TableHead>Descrição</TableHead>
                                 <TableHead>NCM</TableHead>
                                 <TableHead>Un. Com.</TableHead> {/* Exibirá a descrição da unidade */}
@@ -185,7 +189,8 @@ const ProductList = () => {
                         <TableBody>
                             {paginatedProducts.map((p) => (
                                 <TableRow key={p.id}>
-                                    <TableCell className="font-medium">{p.prod_cProd}</TableCell> {/* Exibe o prod_cProd */}
+                                    <TableCell className="font-medium">{p.id}</TableCell> {/* Exibe o ID */}
+                                    <TableCell>{p.prod_cProd}</TableCell> {/* Exibe o prod_cProd */}
                                     <TableCell>{p.prod_xProd}</TableCell>
                                     <TableCell>{p.prod_NCM}</TableCell>
                                     <TableCell>{p.prod_uCOM_descricao}</TableCell> {/* Exibe a descrição da unidade */}
