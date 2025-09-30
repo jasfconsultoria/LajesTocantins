@@ -413,9 +413,13 @@ const BudgetEditorPage = () => {
                         </div>
 
                         <h3 className="config-title mt-8 mb-4">Condições</h3>
-                        <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group"><Label htmlFor="previsao_entrega" className="form-label">Previsão de Entrega</Label><Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} /></div>
-                            <div className="form-group"><Label htmlFor="status_orcamento" className="form-label">Status</Label>
+                        <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                            <div className="form-group lg:col-span-4">
+                                <Label htmlFor="previsao_entrega" className="form-label">Previsão de Entrega</Label>
+                                <Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} />
+                            </div>
+                            <div className="form-group lg:col-span-4">
+                                <Label htmlFor="status_orcamento" className="form-label">Status</Label>
                                 <Select onValueChange={(value) => handleSelectChange('faturado', value === 'true')} value={budget.faturado.toString()}>
                                     <SelectTrigger id="status_orcamento" className="form-select"><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -424,21 +428,27 @@ const BudgetEditorPage = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="form-group">
+                            <div className="form-group lg:col-span-4">
                                 <Label htmlFor="forma_pagamento" className="form-label">Forma de Pagamento *</Label>
                                 <Select onValueChange={(value) => handleSelectChange('forma_pagamento', value)} value={budget.forma_pagamento}>
                                     <SelectTrigger id="forma_pagamento" className="form-select">
                                         <SelectValue placeholder="Selecione a forma" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="0">0 - A Vista</SelectItem>
-                                        <SelectItem value="1">1 - A Prazo</SelectItem>
-                                        <SelectItem value="2">2 - Outros</SelectItem>
+                                        <SelectItem value="0">A Vista</SelectItem>
+                                        <SelectItem value="1">A Prazo</SelectItem>
+                                        <SelectItem value="2">Outros</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="form-group"><Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label><Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} /></div>
-                            <div className="form-group"><Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label><Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} /></div>
+                            <div className="form-group lg:col-span-8">
+                                <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
+                                <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} />
+                            </div>
+                            <div className="form-group lg:col-span-4">
+                                <Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label>
+                                <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} />
+                            </div>
                         </div>
                     </div>
 
@@ -461,10 +471,6 @@ const BudgetEditorPage = () => {
                 </div>
                 
                 <div className="flex justify-end space-x-2 mt-8">
-                    <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
-                    <Button variant="outline" onClick={() => handleSelectChange('faturado', true)}>Faturar</Button>
-                    <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Alterar será adicionada em breve!" })}>Alterar</Button>
-                    <Button variant="outline" onClick={() => navigate('/app/budgets')}>Cancelar</Button>
                     <Select defaultValue="1_via">
                         <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
                         <SelectContent>
@@ -472,6 +478,7 @@ const BudgetEditorPage = () => {
                             <SelectItem value="2_via">2ª Via</SelectItem>
                         </SelectContent>
                     </Select>
+                    <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
                     <Button onClick={handleSave} className="save-button" disabled={saving}>
                         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                         Salvar Orçamento
