@@ -72,21 +72,27 @@ const ProductList = () => {
             // Create a map for quick lookup of unit descriptions
             const unitMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
 
-            // 3. Combine products with their unit descriptions
-            const combinedProducts = productsData.map(p => ({
-                ...p,
-                prod_uCOM_descricao: unitMap.get(p.prod_uCOM) || 'N/A', // Add description, default to 'N/A'
-                // Re-create busca_completa for client-side filtering if needed, or just filter on prod_xProd etc.
-                // For now, let's simplify filtering to just prod_xProd, prod_cProd, prod_cEAN
-                // The current normalizeString function in filteredProducts already handles this if prod_uCOM_descricao is present.
-                busca_completa: LOWER(
-                    COALESCE(p.prod_cProd, '') || ' ' ||
-                    COALESCE(p.prod_xProd, '') || ' ' ||
-                    COALESCE(p.prod_cEAN, '') || ' ' ||
-                    COALESCE(p.prod_NCM, '') || ' ' ||
-                    COALESCE(unitMap.get(p.prod_uCOM), '')
-                )
-            }));
+            // 3. Combine products with their unit descriptions and create client-side busca_completa
+            const combinedProducts = productsData.map(p => {
+                const unitDescription = unitMap.get(p.prod_uCOM) || ''; // Get unit description, default to empty string
+                
+                // Create a string for client-side search, filtering out null/undefined values
+                const searchStringParts = [
+                    p.prod_cProd,
+                    p.prod_xProd,
+                    p.prod_cEAN,
+                    p.prod_NCM,
+                    unitDescription
+                ].filter(Boolean); // Filter out falsy values (null, undefined, empty string)
+
+                const buscaCompleta = normalizeString(searchStringParts.join(' '));
+
+                return {
+                    ...p,
+                    prod_uCOM_descricao: unitDescription || 'N/A', // Still display 'N/A' if unitDescription is empty
+                    busca_completa: buscaCompleta
+                };
+            });
 
             console.log(`ProductList: Fetched ${combinedProducts.length} products. Combined data:`, combinedProducts);
             setProducts(combinedProducts);
@@ -113,7 +119,7 @@ const ProductList = () => {
             return products;
         }
         return products.filter(p =>
-            // Usa a nova coluna 'busca_completa' da VIEW para a pesquisa
+            // Usa a nova coluna 'busca_completa' gerada no cliente para a pesquisa
             normalizeString(p.busca_completa || '').includes(normalizedSearchTerm)
         );
     }, [products, searchTerm]);
