@@ -441,14 +441,7 @@ const BudgetEditorPage = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="form-group lg:col-span-8">
-                                <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
-                                <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} />
-                            </div>
-                            <div className="form-group lg:col-span-4">
-                                <Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label>
-                                <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} />
-                            </div>
+                            {/* Condição de Pagamento e Validade Proposta (dias) removidos daqui */}
                         </div>
                     </div>
 
@@ -462,20 +455,30 @@ const BudgetEditorPage = () => {
                     </div>
                 </div>
                 
-                {/* Nova posição para os botões de ação */}
-                <div className="flex justify-end space-x-2 mt-6"> {/* Adicionado mt-6 para espaçamento */}
-                    <Select defaultValue="1_via">
-                        <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="1_via">1ª Via</SelectItem>
-                            <SelectItem value="2_via">2ª Via</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
-                    <Button onClick={handleSave} className="save-button" disabled={saving}>
-                        {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                        Salvar Orçamento
-                    </Button>
+                {/* Nova linha para Condição de Pagamento, Validade e Botões de Ação */}
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                    <div className="form-group lg:col-span-5"> {/* Condição de Pagamento */}
+                        <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
+                        <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group lg:col-span-2"> {/* Validade Proposta (dias) */}
+                        <Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label>
+                        <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} />
+                    </div>
+                    <div className="lg:col-span-5 flex justify-end space-x-2"> {/* Botões e Select */}
+                        <Select defaultValue="1_via">
+                            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="1_via">1ª Via</SelectItem>
+                                <SelectItem value="2_via">2ª Via</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
+                        <Button onClick={handleSave} className="save-button" disabled={saving}>
+                            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                            Salvar Orçamento
+                        </Button>
+                    </div>
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Observação</h3>
