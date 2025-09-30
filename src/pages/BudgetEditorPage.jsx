@@ -36,7 +36,7 @@ const initialBudgetState = {
     faturado: false,
     vendedor: '',
     desconto: 0.0,
-    // tipo: 'Orçamento', // Default to Orçamento - REMOVIDO, agora é derivado
+    tipo: 'Orçamento', // Default to Orçamento
     condicao_pagamento: '',
     endereco_entrega_completo: '',
     obra: '',
@@ -288,7 +288,7 @@ const BudgetEditorPage = () => {
                         <Label htmlFor="data_orcamento" className="form-label">Data do Orçamento *</Label>
                         <Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required />
                     </div>
-                    <div className="form-group lg:col-span-5">
+                    <div className="form-group lg:col-span-8">
                         <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
                         <div className="flex items-center space-x-2">
                             <Input
@@ -304,17 +304,17 @@ const BudgetEditorPage = () => {
                             </Button>
                         </div>
                     </div>
-                    <div className="form-group lg:col-span-3">
+
+                    {/* Row 2: Solicitante, Fone Solicitante, Natureza da Operação, Vendedor, NF-e Nº */}
+                    <div className="form-group lg:col-span-4">
                         <Label htmlFor="solicitante" className="form-label">Solicitante</Label>
                         <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} />
                     </div>
-
-                    {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="telefone" className="form-label">Fone Solicitante</Label>
                         <Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-4">
+                    <div className="form-group lg:col-span-3">
                         <Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label>
                         <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} />
                     </div>
@@ -322,17 +322,13 @@ const BudgetEditorPage = () => {
                         <Label htmlFor="vendedor" className="form-label">Vendedor</Label>
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-3">
-                        <Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label>
-                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} />
-                    </div>
-
+                    
                     {/* Row 3: Endereço Cliente, Cidade, UF */}
-                    <div className="form-group lg:col-span-6">
+                    <div className="form-group lg:col-span-7">
                         <Label htmlFor="endereco_entrega" className="form-label">Endereço Cliente</Label>
                         <Input id="endereco_entrega" type="text" className="form-input" value={budget.endereco_entrega || ''} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-4">
+                    <div className="form-group lg:col-span-3">
                         <Label htmlFor="municipio" className="form-label">Cidade</Label>
                         <Input id="municipio" type="text" className="form-input" value={budget.municipio || ''} onChange={handleInputChange} />
                     </div>
@@ -346,6 +342,14 @@ const BudgetEditorPage = () => {
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
                         <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
                     </div>
+
+                    {/* Row 5: NF-e Nº (moved here and resized) */}
+                    <div className="form-group lg:col-span-2"> {/* Adjusted to lg:col-span-2 */}
+                        <Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label>
+                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} />
+                    </div>
+                    {/* Empty space to fill the rest of the row if needed, or other fields */}
+                    <div className="lg:col-span-10"></div>
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200 flex items-center gap-2">
