@@ -441,33 +441,18 @@ const BudgetEditorPage = () => {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="form-group lg:col-span-4"> {/* Ajustado para 4 */}
+                            <div className="form-group lg:col-span-8">
                                 <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
                                 <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} />
                             </div>
-                            <div className="form-group lg:col-span-2"> {/* Ajustado para 2 */}
+                            <div className="form-group lg:col-span-4">
                                 <Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label>
                                 <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} />
-                            </div>
-                            {/* Botões de ação movidos para esta linha */}
-                            <div className="flex justify-end space-x-2 lg:col-span-6"> {/* Ocupa as 6 colunas restantes */}
-                                <Select defaultValue="1_via">
-                                    <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1_via">1ª Via</SelectItem>
-                                        <SelectItem value="2_via">2ª Via</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
-                                <Button onClick={handleSave} className="save-button" disabled={saving}>
-                                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                                    Salvar Orçamento
-                                </Button>
                             </div>
                         </div>
                     </div>
 
-                    <div className="space-y-1 p-3 bg-slate-50 rounded-lg border border-slate-200"> {/* Alterado space-y-2 para space-y-1 e p-4 para p-3 */}
+                    <div className="space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalProdutos)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}</span></div> {/* Placeholder para serviços */}
@@ -477,8 +462,8 @@ const BudgetEditorPage = () => {
                     </div>
                 </div>
                 
-                {/* O div dos botões foi movido para dentro do form-grid das Condições */}
-                {/* <div className="flex justify-end space-x-2 mt-8">
+                {/* Nova posição para os botões de ação */}
+                <div className="flex justify-end space-x-2 mt-6"> {/* Adicionado mt-6 para espaçamento */}
                     <Select defaultValue="1_via">
                         <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
                         <SelectContent>
@@ -491,7 +476,7 @@ const BudgetEditorPage = () => {
                         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                         Salvar Orçamento
                     </Button>
-                </div> */}
+                </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Observação</h3>
                 <div className="pt-6">
