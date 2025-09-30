@@ -7,7 +7,7 @@ import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, Plus
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } => '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
@@ -67,7 +67,7 @@ const BudgetEditorPage = () => {
     const [budget, setBudget] = useState(initialBudgetState);
     const [compositions, setCompositions] = useState([]);
     const [people, setPeople] = useState([]);
-    const [loading, setLoading] = true);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
 
@@ -452,7 +452,7 @@ const BudgetEditorPage = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200"> {/* Alterado space-y-4 para space-y-2 */}
+                    <div className="space-y-2 p-4 bg-slate-500/5 rounded-lg border border-slate-200"> {/* Alterado space-y-4 para space-y-2 e bg-slate-50 para bg-slate-500/5 */}
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalProdutos)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}</span></div> {/* Placeholder para serviços */}
