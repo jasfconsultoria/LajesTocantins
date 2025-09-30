@@ -36,7 +36,7 @@ const ProductList = () => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = true);
+    const [loading, setLoading] = useState(true); // Corrigido: Adicionado useState
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
