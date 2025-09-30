@@ -398,7 +398,7 @@ const BudgetEditorPage = () => {
                                     <TableRow key={comp.id}>
                                         <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
                                         <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell> {/* Usando unitsMap */}
-                                        <TableCell>{comp.quantidade}</TableCell>
+                                        <TableCell className="text-right">{comp.quantidade}</TableCell>
                                         {/* <TableCell>{comp.observacao || '-'}</TableCell> REMOVIDO */}
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}</TableCell>
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.quantidade * comp.valor_venda)}</TableCell>
@@ -468,10 +468,10 @@ const BudgetEditorPage = () => {
 
                     <div className="lg:col-span-1 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200"> {/* Ocupa 1/3 da largura */}
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
-                        <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalProdutos)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}</span></div> {/* Placeholder para serviços */}
-                        <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPedido)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((budget.desconto || 0) + totalDescontoItens)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProdutos)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(0)}</span></div> {/* Placeholder para serviços */}
+                        <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalPedido)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((budget.desconto || 0) + totalDescontoItens)}</span></div>
                         <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalLiquidoPedido)}</span></div>
                     </div>
                 </div>
