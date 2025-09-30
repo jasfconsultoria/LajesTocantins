@@ -42,19 +42,37 @@ function MainLayout() {
     { to: '/app/budgets', label: 'Orçamentos', icon: ClipboardList, type: 'link' },
     
     // New Financeiro section
-    { label: 'Financeiro', icon: DollarSign, type: 'category' },
-    { to: '/app/financeiro/creditos', label: 'Créditos', icon: ArrowUpCircle, type: 'link' },
-    { to: '/app/financeiro/debitos', label: 'Débitos', icon: ArrowDownCircle, type: 'link' },
+    { 
+      label: 'Financeiro', 
+      icon: DollarSign, 
+      type: 'category',
+      subItems: [
+        { to: '/app/financeiro/creditos', label: 'Créditos', icon: ArrowUpCircle, type: 'link' },
+        { to: '/app/financeiro/debitos', label: 'Débitos', icon: ArrowDownCircle, type: 'link' },
+      ]
+    },
 
     // New Estoque section
-    { label: 'Estoque', icon: Warehouse, type: 'category' },
-    { to: '/app/estoque/entradas', label: 'Entradas', icon: ArrowRightToLine, type: 'link' },
-    { to: '/app/estoque/saidas', label: 'Saídas', icon: ArrowLeftToLine, type: 'link' },
+    { 
+      label: 'Estoque', 
+      icon: Warehouse, 
+      type: 'category',
+      subItems: [
+        { to: '/app/estoque/entradas', label: 'Entradas', icon: ArrowRightToLine, type: 'link' },
+        { to: '/app/estoque/saidas', label: 'Saídas', icon: ArrowLeftToLine, type: 'link' },
+      ]
+    },
 
     // New Notas section
-    { label: 'Notas', icon: Receipt, type: 'category' },
-    { to: '/app/notas/nfe', label: 'NF-e', icon: FileText, type: 'link' },
-    { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt, type: 'link' },
+    { 
+      label: 'Notas', 
+      icon: Receipt, 
+      type: 'category',
+      subItems: [
+        { to: '/app/notas/nfe', label: 'NF-e', icon: FileText, type: 'link' },
+        { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt, type: 'link' },
+      ]
+    },
 
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3, type: 'link' },
     { to: '/app/logs', label: 'Logs', icon: Database, type: 'link' },
@@ -67,8 +85,16 @@ function MainLayout() {
     { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck, type: 'link' },
   ];
 
+  // Function to insert admin items into the nested structure
+  const insertAdminItems = (items, adminItems) => {
+    const newItems = [...items];
+    const insertIndex = newItems.findIndex(item => item.label === 'Orçamentos') + 1; // Insert after 'Orçamentos'
+    newItems.splice(insertIndex, 0, ...adminItems);
+    return newItems;
+  };
+
   const sidebarItems = role === 'admin' 
-    ? [...baseSidebarItems.slice(0, 5), ...adminOnlyItems, ...baseSidebarItems.slice(5)] // Adjust slice index
+    ? insertAdminItems(baseSidebarItems, adminOnlyItems)
     : baseSidebarItems;
   
   const handleSignOut = async () => {
