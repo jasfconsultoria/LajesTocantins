@@ -182,7 +182,7 @@ const ProductList = () => {
                                 <TableHead>Código</TableHead>
                                 <TableHead>Descrição</TableHead>
                                 <TableHead>NCM</TableHead>
-                                <TableHead>Unidade Comercial</TableHead> {/* Renomeado para 'Unidade Comercial' */}
+                                <TableHead>Unidade Comercial</TableHead> {/* Exibirá a descrição da unidade */}
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -193,7 +193,7 @@ const ProductList = () => {
                                     <TableCell>{p.prod_cProd}</TableCell>
                                     <TableCell>{p.prod_xProd}</TableCell>
                                     <TableCell>{p.prod_NCM}</TableCell>
-                                    <TableCell>{p.prod_uCOM}</TableCell> {/* Exibe o código numérico */}
+                                    <TableCell>{p.prod_uCOM_descricao || 'N/A'}</TableCell> {/* Agora exibe a descrição ou 'N/A' */}
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/products/${p.id}/edit`)}>
