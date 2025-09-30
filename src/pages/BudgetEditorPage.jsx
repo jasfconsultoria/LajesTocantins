@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -36,7 +36,7 @@ const initialBudgetState = {
     faturado: false,
     vendedor: '',
     desconto: 0.0,
-    tipo: 'Orçamento', // Default to Orçamento
+    // tipo: 'Orçamento', // Default to Orçamento - REMOVIDO, agora é derivado
     condicao_pagamento: '',
     endereco_entrega_completo: '',
     obra: '',
@@ -181,6 +181,7 @@ const BudgetEditorPage = () => {
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null, // Salvar novo campo
                 updated_at: new Date().toISOString(),
+                // O campo 'tipo' não é mais salvo diretamente, é derivado
             };
 
             let error;
@@ -225,6 +226,15 @@ const BudgetEditorPage = () => {
         }
     };
 
+    // Derivar o tipo e os títulos/rótulos dinamicamente
+    const displayTipo = useMemo(() => {
+        return budget.faturado ? 'Pedido' : 'Orçamento';
+    }, [budget.faturado]);
+
+    const pageTitle = id ? `Editar ${displayTipo}` : `Novo ${displayTipo}`;
+    const configTitle = `Dados do ${displayTipo}`;
+    const numeroLabel = `Número do ${displayTipo}`;
+
     // Placeholder para cálculos de totais
     const totalProdutos = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
     const totalDescontoItens = compositions.reduce((sum, item) => sum + (item.desconto || 0), 0);
@@ -253,7 +263,7 @@ const BudgetEditorPage = () => {
                     <ArrowLeft className="w-4 h-4" />
                 </Button>
                 <div>
-                    <h1 className="text-3xl font-bold gradient-text">{id ? 'Editar Orçamento' : 'Novo Orçamento'}</h1>
+                    <h1 className="text-3xl font-bold gradient-text">{pageTitle}</h1>
                     <p className="text-slate-600 mt-1">Gerencie os detalhes do orçamento ou pedido.</p>
                 </div>
             </div>
@@ -263,7 +273,7 @@ const BudgetEditorPage = () => {
                     <div className="flex items-center gap-3">
                         <ClipboardList className="w-6 h-6 text-blue-600" />
                         <div>
-                            <h3 className="config-title">Dados do Orçamento</h3>
+                            <h3 className="config-title">{configTitle}</h3>
                             <p className="config-description">Informações gerais e financeiras do orçamento.</p>
                         </div>
                     </div>
@@ -271,14 +281,14 @@ const BudgetEditorPage = () => {
                 <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                     {/* Row 1: Número do Pedido, Data do Orçamento, Cliente */}
                     <div className="form-group lg:col-span-2">
-                        <Label htmlFor="numero_pedido" className="form-label">Número do Pedido</Label>
+                        <Label htmlFor="numero_pedido" className="form-label">{numeroLabel}</Label>
                         <Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} onChange={handleInputChange} />
                     </div>
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="data_orcamento" className="form-label">Data do Orçamento *</Label>
                         <Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required />
                     </div>
-                    <div className="form-group lg:col-span-8">
+                    <div className="form-group lg:col-span-5">
                         <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
                         <div className="flex items-center space-x-2">
                             <Input
@@ -294,29 +304,35 @@ const BudgetEditorPage = () => {
                             </Button>
                         </div>
                     </div>
-
-                    {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
-                    <div className="form-group lg:col-span-4">
+                    <div className="form-group lg:col-span-3">
                         <Label htmlFor="solicitante" className="form-label">Solicitante</Label>
                         <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-4">
+
+                    {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
+                    <div className="form-group lg:col-span-3">
                         <Label htmlFor="telefone" className="form-label">Fone Solicitante</Label>
                         <Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group lg:col-span-4">
+                        <Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label>
+                        <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} />
                     </div>
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="vendedor" className="form-label">Vendedor</Label>
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
-                    {/* Empty space for alignment, or could be used for another small field */}
-                    <div className="lg:col-span-2"></div> 
+                    <div className="form-group lg:col-span-3">
+                        <Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label>
+                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} />
+                    </div>
 
                     {/* Row 3: Endereço Cliente, Cidade, UF */}
-                    <div className="form-group lg:col-span-7">
+                    <div className="form-group lg:col-span-6">
                         <Label htmlFor="endereco_entrega" className="form-label">Endereço Cliente</Label>
                         <Input id="endereco_entrega" type="text" className="form-input" value={budget.endereco_entrega || ''} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-3">
+                    <div className="form-group lg:col-span-4">
                         <Label htmlFor="municipio" className="form-label">Cidade</Label>
                         <Input id="municipio" type="text" className="form-input" value={budget.municipio || ''} onChange={handleInputChange} />
                     </div>
@@ -329,28 +345,6 @@ const BudgetEditorPage = () => {
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
                         <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
-                    </div>
-                    
-                    {/* Row 5: Natureza da Operação, NF-e Nº */}
-                    <div className="form-group lg:col-span-9">
-                        <Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label>
-                        <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group lg:col-span-3">
-                        <Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label>
-                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} />
-                    </div>
-
-                    {/* Remaining fields, not explicitly in the image, keep them for now */}
-                    <div className="form-group lg:col-span-3">
-                        <Label htmlFor="tipo" className="form-label">Tipo</Label>
-                        <Select onValueChange={(value) => handleSelectChange('tipo', value)} value={budget.tipo}>
-                            <SelectTrigger id="tipo" className="form-select"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="Orçamento">Orçamento</SelectItem>
-                                <SelectItem value="Pedido">Pedido</SelectItem>
-                            </SelectContent>
-                        </Select>
                     </div>
                 </div>
 
