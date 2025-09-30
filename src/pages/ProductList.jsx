@@ -59,7 +59,7 @@ const ProductList = () => {
                 .order('created_at', { ascending: false });
             
             if (error) throw error;
-            console.log(`ProductList: Fetched ${data ? data.length : 0} products.`);
+            console.log(`ProductList: Fetched ${data ? data.length : 0} products. Raw data:`, data); // Log mais detalhado
             setProducts(data);
         } catch (error) {
             toast({
@@ -182,6 +182,7 @@ const ProductList = () => {
                                 <TableHead>Código</TableHead>
                                 <TableHead>Descrição</TableHead>
                                 <TableHead>NCM</TableHead>
+                                <TableHead>Cód. Un.</TableHead> {/* Nova coluna para o código numérico da unidade */}
                                 <TableHead>Un. Com.</TableHead> {/* Exibirá a descrição da unidade */}
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
@@ -193,6 +194,7 @@ const ProductList = () => {
                                     <TableCell>{p.prod_cProd}</TableCell>
                                     <TableCell>{p.prod_xProd}</TableCell>
                                     <TableCell>{p.prod_NCM}</TableCell>
+                                    <TableCell>{p.prod_uCOM}</TableCell> {/* Exibe o código numérico */}
                                     <TableCell>{p.prod_uCOM_descricao || 'N/A'}</TableCell> {/* Exibe a descrição da unidade ou 'N/A' */}
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
