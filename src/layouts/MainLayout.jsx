@@ -3,7 +3,10 @@ import { Helmet } from 'react-helmet';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { 
   Bell, Home, Building, Package, Users, ClipboardList, BarChart3, Database, 
-  HelpCircle, History, UserCheck, Menu, X 
+  HelpCircle, History, UserCheck, Menu, X, 
+  DollarSign, ArrowUpCircle, ArrowDownCircle, // Financeiro icons
+  Warehouse, ArrowRightToLine, ArrowLeftToLine, // Estoque icons
+  Receipt, FileText, ReceiptText // Notas icons
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,24 +35,40 @@ function MainLayout() {
   };
 
   const baseSidebarItems = [
-    { to: '/app', label: 'Dashboard', icon: Home },
-    { to: '/app/companies', label: 'Empresas', icon: Building },
-    { to: '/app/products', label: 'Produtos', icon: Package },
-    { to: '/app/people', label: 'Pessoas', icon: Users },
-    { to: '/app/budgets', label: 'Orçamentos', icon: ClipboardList },
-    { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
-    { to: '/app/logs', label: 'Logs', icon: Database },
-    { to: '/app/help', label: 'Ajuda', icon: HelpCircle },
-    { to: '/app/versions', label: 'Versões', icon: History }
+    { to: '/app', label: 'Dashboard', icon: Home, type: 'link' },
+    { to: '/app/companies', label: 'Empresas', icon: Building, type: 'link' },
+    { to: '/app/products', label: 'Produtos', icon: Package, type: 'link' },
+    { to: '/app/people', label: 'Pessoas', icon: Users, type: 'link' },
+    { to: '/app/budgets', label: 'Orçamentos', icon: ClipboardList, type: 'link' },
+    
+    // New Financeiro section
+    { label: 'Financeiro', icon: DollarSign, type: 'category' },
+    { to: '/app/financeiro/creditos', label: 'Créditos', icon: ArrowUpCircle, type: 'link' },
+    { to: '/app/financeiro/debitos', label: 'Débitos', icon: ArrowDownCircle, type: 'link' },
+
+    // New Estoque section
+    { label: 'Estoque', icon: Warehouse, type: 'category' },
+    { to: '/app/estoque/entradas', label: 'Entradas', icon: ArrowRightToLine, type: 'link' },
+    { to: '/app/estoque/saidas', label: 'Saídas', icon: ArrowLeftToLine, type: 'link' },
+
+    // New Notas section
+    { label: 'Notas', icon: Receipt, type: 'category' },
+    { to: '/app/notas/nfe', label: 'NF-e', icon: FileText, type: 'link' },
+    { to: '/app/notas/nfce', label: 'NFC-e', icon: ReceiptText, type: 'link' },
+
+    { to: '/app/reports', label: 'Relatórios', icon: BarChart3, type: 'link' },
+    { to: '/app/logs', label: 'Logs', icon: Database, type: 'link' },
+    { to: '/app/help', label: 'Ajuda', icon: HelpCircle, type: 'link' },
+    { to: '/app/versions', label: 'Versões', icon: History, type: 'link' }
   ];
 
   const adminOnlyItems = [
-    { to: '/app/users', label: 'Usuários', icon: Users },
-    { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck },
+    { to: '/app/users', label: 'Usuários', icon: Users, type: 'link' },
+    { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck, type: 'link' },
   ];
 
   const sidebarItems = role === 'admin' 
-    ? [...baseSidebarItems.slice(0, 2), ...adminOnlyItems, ...baseSidebarItems.slice(2)]
+    ? [...baseSidebarItems.slice(0, 5), ...adminOnlyItems, ...baseSidebarItems.slice(5)] // Adjust slice index
     : baseSidebarItems;
   
   const handleSignOut = async () => {
@@ -75,7 +94,7 @@ function MainLayout() {
       {/* Sidebar container animado - fixed e animando 'left' */}
       <motion.aside
         initial={{ left: -expandedSidebarWidth }} // Começa fora da tela
-        animate={{ left: sidebarOpen ? 0 : -expandedSidebarWidth }} // Anima para dentro/fora
+        animate={{ left: sidebarOpen ? 0 : -expandedSidebarWidth }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className={`fixed top-0 h-screen w-64 glass-effect border-r border-white/20 z-30`} // Fixed width
       >

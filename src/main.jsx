@@ -23,8 +23,9 @@ import PeopleList from '@/pages/PeopleList';
 import PersonEditorPage from '@/pages/PersonEditorPage'; 
 import ProductList from '@/pages/ProductList';
 import ProductEditorPage from '@/pages/ProductEditorPage';
-import BudgetList from '@/pages/BudgetList'; // Import BudgetList
-import BudgetEditorPage from '@/pages/BudgetEditorPage'; // Import BudgetEditorPage
+import BudgetList from '@/pages/BudgetList';
+import BudgetEditorPage from '@/pages/BudgetEditorPage';
+import NotImplementedPage from '@/pages/NotImplementedPage'; // New import
 
 const ProtectedRoute = () => {
   const { session, loading } = useAuth();
@@ -67,9 +68,22 @@ const router = createBrowserRouter([
           { path: "people", element: <PeopleList /> }, 
           { path: "people/new", element: <PersonEditorPage /> }, 
           { path: "people/:id/edit", element: <PersonEditorPage /> }, 
-          { path: "budgets", element: <BudgetList /> }, // New Budget List route
-          { path: "budgets/new", element: <BudgetEditorPage /> }, // New Budget Create route
-          { path: "budgets/:id/edit", element: <BudgetEditorPage /> }, // New Budget Edit route
+          { path: "budgets", element: <BudgetList /> },
+          { path: "budgets/new", element: <BudgetEditorPage /> },
+          { path: "budgets/:id/edit", element: <BudgetEditorPage /> },
+          
+          // New Financeiro Routes
+          { path: "financeiro/creditos", element: <NotImplementedPage title="Créditos" /> },
+          { path: "financeiro/debitos", element: <NotImplementedPage title="Débitos" /> },
+
+          // New Estoque Routes
+          { path: "estoque/entradas", element: <NotImplementedPage title="Entradas de Estoque" /> },
+          { path: "estoque/saidas", element: <NotImplementedPage title="Saídas de Estoque" /> },
+
+          // New Notas Routes
+          { path: "notas/nfe", element: <NotImplementedPage title="NF-e" /> },
+          { path: "notas/nfce", element: <NotImplementedPage title="NFC-e" /> },
+
           { path: "users", element: <UserManagement /> },
           { path: "sefaz", element: <SefazSettings /> },
           { path: "techResp", element: <TechRespSettings /> },

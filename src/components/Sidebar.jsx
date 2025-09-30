@@ -14,17 +14,24 @@ const Sidebar = ({ sidebarItems, handleSignOut, appVersion, closeSidebar, user, 
 
       {/* Navigation Items */}
       <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        {sidebarItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/app'}
-            onClick={closeSidebar}
-            className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
-          >
-            <item.icon className="w-5 h-5 mr-3" />
-            {item.label}
-          </NavLink>
+        {sidebarItems.map((item, index) => (
+          item.type === 'category' ? (
+            <div key={index} className="flex items-center text-slate-400 text-xs font-semibold uppercase mt-4 mb-2 px-3 py-1 rounded-md bg-white/10">
+              {item.icon && <item.icon className="w-4 h-4 mr-2" />}
+              {item.label}
+            </div>
+          ) : (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/app'}
+              onClick={closeSidebar}
+              className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
+            >
+              <item.icon className="w-5 h-5 mr-3" />
+              {item.label}
+            </NavLink>
+          )
         ))}
       </div>
       
