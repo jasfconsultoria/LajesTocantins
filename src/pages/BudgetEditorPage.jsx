@@ -67,7 +67,7 @@ const BudgetEditorPage = () => {
     const [budget, setBudget] = useState(initialBudgetState);
     const [compositions, setCompositions] = useState([]);
     const [people, setPeople] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = true);
     const [saving, setSaving] = useState(false);
     const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
 
@@ -452,7 +452,7 @@ const BudgetEditorPage = () => {
                         </div>
                     </div>
 
-                    <div className="space-y-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200"> {/* Alterado space-y-4 para space-y-2 */}
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalProdutos)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(0)}</span></div> {/* Placeholder para serviços */}
@@ -461,16 +461,9 @@ const BudgetEditorPage = () => {
                         <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalLiquidoPedido)}</span></div>
                     </div>
                 </div>
-
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Observação</h3>
-                <div className="pt-6">
-                    <div className="form-group col-span-full">
-                        <Label htmlFor="observacao" className="form-label">Observação</Label>
-                        <Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} />
-                    </div>
-                </div>
                 
-                <div className="flex justify-end space-x-2 mt-8">
+                {/* Nova posição para os botões de ação */}
+                <div className="flex justify-end space-x-2 mt-6"> {/* Adicionado mt-6 para espaçamento */}
                     <Select defaultValue="1_via">
                         <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
                         <SelectContent>
@@ -483,6 +476,14 @@ const BudgetEditorPage = () => {
                         {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                         Salvar Orçamento
                     </Button>
+                </div>
+
+                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Observação</h3>
+                <div className="pt-6">
+                    <div className="form-group col-span-full">
+                        <Label htmlFor="observacao" className="form-label">Observação</Label>
+                        <Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} />
+                    </div>
                 </div>
             </div>
 
