@@ -282,14 +282,18 @@ const ProductEditorPage = () => {
                     <div className="form-group lg:col-span-8">
                         <Label htmlFor="icms_orig" className="form-label">Origem da Mercadoria</Label>
                         <Select onValueChange={(value) => handleSelectChange('icms_orig', parseInt(value))} value={(product.icms_orig ?? 0).toString()}>
-                            <SelectTrigger id="icms_orig" className="form-select"><SelectValue /></SelectTrigger>
+                            <SelectTrigger id="icms_orig" className="form-select">
+                                <SelectValue placeholder="Selecione a origem" className="text-left flex-1" />
+                            </SelectTrigger>
                             <SelectContent>{icmsOrigOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="icms_modBC" className="form-label">Modalidade BC ICMS</Label>
                         <Select onValueChange={(value) => handleSelectChange('icms_modBC', parseInt(value))} value={(product.icms_modBC ?? 0).toString()}>
-                            <SelectTrigger id="icms_modBC" className="form-select"><SelectValue /></SelectTrigger>
+                            <SelectTrigger id="icms_modBC" className="form-select">
+                                <SelectValue placeholder="Selecione a modalidade" className="text-left flex-1" />
+                            </SelectTrigger>
                             <SelectContent>{icmsModbcOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
