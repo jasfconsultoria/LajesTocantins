@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Save, Loader2, ArrowLeft, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input }
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -309,39 +309,51 @@ const ProductEditorPage = () => {
                     </div>
                 </div>
 
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">PIS</h3>
-                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="form-group">
-                        <Label htmlFor="pis_CST" className="form-label">CST PIS</Label>
-                        <Input id="pis_CST" type="text" className="form-input" value={product.pis_CST} onChange={handleInputChange} />
+                {/* Nova estrutura para PIS, COFINS, IPI em uma única linha */}
+                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    {/* Container PIS */}
+                    <div className="config-card p-4">
+                        <h3 className="config-title mb-4">PIS</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <Label htmlFor="pis_CST" className="form-label">CST PIS</Label>
+                                <Input id="pis_CST" type="text" className="form-input" value={product.pis_CST} onChange={handleInputChange} />
+                            </div>
+                            <div className="form-group">
+                                <Label htmlFor="pis_pPIS" className="form-label">% Alíquota PIS</Label>
+                                <Input id="pis_pPIS" type="number" step="0.01" className="form-input" value={product.pis_pPIS} onChange={handleInputChange} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="form-group">
-                        <Label htmlFor="pis_pPIS" className="form-label">% Alíquota PIS</Label>
-                        <Input id="pis_pPIS" type="number" step="0.01" className="form-input" value={product.pis_pPIS} onChange={handleInputChange} />
-                    </div>
-                </div>
 
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">COFINS</h3>
-                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="form-group">
-                        <Label htmlFor="cofins_CST" className="form-label">CST COFINS</Label>
-                        <Input id="cofins_CST" type="text" className="form-input" value={product.cofins_CST} onChange={handleInputChange} />
+                    {/* Container COFINS */}
+                    <div className="config-card p-4">
+                        <h3 className="config-title mb-4">COFINS</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <Label htmlFor="cofins_CST" className="form-label">CST COFINS</Label>
+                                <Input id="cofins_CST" type="text" className="form-input" value={product.cofins_CST} onChange={handleInputChange} />
+                            </div>
+                            <div className="form-group">
+                                <Label htmlFor="cofins_pCOFINS" className="form-label">% Alíquota COFINS</Label>
+                                <Input id="cofins_pCOFINS" type="number" step="0.01" className="form-input" value={product.cofins_pCOFINS} onChange={handleInputChange} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="form-group">
-                        <Label htmlFor="cofins_pCOFINS" className="form-label">% Alíquota COFINS</Label>
-                        <Input id="cofins_pCOFINS" type="number" step="0.01" className="form-input" value={product.cofins_pCOFINS} onChange={handleInputChange} />
-                    </div>
-                </div>
 
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">IPI</h3>
-                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="form-group">
-                        <Label htmlFor="IPI_CST" className="form-label">CST IPI</Label>
-                        <Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group">
-                        <Label htmlFor="IPI_pIPI" className="form-label">% Alíquota IPI</Label>
-                        <Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} />
+                    {/* Container IPI */}
+                    <div className="config-card p-4">
+                        <h3 className="config-title mb-4">IPI</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="form-group">
+                                <Label htmlFor="IPI_CST" className="form-label">CST IPI</Label>
+                                <Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} />
+                            </div>
+                            <div className="form-group">
+                                <Label htmlFor="IPI_pIPI" className="form-label">% Alíquota IPI</Label>
+                                <Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} />
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
