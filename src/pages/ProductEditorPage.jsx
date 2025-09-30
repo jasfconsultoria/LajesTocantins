@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { logAction } from '@/lib/log';
+import UnitSearchSelect from '@/components/UnitSearchSelect'; // Importar o novo componente
 
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
@@ -58,6 +59,7 @@ const ProductEditorPage = () => {
     const [product, setProduct] = useState(initialProductState);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [units, setUnits] = useState([]); // Novo estado para as unidades
 
     const fetchProduct = useCallback(async () => {
         if (!id) {
@@ -80,9 +82,24 @@ const ProductEditorPage = () => {
         }
     }, [id, toast]);
 
+    const fetchUnits = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from('unidade_codigo') // Assumindo o nome da tabela de unidades
+                .select('codigo, unidade')
+                .order('unidade', { ascending: true });
+            if (error) throw error;
+            setUnits(data);
+        } catch (error) {
+            console.error("Error fetching units:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as unidades comerciais.' });
+        }
+    }, [toast]);
+
     useEffect(() => {
         fetchProduct();
-    }, [fetchProduct]);
+        fetchUnits(); // Chamar a busca de unidades
+    }, [fetchProduct, fetchUnits]);
 
     const handleInputChange = (e) => {
         const { id, value, type } = e.target;
@@ -194,8 +211,12 @@ const ProductEditorPage = () => {
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial</Label>
-                        <Input id="prod_uCOM" type="text" className="form-input" value={product.prod_uCOM} onChange={handleInputChange} />
-                        {/* TODO: Adicionar funcionalidade de 'buscar na tabela Unidade Código mostrar Unidade' */}
+                        <UnitSearchSelect
+                            value={product.prod_uCOM}
+                            onValueChange={(value) => handleSelectChange('prod_uCOM', value)}
+                            units={units}
+                            disabled={saving}
+                        />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_vUnCOM" className="form-label">Valor Unitário Comercial</Label>
