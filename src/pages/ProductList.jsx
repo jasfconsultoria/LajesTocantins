@@ -5,7 +5,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Package, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react'; // Importar ArrowUp e ArrowDown
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -36,13 +36,16 @@ const ProductList = () => {
     const { toast } = useToast();
     const navigate = useNavigate();
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true); // Corrigido: Adicionado useState
+    const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [sortColumn, setSortColumn] = useState('id'); // Estado para a coluna de ordenação
+    const [sortDirection, setSortDirection] = useState('asc'); // Estado para a direção da ordenação ('asc' ou 'desc')
 
     const ITEMS_PER_PAGE = 10;
 
     const formatCurrency = (value) => {
+        if (value === null || value === undefined) return '';
         return new Intl.NumberFormat('pt-BR', { 
             style: 'decimal', // Usar 'decimal' para não incluir o símbolo da moeda
             minimumFractionDigits: 2,
@@ -121,23 +124,70 @@ const ProductList = () => {
         fetchProducts();
     }, [fetchProducts]);
 
-    const filteredProducts = useMemo(() => {
-        const normalizedSearchTerm = normalizeString(searchTerm);
-        if (!normalizedSearchTerm) {
-            return products;
+    const handleSort = (column) => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc'); // Default to asc when changing column
         }
-        return products.filter(p =>
-            // Usa a nova coluna 'busca_completa' gerada no cliente para a pesquisa
-            normalizeString(p.busca_completa || '').includes(normalizedSearchTerm)
-        );
-    }, [products, searchTerm]);
+        setCurrentPage(1); // Reset to first page on sort change
+    };
+
+    const renderSortIcon = (column) => {
+        if (sortColumn === column) {
+            return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+        }
+        return null;
+    };
+
+    const sortedAndFilteredProducts = useMemo(() => {
+        const normalizedSearchTerm = normalizeString(searchTerm);
+
+        let currentFiltered = products;
+
+        // Apply filtering
+        if (normalizedSearchTerm) {
+            currentFiltered = products.filter(p => {
+                // Use the client-side generated busca_completa for search
+                return normalizeString(p.busca_completa || '').includes(normalizedSearchTerm);
+            });
+        }
+
+        // Apply sorting
+        return [...currentFiltered].sort((a, b) => {
+            let aValue, bValue;
+
+            switch (sortColumn) {
+                case 'id':
+                case 'prod_cProd':
+                case 'prod_NCM':
+                case 'prod_vUnCOM':
+                    aValue = a[sortColumn];
+                    bValue = b[sortColumn];
+                    break;
+                case 'prod_xProd':
+                case 'prod_uCOM_descricao':
+                    aValue = normalizeString(a[sortColumn] || '');
+                    bValue = normalizeString(b[sortColumn] || '');
+                    break;
+                default:
+                    aValue = normalizeString(a[sortColumn] || '');
+                    bValue = normalizeString(b[sortColumn] || '');
+            }
+
+            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [products, searchTerm, sortColumn, sortDirection]);
 
     const paginatedProducts = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredProducts, currentPage]);
+        return sortedAndFilteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [sortedAndFilteredProducts, currentPage]);
 
-    const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(sortedAndFilteredProducts.length / ITEMS_PER_PAGE);
 
     const handleNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
@@ -221,12 +271,24 @@ const ProductList = () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>ID</TableHead>
-                                <TableHead>Código</TableHead>
-                                <TableHead>Descrição</TableHead>
-                                <TableHead>NCM</TableHead>
-                                <TableHead>Unidade Comercial</TableHead>
-                                <TableHead className="text-right">Valor Unitário Comercial</TableHead> {/* Nova coluna */}
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('id')}>
+                                    <div className="flex items-center">ID {renderSortIcon('id')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_cProd')}>
+                                    <div className="flex items-center">Código {renderSortIcon('prod_cProd')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_xProd')}>
+                                    <div className="flex items-center">Descrição {renderSortIcon('prod_xProd')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_NCM')}>
+                                    <div className="flex items-center">NCM {renderSortIcon('prod_NCM')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_uCOM_descricao')}>
+                                    <div className="flex items-center">Unidade Comercial {renderSortIcon('prod_uCOM_descricao')}</div>
+                                </TableHead>
+                                <TableHead className="text-right cursor-pointer" onClick={() => handleSort('prod_vUnCOM')}>
+                                    <div className="flex items-center justify-end">Valor Unitário Comercial {renderSortIcon('prod_vUnCOM')}</div>
+                                </TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -238,7 +300,7 @@ const ProductList = () => {
                                     <TableCell>{p.prod_xProd}</TableCell>
                                     <TableCell>{p.prod_NCM}</TableCell>
                                     <TableCell>{p.prod_uCOM_descricao || 'N/A'}</TableCell>
-                                    <TableCell className="text-right">{formatCurrency(p.prod_vUnCOM)}</TableCell> {/* Valor formatado */}
+                                    <TableCell className="text-right">{formatCurrency(p.prod_vUnCOM)}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/products/${p.id}/edit`)}>

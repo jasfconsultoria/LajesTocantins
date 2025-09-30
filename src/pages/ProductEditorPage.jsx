@@ -60,6 +60,14 @@ const ProductEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [units, setUnits] = useState([]); // Novo estado para as unidades
 
+    const formatCurrency = (value) => {
+        if (value === null || value === undefined) return '';
+        return new Intl.NumberFormat('pt-BR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value);
+    };
+
     const fetchProduct = useCallback(async () => {
         if (!id) {
             setLoading(false);
@@ -102,9 +110,20 @@ const ProductEditorPage = () => {
 
     const handleInputChange = (e) => {
         const { id, value, type } = e.target;
+        let parsedValue = value;
+
+        if (id === 'prod_vUnCOM') { // Tratamento específico para o campo de valor
+            // Substitui vírgula por ponto para permitir parseFloat, e remove outros caracteres não numéricos
+            const cleanedValue = value.replace(',', '.').replace(/[^\d.]/g, '');
+            parsedValue = cleanedValue === '' ? null : parseFloat(cleanedValue);
+            if (isNaN(parsedValue)) parsedValue = null; // Garante que seja null se não for um número válido
+        } else if (type === 'number') {
+            parsedValue = parseFloat(value);
+        }
+
         setProduct(prev => ({
             ...prev,
-            [id]: type === 'number' ? parseFloat(value) : value
+            [id]: parsedValue
         }));
     };
 
@@ -224,7 +243,14 @@ const ProductEditorPage = () => {
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_vUnCOM" className="form-label">Valor Unitário Comercial</Label>
-                        <Input id="prod_vUnCOM" type="number" step="0.0001" className="form-input" value={product.prod_vUnCOM} onChange={handleInputChange} placeholder="Ex: 10.50" />
+                        <Input
+                            id="prod_vUnCOM"
+                            type="text" // Alterado para 'text' para permitir formatação personalizada
+                            className="form-input"
+                            value={product.prod_vUnCOM !== null ? formatCurrency(product.prod_vUnCOM) : ''}
+                            onChange={handleInputChange}
+                            placeholder="Ex: 10,50"
+                        />
                     </div>
 
                     {/* Row 2: Nome do Produto (prod_xProd) */}
