@@ -19,7 +19,6 @@ const initialProductState = {
     pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
     IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
     prod_rastro: 'N', prod_nivelm: 0, prod_alert: 'N',
-    // prod_descricao_detalhada: '', // Novo campo para descrição detalhada - REMOVIDO
 };
 
 const icmsModbcOptions = [
@@ -203,45 +202,47 @@ const ProductEditorPage = () => {
                     {/* Row 1: Código do Produto, GTIN/EAN, Unidade Comercial, Valor Unitário Comercial */}
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_cProd" className="form-label">Código do Produto *</Label>
-                        <Input id="prod_cProd" type="text" className="form-input" value={product.prod_cProd} onChange={handleInputChange} required />
+                        <Input id="prod_cProd" type="text" className="form-input" value={product.prod_cProd} onChange={handleInputChange} placeholder="Ex: PROD001" required />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_cEAN" className="form-label">GTIN/EAN</Label>
-                        <Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEAN} onChange={handleInputChange} />
+                        <Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEAN} onChange={handleInputChange} placeholder="Ex: 7891234567890" />
                     </div>
                     <div className="form-group lg:col-span-3">
-                        <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial</Label>
+                        <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial *</Label>
                         <UnitSearchSelect
                             value={product.prod_uCOM}
                             onValueChange={(value) => handleSelectChange('prod_uCOM', value)}
                             units={units}
                             disabled={saving}
+                            placeholder="Selecione a Unidade"
+                            required // Tornando o campo obrigatório
                         />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_vUnCOM" className="form-label">Valor Unitário Comercial</Label>
-                        <Input id="prod_vUnCOM" type="number" step="0.0001" className="form-input" value={product.prod_vUnCOM} onChange={handleInputChange} />
+                        <Input id="prod_vUnCOM" type="number" step="0.0001" className="form-input" value={product.prod_vUnCOM} onChange={handleInputChange} placeholder="Ex: 10.50" />
                     </div>
 
                     {/* Row 2: Nome do Produto (prod_xProd) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="prod_xProd" className="form-label">Nome do Produto *</Label>
-                        <Input id="prod_xProd" type="text" className="form-input" value={product.prod_xProd} onChange={handleInputChange} required />
+                        <Input id="prod_xProd" type="text" className="form-input" value={product.prod_xProd} onChange={handleInputChange} required placeholder="Ex: Laje Treliçada H8" />
                     </div>
 
                     {/* Combined Row for NCM, CFOP, CEST, Rastreável, Alerta, Nível Máximo, Ativo */}
                     <div className="form-group lg:col-span-2"> {/* NCM agora ocupa 2 colunas */}
                         <Label htmlFor="prod_NCM" className="form-label">NCM</Label>
-                        <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} />
+                        <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} placeholder="Ex: 68101100" />
                     </div>
                     <div className="form-group lg:col-span-2"> {/* CFOP agora ocupa 2 colunas */}
                         <Label htmlFor="prod_CFOP" className="form-label">CFOP</Label>
-                        <Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} />
+                        <Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} placeholder="Ex: 5102" />
                         {/* TODO: Adicionar funcionalidade de 'buscar na tabela "cfop" mostrar as duas colunas' */}
                     </div>
                     <div className="form-group lg:col-span-2"> {/* CEST (Opcional) continua com 2 colunas */}
                         <Label htmlFor="prod_CEST_Opc" className="form-label">CEST (Opcional)</Label>
-                        <Input id="prod_CEST_Opc" type="text" className="form-input" value={product.prod_CEST_Opc} onChange={handleInputChange} />
+                        <Input id="prod_CEST_Opc" type="text" className="form-input" value={product.prod_CEST_Opc} onChange={handleInputChange} placeholder="Ex: 2400100" />
                     </div>
                     <div className="form-group lg:col-span-1"> {/* Rastreável agora ocupa 1 coluna */}
                         <Label htmlFor="prod_rastro" className="form-label">Rastreável</Label>
@@ -259,7 +260,7 @@ const ProductEditorPage = () => {
                     </div>
                     <div className="form-group lg:col-span-2"> {/* Nível Máximo agora ocupa 2 colunas */}
                         <Label htmlFor="prod_nivelm" className="form-label">Nível Máximo</Label>
-                        <Input id="prod_nivelm" type="number" className="form-input" value={product.prod_nivelm} onChange={handleInputChange} />
+                        <Input id="prod_nivelm" type="number" className="form-input" value={product.prod_nivelm} onChange={handleInputChange} placeholder="Ex: 100" />
                     </div>
                     <div className="form-group lg:col-span-2"> {/* Ativo agora ocupa 2 colunas */}
                         <Label htmlFor="prod_ativo" className="form-label">Ativo</Label>
@@ -301,15 +302,15 @@ const ProductEditorPage = () => {
                     {/* Segunda linha */}
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="icms_pRedBC" className="form-label">% Redução BC ICMS</Label>
-                        <Input id="icms_pRedBC" type="number" step="0.01" className="form-input" value={product.icms_pRedBC} onChange={handleInputChange} />
+                        <Input id="icms_pRedBC" type="number" step="0.01" className="form-input" value={product.icms_pRedBC} onChange={handleInputChange} placeholder="Ex: 0.00" />
                     </div>
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="icms_pICMS" className="form-label">% Alíquota ICMS</Label>
-                        <Input id="icms_pICMS" type="number" step="0.01" className="form-input" value={product.icms_pICMS} onChange={handleInputChange} />
+                        <Input id="icms_pICMS" type="number" step="0.01" className="form-input" value={product.icms_pICMS} onChange={handleInputChange} placeholder="Ex: 17.00" />
                     </div>
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="icms_CST" className="form-label">CST ICMS</Label>
-                        <Input id="icms_CST" type="text" className="form-input" value={product.icms_CST} onChange={handleInputChange} />
+                        <Input id="icms_CST" type="text" className="form-input" value={product.icms_CST} onChange={handleInputChange} placeholder="Ex: 00" />
                     </div>
                 </div>
 
@@ -321,11 +322,11 @@ const ProductEditorPage = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="form-group">
                                 <Label htmlFor="pis_CST" className="form-label">CST PIS</Label>
-                                <Input id="pis_CST" type="text" className="form-input" value={product.pis_CST} onChange={handleInputChange} />
+                                <Input id="pis_CST" type="text" className="form-input" value={product.pis_CST} onChange={handleInputChange} placeholder="Ex: 01" />
                             </div>
                             <div className="form-group">
                                 <Label htmlFor="pis_pPIS" className="form-label">% Alíquota PIS</Label>
-                                <Input id="pis_pPIS" type="number" step="0.01" className="form-input" value={product.pis_pPIS} onChange={handleInputChange} />
+                                <Input id="pis_pPIS" type="number" step="0.01" className="form-input" value={product.pis_pPIS} onChange={handleInputChange} placeholder="Ex: 0.65" />
                             </div>
                         </div>
                     </div>
@@ -336,11 +337,11 @@ const ProductEditorPage = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="form-group">
                                 <Label htmlFor="cofins_CST" className="form-label">CST COFINS</Label>
-                                <Input id="cofins_CST" type="text" className="form-input" value={product.cofins_CST} onChange={handleInputChange} />
+                                <Input id="cofins_CST" type="text" className="form-input" value={product.cofins_CST} onChange={handleInputChange} placeholder="Ex: 01" />
                             </div>
                             <div className="form-group">
                                 <Label htmlFor="cofins_pCOFINS" className="form-label">% Alíquota COFINS</Label>
-                                <Input id="cofins_pCOFINS" type="number" step="0.01" className="form-input" value={product.cofins_pCOFINS} onChange={handleInputChange} />
+                                <Input id="cofins_pCOFINS" type="number" step="0.01" className="form-input" value={product.cofins_pCOFINS} onChange={handleInputChange} placeholder="Ex: 3.00" />
                             </div>
                         </div>
                     </div>
@@ -351,11 +352,11 @@ const ProductEditorPage = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="form-group">
                                 <Label htmlFor="IPI_CST" className="form-label">CST IPI</Label>
-                                <Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} />
+                                <Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} placeholder="Ex: 50" />
                             </div>
                             <div className="form-group">
                                 <Label htmlFor="IPI_pIPI" className="form-label">% Alíquota IPI</Label>
-                                <Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} />
+                                <Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} placeholder="Ex: 0.00" />
                             </div>
                         </div>
                     </div>
