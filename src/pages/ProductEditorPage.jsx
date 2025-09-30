@@ -19,7 +19,7 @@ const initialProductState = {
     pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
     IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
     prod_rastro: 'N', prod_nivelm: 0, prod_alert: 'N',
-    prod_descricao_detalhada: '', // Novo campo para descrição detalhada
+    // prod_descricao_detalhada: '', // Novo campo para descrição detalhada - REMOVIDO
 };
 
 const icmsModbcOptions = [
@@ -269,11 +269,11 @@ const ProductEditorPage = () => {
                         </Select>
                     </div>
 
-                    {/* Row 5: Descrição do Produto (prod_descricao_detalhada) */}
-                    <div className="form-group lg:col-span-12">
+                    {/* Row 5: Descrição do Produto (prod_descricao_detalhada) - REMOVIDO */}
+                    {/* <div className="form-group lg:col-span-12">
                         <Label htmlFor="prod_descricao_detalhada" className="form-label">Descrição do Produto</Label>
                         <Textarea id="prod_descricao_detalhada" className="form-textarea" value={product.prod_descricao_detalhada} onChange={handleInputChange} rows={3} />
-                    </div>
+                    </div> */}
                 </div>
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">ICMS</h3>
