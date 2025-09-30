@@ -35,7 +35,7 @@ const UnitSearchSelect = ({
     if (value && units.length > 0) {
       const selected = units.find(u => u.codigo === value);
       if (selected) {
-        setDisplayValue(`${selected.codigo} - ${selected.unidade}`);
+        setDisplayValue(selected.unidade); // Alterado para mostrar apenas a unidade
       } else {
         setDisplayValue('');
       }
@@ -111,7 +111,7 @@ const UnitSearchSelect = ({
                     onClick={() => handleSelect(u.codigo)}
                   >
                     <Ruler className="w-4 h-4 mr-2 text-slate-500" />
-                    {u.codigo} - {u.unidade}
+                    {u.codigo} - {u.unidade} {/* Mantido código e unidade na lista para facilitar a busca */}
                   </Button>
                 ))}
               </div>
