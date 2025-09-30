@@ -6,7 +6,7 @@ import {
   HelpCircle, History, UserCheck, Menu, X, 
   DollarSign, ArrowUpCircle, ArrowDownCircle, // Financeiro icons
   Warehouse, ArrowRightToLine, ArrowLeftToLine, // Estoque icons
-  Receipt, FileText, ReceiptText // Notas icons
+  Receipt, FileText // Notas icons
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -54,7 +54,7 @@ function MainLayout() {
     // New Notas section
     { label: 'Notas', icon: Receipt, type: 'category' },
     { to: '/app/notas/nfe', label: 'NF-e', icon: FileText, type: 'link' },
-    { to: '/app/notas/nfce', label: 'NFC-e', icon: ReceiptText, type: 'link' },
+    { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt, type: 'link' },
 
     { to: '/app/reports', label: 'Relatórios', icon: BarChart3, type: 'link' },
     { to: '/app/logs', label: 'Logs', icon: Database, type: 'link' },
