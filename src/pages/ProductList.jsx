@@ -52,15 +52,45 @@ const ProductList = () => {
         setLoading(true);
         try {
             console.log(`ProductList: Fetching products for activeCompanyId: ${activeCompanyId}`);
-            const { data, error } = await supabase
-                .from('produtos_com_unidade')
-                .select('*') // Seleciona todos os campos da VIEW
+            
+            // 1. Fetch products directly from 'produtos' table
+            const { data: productsData, error: productsError } = await supabase
+                .from('produtos')
+                .select('*')
                 .eq('id_emit', activeCompanyId)
                 .order('created_at', { ascending: false });
-            
-            if (error) throw error;
-            console.log(`ProductList: Fetched ${data ? data.length : 0} products. Raw data:`, data); // Log mais detalhado
-            setProducts(data);
+
+            if (productsError) throw productsError;
+
+            // 2. Fetch units from 'unidade' table
+            const { data: unitsData, error: unitsError } = await supabase
+                .from('unidade')
+                .select('codigo, unidade'); // Only fetch necessary columns
+
+            if (unitsError) throw unitsError;
+
+            // Create a map for quick lookup of unit descriptions
+            const unitMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
+
+            // 3. Combine products with their unit descriptions
+            const combinedProducts = productsData.map(p => ({
+                ...p,
+                prod_uCOM_descricao: unitMap.get(p.prod_uCOM) || 'N/A', // Add description, default to 'N/A'
+                // Re-create busca_completa for client-side filtering if needed, or just filter on prod_xProd etc.
+                // For now, let's simplify filtering to just prod_xProd, prod_cProd, prod_cEAN
+                // The current normalizeString function in filteredProducts already handles this if prod_uCOM_descricao is present.
+                busca_completa: LOWER(
+                    COALESCE(p.prod_cProd, '') || ' ' ||
+                    COALESCE(p.prod_xProd, '') || ' ' ||
+                    COALESCE(p.prod_cEAN, '') || ' ' ||
+                    COALESCE(p.prod_NCM, '') || ' ' ||
+                    COALESCE(unitMap.get(p.prod_uCOM), '')
+                )
+            }));
+
+            console.log(`ProductList: Fetched ${combinedProducts.length} products. Combined data:`, combinedProducts);
+            setProducts(combinedProducts);
+
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -108,7 +138,6 @@ const ProductList = () => {
             return;
         }
         try {
-            // A exclusão ainda deve ser feita na tabela 'produtos' original
             const { error } = await supabase
                 .from('produtos')
                 .delete()
