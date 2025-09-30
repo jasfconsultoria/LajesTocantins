@@ -4,15 +4,20 @@ SELECT
     p.created_at,
     p.updated_at,
     p.id_emit,
-    p."prod_cProd",
+    -- Colunas da tabela 'produtos' conforme o espólie
     p."prod_cEAN",
     p."prod_xProd",
     p."prod_NCM",
+    p."prod_NVE_Opc",
     p."prod_CEST_Opc",
+    p."prod_EXTIPI",
     p."prod_CFOP",
     p."prod_uCOM",
-    u.unidade AS unidade_nome,
+    p."prod_qCOM",
     p."prod_vUnCOM",
+    p."prod_vProd",
+    p."prod_cEANTrib",
+    -- Outras colunas que não estavam no espólie, mas estavam no initialProductState
     p."icms_pICMS",
     p."icms_pRedBC",
     p."icms_modBC",
@@ -29,9 +34,10 @@ SELECT
     p."prod_nivelm",
     p."prod_alert",
     p."prod_descricao_detalhada",
-    -- Campo concatenado para busca
+    -- Coluna da tabela 'unidade'
+    u.unidade AS unidade_nome,
+    -- Campo concatenado para busca (ajustado para remover prod_cProd)
     LOWER(UNACCENT(
-        COALESCE(p."prod_cProd", '') || ' ' ||
         COALESCE(p."prod_xProd", '') || ' ' ||
         COALESCE(p."prod_cEAN", '') || ' ' ||
         COALESCE(p."prod_NCM", '') || ' ' ||
