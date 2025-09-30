@@ -85,7 +85,7 @@ const ProductEditorPage = () => {
     const fetchUnits = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('unidade_codigo') // Assumindo o nome da tabela de unidades
+                .from('unidade') // Nome da tabela corrigido para 'unidade'
                 .select('codigo, unidade')
                 .order('unidade', { ascending: true });
             if (error) throw error;
