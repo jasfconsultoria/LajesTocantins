@@ -175,7 +175,7 @@ const ProductList = () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>ID</TableHead> {/* Alterado para exibir o ID */}
+                                <TableHead>Código</TableHead> {/* Alterado para exibir o Código do Produto */}
                                 <TableHead>Descrição</TableHead>
                                 <TableHead>NCM</TableHead>
                                 <TableHead>Un. Com.</TableHead> {/* Exibirá a descrição da unidade */}
@@ -185,7 +185,7 @@ const ProductList = () => {
                         <TableBody>
                             {paginatedProducts.map((p) => (
                                 <TableRow key={p.id}>
-                                    <TableCell className="font-medium">{p.id}</TableCell> {/* Exibe o ID */}
+                                    <TableCell className="font-medium">{p.prod_cProd}</TableCell> {/* Exibe o prod_cProd */}
                                     <TableCell>{p.prod_xProd}</TableCell>
                                     <TableCell>{p.prod_NCM}</TableCell>
                                     <TableCell>{p.prod_uCOM_descricao}</TableCell> {/* Exibe a descrição da unidade */}
