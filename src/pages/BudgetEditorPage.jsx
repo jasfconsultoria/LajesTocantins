@@ -335,7 +335,7 @@ const BudgetEditorPage = () => {
                     </div>
 
                     {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
-                    <div className="form-group lg:col-span-4}>
+                    <div className="form-group lg:col-span-4">
                         <Label htmlFor="solicitante" className="form-label">Solicitante</Label>
                         <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} />
                     </div>
