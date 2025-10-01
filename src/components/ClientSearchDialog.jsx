@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { User, Building2, Search } from 'lucide-react';
+import { User, Building2, Search, ChevronLeft, ChevronRight } from 'lucide-react'; // Importar ChevronLeft e ChevronRight
+import { ScrollArea } from '@/components/ui/scroll-area'; // Importar ScrollArea
 import { formatCpfCnpj } from '@/lib/utils'; // Importar a função de formatação
 
 // Helper function for normalization (copied from PeopleList.jsx)
@@ -27,6 +28,8 @@ const normalizeString = (str) => {
 
 const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1); // Estado para a página atual
+  const ITEMS_PER_PAGE = 10; // Itens por página
 
   const filteredPeople = useMemo(() => {
     const normalizedSearchTerm = normalizeString(searchTerm);
@@ -48,22 +51,39 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
     });
   }, [people, searchTerm]);
 
+  const paginatedPeople = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredPeople.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredPeople, currentPage]);
+
+  const totalPages = Math.ceil(filteredPeople.length / ITEMS_PER_PAGE);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
   const handleSelect = (person) => {
     onSelectClient(person); // Pass the full person object
     setIsOpen(false);
     setSearchTerm(''); // Clear search term on close
+    setCurrentPage(1); // Reset pagination
   };
 
-  // Clear search term when dialog opens/closes
+  // Clear search term and reset pagination when dialog opens/closes
   useEffect(() => {
     if (!isOpen) {
       setSearchTerm('');
+      setCurrentPage(1);
     }
   }, [isOpen]);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[600px] p-0"> {/* Largura ajustada */}
+      <DialogContent className="sm:max-w-[700px] p-0"> {/* Largura ajustada para 700px */}
         <DialogHeader className="p-6 pb-4">
           <DialogTitle>Selecionar Cliente</DialogTitle>
           <DialogDescription>
@@ -75,27 +95,30 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
           <Input
             placeholder="Buscar por nome, CPF/CNPJ, cidade ou UF..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // Reset page on search
+            }}
             className="pl-10"
           />
         </div>
-        <div className="max-h-[300px] overflow-y-auto px-6 pb-6">
-          {filteredPeople.length === 0 ? (
+        <ScrollArea className="h-[400px] px-6 pb-6"> {/* Altura ajustada para 400px */}
+          {paginatedPeople.length === 0 ? (
             <p className="text-center text-slate-500 py-4">Nenhum cliente encontrado.</p>
           ) : (
             <div className="space-y-2">
-              {filteredPeople.map(person => (
+              {paginatedPeople.map(person => (
                 <Button
                   key={person.id}
                   variant="ghost"
-                  className="w-full justify-start h-auto py-2 px-3 flex-col items-start text-left" // Adicionado flex-col para layout de duas linhas
+                  className="w-full justify-start h-auto py-2 px-3 flex-col items-start text-left"
                   onClick={() => handleSelect(person)}
                 >
                   <div className="flex items-center text-slate-800 font-medium">
                     {person.pessoa_tipo === 1 ? <User className="w-4 h-4 mr-2 text-blue-500" /> : <Building2 className="w-4 h-4 mr-2 text-purple-500" />}
                     {person.nome_fantasia && person.razao_social ? `${person.nome_fantasia} - ${person.razao_social}` : person.razao_social || person.nome_fantasia}
                   </div>
-                  <div className="text-xs text-slate-500 mt-1 pl-6"> {/* Ajustado padding para alinhamento */}
+                  <div className="text-xs text-slate-500 mt-1 pl-6">
                     {person.cpf_cnpj && `${person.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} ${formatCpfCnpj(person.cpf_cnpj, person.pessoa_tipo)}`}
                     {person.cpf_cnpj && (person.municipio_nome || person.uf) && ' - '}
                     {person.municipio_nome && `${person.municipio_nome}`}
@@ -106,6 +129,23 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
               ))}
             </div>
           )}
+        </ScrollArea>
+        <div className="flex justify-between items-center text-sm text-slate-600 px-6 py-4 border-t border-slate-200">
+            <div>
+                Exibindo {paginatedPeople.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredPeople.length)} de {filteredPeople.length} registros
+            </div>
+            <div className="flex items-center gap-2">
+                <span>Página {currentPage} de {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Anterior
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                    Próximo
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+            </div>
         </div>
       </DialogContent>
     </Dialog>
