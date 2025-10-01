@@ -35,7 +35,7 @@ const initialBudgetState = {
     natureza: '',
     faturado: false,
     vendedor: '',
-    desconto: 0.0, // Desconto global do orçamento
+    desconto: 0.0, // Desconto global do orçamento (mantido no estado, mas não usado nos cálculos do resumo)
     // tipo: 'Orçamento', // Default to Orçamento - REMOVIDO, agora é derivado
     condicao_pagamento: '',
     endereco_entrega_completo: '',
@@ -259,8 +259,8 @@ const BudgetEditorPage = () => {
 
     // Soma dos descontos de cada item
     const sumOfItemDiscounts = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
-    // Desconto global do orçamento
-    const globalBudgetDiscount = budget.desconto || 0;
+    // O desconto global (budget.desconto) NÃO é somado aqui para o "Total Desconto R$" no resumo,
+    // mas é considerado no cálculo final do "Total Líq. do Pedido R$".
 
     // Total do Pedido R$ (total dos produtos + total servicos + acrescimo global)
     const totalDoPedido = totalProdutosBruto + totalServicosBruto + totalAcrescimoGlobal;
@@ -269,7 +269,8 @@ const BudgetEditorPage = () => {
     const totalDescontoDisplay = sumOfItemDiscounts;
     
     // Total Líq. do Pedido R$ (Total do Pedido - (soma dos descontos dos itens + desconto global))
-    const totalLiquidoFinal = totalDoPedido - sumOfItemDiscounts - globalBudgetDiscount;
+    // Aqui, o desconto global (budget.desconto) é subtraído do total, junto com os descontos dos itens.
+    const totalLiquidoFinal = totalDoPedido - sumOfItemDiscounts - (budget.desconto || 0);
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
