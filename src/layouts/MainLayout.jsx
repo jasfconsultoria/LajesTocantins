@@ -3,11 +3,11 @@ import { Helmet } from 'react-helmet';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { 
   Bell, Home, Building, Package, Users, ClipboardList, BarChart3, Database, 
-  HelpCircle, History, UserCheck, Menu, X, 
+  HelpCircle, History, UserCheck, Menu, X,
   DollarSign, ArrowUpCircle, ArrowDownCircle, // Financeiro icons
   Warehouse, ArrowRightToLine, ArrowLeftToLine, // Estoque icons
   Receipt, FileText // Notas icons
-} from 'lucide-react';
+} from 'lucide-react'; // Importa todos os ícones necessários
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -35,60 +35,60 @@ function MainLayout() {
   };
 
   const baseSidebarItems = [
-    { to: '/app', label: 'Dashboard', icon: Home, type: 'link' },
-    { to: '/app/companies', label: 'Empresas', icon: Building, type: 'link' },
-    { to: '/app/products', label: 'Produtos', icon: Package, type: 'link' },
-    { to: '/app/people', label: 'Pessoas', icon: Users, type: 'link' },
-    { to: '/app/budgets', label: 'Orçamentos', icon: ClipboardList, type: 'link' },
+    { to: '/app', label: 'Dashboard', icon: Home },
+    { to: '/app/companies', label: 'Empresas', icon: Building },
+    { to: '/app/products', label: 'Produtos', icon: Package },
+    { to: '/app/people', label: 'Pessoas', icon: Users },
+    { to: '/app/budgets', label: 'Orçamentos', icon: ClipboardList },
     
-    // New Financeiro section
+    // Financeiro section
     { 
       label: 'Financeiro', 
       icon: DollarSign, 
       type: 'category',
       subItems: [
-        { to: '/app/financeiro/creditos', label: 'Créditos', icon: ArrowUpCircle, type: 'link' },
-        { to: '/app/financeiro/debitos', label: 'Débitos', icon: ArrowDownCircle, type: 'link' },
+        { to: '/app/financeiro/creditos', label: 'Créditos', icon: ArrowUpCircle },
+        { to: '/app/financeiro/debitos', label: 'Débitos', icon: ArrowDownCircle },
       ]
     },
 
-    // New Estoque section
+    // Estoque section
     { 
       label: 'Estoque', 
       icon: Warehouse, 
       type: 'category',
       subItems: [
-        { to: '/app/estoque/entradas', label: 'Entradas', icon: ArrowRightToLine, type: 'link' },
-        { to: '/app/estoque/saidas', label: 'Saídas', icon: ArrowLeftToLine, type: 'link' },
+        { to: '/app/estoque/entradas', label: 'Entradas', icon: ArrowRightToLine },
+        { to: '/app/estoque/saidas', label: 'Saídas', icon: ArrowLeftToLine },
       ]
     },
 
-    // New Notas section
+    // Notas section
     { 
       label: 'Notas', 
       icon: Receipt, 
       type: 'category',
       subItems: [
-        { to: '/app/notas/nfe', label: 'NF-e', icon: FileText, type: 'link' },
-        { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt, type: 'link' },
+        { to: '/app/notas/nfe', label: 'NF-e', icon: FileText },
+        { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt },
       ]
     },
 
-    { to: '/app/reports', label: 'Relatórios', icon: BarChart3, type: 'link' },
-    { to: '/app/logs', label: 'Logs', icon: Database, type: 'link' },
-    { to: '/app/help', label: 'Ajuda', icon: HelpCircle, type: 'link' },
-    { to: '/app/versions', label: 'Versões', icon: History, type: 'link' }
+    { to: '/app/reports', label: 'Relatórios', icon: BarChart3 },
+    { to: '/app/logs', label: 'Logs', icon: Database },
+    { to: '/app/help', label: 'Ajuda', icon: HelpCircle },
+    { to: '/app/versions', label: 'Versões', icon: History }
   ];
 
   const adminOnlyItems = [
-    { to: '/app/users', label: 'Usuários', icon: Users, type: 'link' },
-    { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck, type: 'link' },
+    { to: '/app/users', label: 'Usuários', icon: Users },
+    { to: '/app/techResp', label: 'Resp. Técnico', icon: UserCheck },
   ];
 
-  // Function to insert admin items into the nested structure
+  // Função para inserir itens de admin na estrutura aninhada
   const insertAdminItems = (items, adminItems) => {
     const newItems = [...items];
-    const insertIndex = newItems.findIndex(item => item.label === 'Orçamentos') + 1; // Insert after 'Orçamentos'
+    const insertIndex = newItems.findIndex(item => item.label === 'Orçamentos') + 1; // Inserir após 'Orçamentos'
     newItems.splice(insertIndex, 0, ...adminItems);
     return newItems;
   };
@@ -120,7 +120,7 @@ function MainLayout() {
       {/* Sidebar container animado - fixed e animando 'left' */}
       <motion.aside
         initial={{ left: -expandedSidebarWidth }} // Começa fora da tela
-        animate={{ left: sidebarOpen ? 0 : -expandedSidebarWidth }}
+        animate={{ left: sidebarOpen ? 0 : -expandedSidebarWidth }} // Anima para dentro/fora
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className={`fixed top-0 h-screen w-64 glass-effect border-r border-white/20 z-30`} // Fixed width
       >
