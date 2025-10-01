@@ -255,22 +255,20 @@ const BudgetEditorPage = () => {
     // Cálculos de totais conforme a lógica do usuário
     const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
     const totalServicosBruto = 0; // Placeholder para serviços
-    const totalAcrescimoGlobal = budget.acrescimo || 0; // Acréscimo global do orçamento
+    // const totalAcrescimoGlobal = budget.acrescimo || 0; // Não usado no resumo conforme a nova lógica
 
     // Soma dos descontos de cada item
     const sumOfItemDiscounts = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
-    // O desconto global (budget.desconto) NÃO é somado aqui para o "Total Desconto R$" no resumo,
-    // mas é considerado no cálculo final do "Total Líq. do Pedido R$".
+    // O desconto global (budget.desconto) NÃO é usado nos cálculos do resumo.
 
-    // Total do Pedido R$ (total dos produtos + total servicos + acrescimo global)
-    const totalDoPedido = totalProdutosBruto + totalServicosBruto + totalAcrescimoGlobal;
+    // Total do Pedido R$ (total dos produtos + total servicos)
+    const totalDoPedido = totalProdutosBruto + totalServicosBruto;
 
     // Total Desconto R$ (apenas a soma dos descontos dos itens, para exibição)
     const totalDescontoDisplay = sumOfItemDiscounts;
     
-    // Total Líq. do Pedido R$ (Total do Pedido - (soma dos descontos dos itens + desconto global))
-    // Aqui, o desconto global (budget.desconto) é subtraído do total, junto com os descontos dos itens.
-    const totalLiquidoFinal = totalDoPedido - sumOfItemDiscounts - (budget.desconto || 0);
+    // Total Líq. do Pedido R$ (Total do Pedido - Total Desconto)
+    const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
