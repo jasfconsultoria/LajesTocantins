@@ -255,11 +255,20 @@ const BudgetEditorPage = () => {
     // Cálculos de totais conforme a lógica do usuário
     const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
     const totalServicosBruto = 0; // Placeholder para serviços
-    const totalAcrescimoGlobal = budget.acrescimo || 0;
+    const totalAcrescimoGlobal = budget.acrescimo || 0; // Acréscimo global do orçamento
 
-    const totalDescontosCalculated = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0) + (budget.desconto || 0);
+    // Soma dos descontos de cada item
+    const sumOfItemDiscounts = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
+    // Desconto global do orçamento
+    const globalBudgetDiscount = budget.desconto || 0;
+
+    // Total Desconto R$ (soma dos descontos dos itens + desconto global)
+    const totalDescontosCalculated = sumOfItemDiscounts + globalBudgetDiscount;
     
+    // Total do Pedido R$ (total dos produtos + total servicos + acrescimo global)
     const totalDoPedido = totalProdutosBruto + totalServicosBruto + totalAcrescimoGlobal;
+
+    // Total Líq. do Pedido R$ (Total do Pedido - Total Desconto)
     const totalLiquidoFinal = totalDoPedido - totalDescontosCalculated;
 
     if (loading) {
@@ -326,7 +335,7 @@ const BudgetEditorPage = () => {
                     </div>
 
                     {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
-                    <div className="form-group lg:col-span-4">
+                    <div className="form-group lg:col-span-4}>
                         <Label htmlFor="solicitante" className="form-label">Solicitante</Label>
                         <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} />
                     </div>
