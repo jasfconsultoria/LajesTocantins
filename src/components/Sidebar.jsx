@@ -1,18 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LogOut, ChevronDown, ChevronRight } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import '@/components/ui/sidebar.css'; // Importa os estilos personalizados
 
 const Sidebar = ({ sidebarItems, handleSignOut, appVersion, closeSidebar, user, role }) => {
-  const [expandedCategories, setExpandedCategories] = useState({});
-
-  const toggleCategory = (label) => {
-    setExpandedCategories(prev => ({
-      ...prev,
-      [label]: !prev[label]
-    }));
-  };
-
   return (
     <div className="flex flex-col h-full w-64"> {/* Fixed width for internal content */}
       {/* Sidebar Header with Logo */}
@@ -23,48 +14,17 @@ const Sidebar = ({ sidebarItems, handleSignOut, appVersion, closeSidebar, user, 
 
       {/* Navigation Items */}
       <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        {sidebarItems.map((item, index) => (
-          item.type === 'category' ? (
-            <div key={item.label || index}>
-              <button
-                onClick={() => toggleCategory(item.label)}
-                className="flex items-center justify-between w-full text-slate-400 text-xs font-semibold uppercase mt-4 mb-2 px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 transition-colors"
-              >
-                <div className="flex items-center">
-                  {item.icon && <item.icon className="w-4 h-4 mr-2" />}
-                  {item.label}
-                </div>
-                {expandedCategories[item.label] ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              </button>
-              {expandedCategories[item.label] && item.subItems && (
-                <div className="ml-4 space-y-1">
-                  {item.subItems.map(subItem => (
-                    <NavLink
-                      key={subItem.to}
-                      to={subItem.to}
-                      end={subItem.to === '/app'}
-                      onClick={closeSidebar}
-                      className={({ isActive }) => `sidebar-item text-sm ${isActive ? 'active' : ''}`}
-                    >
-                      <subItem.icon className="w-5 h-5 mr-3" />
-                      {subItem.label}
-                    </NavLink>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/app'}
-              onClick={closeSidebar}
-              className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
-            >
-              <item.icon className="w-5 h-5 mr-3" />
-              {item.label}
-            </NavLink>
-          )
+        {sidebarItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/app'}
+            // Removido onClick={closeSidebar} para evitar o fechamento automático
+            className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
+          >
+            <item.icon className="w-5 h-5 mr-3" />
+            {item.label}
+          </NavLink>
         ))}
       </div>
       
