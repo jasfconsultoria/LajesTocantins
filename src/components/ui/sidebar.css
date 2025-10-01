@@ -24,8 +24,3 @@
 .sidebar-submenu-item.active {
   @apply bg-blue-50 text-blue-700 font-medium;
 }
-
-/* Styles for the logout button */
-.sidebar-item.text-red-600.hover\:bg-red-100 {
-  @apply text-red-600 hover:bg-red-100;
-}
