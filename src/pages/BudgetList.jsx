@@ -53,7 +53,7 @@ const BudgetList = () => {
 
             while (true) {
                 const { data, error } = await supabase
-                    .from('orcamento')
+                    .from('orcamento_summary_view') // Consultando a nova VIEW
                     .select('*')
                     .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj)) // Normaliza o CNPJ aqui
                     .order('data_orcamento', { ascending: false }) // Keep initial order for fetching
@@ -71,36 +71,7 @@ const BudgetList = () => {
                     break; // No data or no more data
                 }
             }
-
-            // Now, for each budget, fetch its compositions to calculate totals
-            // WARNING: This can be inefficient for a large number of budgets (N+1 queries).
-            // For better performance, consider a Supabase function or database view to pre-calculate these totals.
-            const budgetsWithCalculatedTotals = await Promise.all(allBudgets.map(async (budget) => {
-                const { data: compositionsData, error: compError } = await supabase
-                    .from('orcamento_composicao')
-                    .select('quantidade, valor_venda, desconto_total')
-                    .eq('orcamento_id', budget.id);
-
-                if (compError) {
-                    console.error(`Error fetching compositions for budget ${budget.id}:`, compError.message);
-                    return { ...budget, totalBrutoItens: 0, totalDescontoItens: 0, totalLiquidoCalculated: budget.total_venda };
-                }
-
-                const totalBrutoItens = compositionsData.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
-                const totalDescontoItens = compositionsData.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
-                
-                // Total Líq. do Pedido R$ = Total Bruto dos Itens - Total Desconto dos Itens
-                const totalLiquidoCalculated = totalBrutoItens - totalDescontoItens;
-
-                return {
-                    ...budget,
-                    totalBrutoItens,
-                    totalDescontoItens,
-                    totalLiquidoCalculated,
-                };
-            }));
-
-            setBudgets(budgetsWithCalculatedTotals);
+            setBudgets(allBudgets); // Definir os orçamentos diretamente da VIEW
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -168,9 +139,9 @@ const BudgetList = () => {
                     aValue = new Date(a.data_orcamento).getTime();
                     bValue = new Date(b.data_orcamento).getTime();
                     break;
-                case 'totalBrutoItens':
-                case 'totalDescontoItens':
-                case 'totalLiquidoCalculated':
+                case 'total_do_pedido_calculado': // Usar o nome da coluna da VIEW
+                case 'total_desconto_itens': // Usar o nome da coluna da VIEW
+                case 'total_liquido_calculado': // Usar o nome da coluna da VIEW
                     aValue = a[sortColumn] || 0;
                     bValue = b[sortColumn] || 0;
                     break;
@@ -304,14 +275,14 @@ const BudgetList = () => {
                                     <TableHead className="cursor-pointer" onClick={() => handleSort('vendedor')}>
                                         <div className="flex items-center">Vendedor {renderSortIcon('vendedor')}</div>
                                     </TableHead>
-                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('totalBrutoItens')}>
-                                        <div className="flex items-center justify-end">Total R$ {renderSortIcon('totalBrutoItens')}</div>
+                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('total_do_pedido_calculado')}>
+                                        <div className="flex items-center justify-end">Total R$ {renderSortIcon('total_do_pedido_calculado')}</div>
                                     </TableHead>
-                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('totalDescontoItens')}>
-                                        <div className="flex items-center justify-end">Desconto R$ {renderSortIcon('totalDescontoItens')}</div>
+                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('total_desconto_itens')}>
+                                        <div className="flex items-center justify-end">Desconto R$ {renderSortIcon('total_desconto_itens')}</div>
                                     </TableHead>
-                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('totalLiquidoCalculated')}>
-                                        <div className="flex items-center justify-end">Líquido R$ {renderSortIcon('totalLiquidoCalculated')}</div>
+                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('total_liquido_calculado')}>
+                                        <div className="flex items-center justify-end">Líquido R$ {renderSortIcon('total_liquido_calculado')}</div>
                                     </TableHead>
                                     <TableHead className="cursor-pointer" onClick={() => handleSort('faturado')}>
                                         <div className="flex items-center justify-end">Status {renderSortIcon('faturado')}</div>
@@ -326,9 +297,9 @@ const BudgetList = () => {
                                         <TableCell>{formatDate(b.data_orcamento)}</TableCell>
                                         <TableCell>{b.nome_cliente || 'Cliente Não Informado'}</TableCell>
                                         <TableCell>{b.vendedor || 'N/A'}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(b.totalBrutoItens)}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(b.totalDescontoItens)}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(b.totalLiquidoCalculated)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(b.total_do_pedido_calculado)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(b.total_desconto_itens)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(b.total_liquido_calculado)}</TableCell>
                                         <TableCell className="text-right">
                                             {b.faturado ? (
                                                 <span className="status-badge bg-green-100 text-green-800">
