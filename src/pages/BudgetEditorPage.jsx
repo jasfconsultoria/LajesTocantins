@@ -35,7 +35,7 @@ const initialBudgetState = {
     natureza: '',
     faturado: false,
     vendedor: '',
-    desconto: 0.0,
+    desconto: 0.0, // Desconto global do orçamento
     // tipo: 'Orçamento', // Default to Orçamento - REMOVIDO, agora é derivado
     condicao_pagamento: '',
     endereco_entrega_completo: '',
@@ -252,11 +252,12 @@ const BudgetEditorPage = () => {
     const configTitle = `Dados do ${displayTipo}`;
     const numeroLabel = `Número do ${displayTipo}`;
 
-    // Placeholder para cálculos de totais
+    // Cálculos de totais
     const totalProdutos = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
-    const totalDescontoItens = compositions.reduce((sum, item) => sum + (item.desconto || 0), 0);
-    const totalGeralItens = totalProdutos - totalDescontoItens;
-    const totalPedido = totalGeralItens - (budget.desconto || 0) + (budget.acrescimo || 0);
+    const totalDescontoItens = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0); // Usando desconto_total
+    
+    const totalAllDiscounts = totalDescontoItens + (budget.desconto || 0); // Soma dos descontos por item e desconto global
+    const totalPedido = totalProdutos - totalAllDiscounts + (budget.acrescimo || 0);
     const totalLiquidoPedido = totalPedido; // Simplificado para este exemplo
 
     if (loading) {
@@ -378,7 +379,6 @@ const BudgetEditorPage = () => {
                                 <TableHead>Composição</TableHead>
                                 <TableHead>Unidade</TableHead>
                                 <TableHead>Qtde</TableHead>
-                                {/* <TableHead>Observação</TableHead> REMOVIDO */}
                                 <TableHead className="text-right">Unitário R$</TableHead>
                                 <TableHead className="text-right">Total R$</TableHead>
                                 <TableHead className="text-right">Desc. R$</TableHead>
@@ -389,7 +389,7 @@ const BudgetEditorPage = () => {
                         <TableBody>
                             {compositions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-slate-500 py-4"> {/* colSpan ajustado */}
+                                    <TableCell colSpan={8} className="text-center text-slate-500 py-4">
                                         Nenhum item de composição adicionado.
                                     </TableCell>
                                 </TableRow>
@@ -397,13 +397,12 @@ const BudgetEditorPage = () => {
                                 compositions.map(comp => (
                                     <TableRow key={comp.id}>
                                         <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
-                                        <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell> {/* Usando unitsMap */}
+                                        <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell>
                                         <TableCell className="text-right">{comp.quantidade}</TableCell>
-                                        {/* <TableCell>{comp.observacao || '-'}</TableCell> REMOVIDO */}
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}</TableCell>
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.quantidade * comp.valor_venda)}</TableCell>
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.desconto || 0)}</TableCell>
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((comp.quantidade * comp.valor_venda) - (comp.desconto || 0))}</TableCell>
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.desconto_total || 0)}</TableCell> {/* Usando desconto_total */}
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell> {/* Usando desconto_total */}
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <Button variant="ghost" size="icon" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" })}>
@@ -426,8 +425,8 @@ const BudgetEditorPage = () => {
                     </div>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8"> {/* Alterado para lg:grid-cols-3 */}
-                    <div className="lg:col-span-2"> {/* Ocupa 2/3 da largura */}
+                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-2">
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
@@ -466,27 +465,27 @@ const BudgetEditorPage = () => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-1 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200"> {/* Ocupa 1/3 da largura */}
+                    <div className="lg:col-span-1 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProdutos)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(0)}</span></div> {/* Placeholder para serviços */}
+                        <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(0)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalPedido)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((budget.desconto || 0) + totalDescontoItens)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalAllDiscounts)}</span></div> {/* Usando totalAllDiscounts */}
                         <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalLiquidoPedido)}</span></div>
                     </div>
                 </div>
                 
                 {/* Nova linha para Condição de Pagamento, Validade e Botões de Ação */}
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
-                    <div className="form-group lg:col-span-5"> {/* Condição de Pagamento */}
+                    <div className="form-group lg:col-span-5">
                         <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
                         <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} />
                     </div>
-                    <div className="form-group lg:col-span-2"> {/* Validade Proposta (dias) */}
+                    <div className="form-group lg:col-span-2">
                         <Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label>
                         <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} />
                     </div>
-                    <div className="lg:col-span-5 flex justify-end space-x-2"> {/* Botões e Select */}
+                    <div className="lg:col-span-5 flex justify-end space-x-2">
                         <Select defaultValue="1_via">
                             <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
                             <SelectContent>
