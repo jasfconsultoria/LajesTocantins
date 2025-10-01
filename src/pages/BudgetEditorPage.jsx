@@ -262,14 +262,14 @@ const BudgetEditorPage = () => {
     // Desconto global do orçamento
     const globalBudgetDiscount = budget.desconto || 0;
 
-    // Total Desconto R$ (soma dos descontos dos itens + desconto global)
-    const totalDescontosCalculated = sumOfItemDiscounts + globalBudgetDiscount;
-    
     // Total do Pedido R$ (total dos produtos + total servicos + acrescimo global)
     const totalDoPedido = totalProdutosBruto + totalServicosBruto + totalAcrescimoGlobal;
 
-    // Total Líq. do Pedido R$ (Total do Pedido - Total Desconto)
-    const totalLiquidoFinal = totalDoPedido - totalDescontosCalculated;
+    // Total Desconto R$ (apenas a soma dos descontos dos itens, para exibição)
+    const totalDescontoDisplay = sumOfItemDiscounts;
+    
+    // Total Líq. do Pedido R$ (Total do Pedido - (soma dos descontos dos itens + desconto global))
+    const totalLiquidoFinal = totalDoPedido - sumOfItemDiscounts - globalBudgetDiscount;
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
@@ -481,7 +481,7 @@ const BudgetEditorPage = () => {
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProdutosBruto)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalServicosBruto)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDoPedido)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDescontosCalculated)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDescontoDisplay)}</span></div>
                         <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalLiquidoFinal)}</span></div>
                     </div>
                 </div>
