@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Input } => '@/components/ui/input';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { User, Building2, Search } from 'lucide-react';
 import { formatCpfCnpj } from '@/lib/utils'; // Importar a função de formatação
