@@ -1,75 +1,31 @@
 /* src/components/ui/sidebar.css */
 
-/* Estilos base da sidebar */
-.sidebar {
-  background-color: #2c3e50; /* Cor de fundo, será sobreposta pelo glass-effect do Tailwind */
-  color: white;
-  z-index: 1000; /* Manter z-index alto para sobreposição ou contexto de empilhamento */
-  overflow-x: hidden; /* Importante para a animação de largura */
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-}
-
-/* Estilos para os itens de navegação */
+/* Base styles for all sidebar items */
 .sidebar-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  border-radius: 8px;
-  color: #e0e0e0; /* Cor padrão para itens não ativos */
-  font-weight: 500; /* Peso da fonte padrão para itens não ativos */
-  text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  @apply flex items-center px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors duration-200;
 }
 
-.sidebar-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
+/* Active state for top-level items */
 .sidebar-item.active {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  font-weight: 600; /* Peso da fonte para itens ativos */
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md;
 }
 
-/* Estilos para cabeçalhos de categoria */
+/* Styles for category headers */
 .sidebar-category-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* Para empurrar o chevron para a direita */
-  padding: 12px 16px;
-  border-radius: 8px;
-  color: #e0e0e0; /* Cor padrão para categorias */
-  font-weight: 500; /* Peso da fonte padrão para categorias */
-  cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  @apply flex items-center px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors duration-200 cursor-pointer font-semibold justify-between;
 }
 
-.sidebar-category-header:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-/* Estilos para itens de submenu */
+/* Styles for submenu items */
 .sidebar-submenu-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 16px 8px 32px; /* Indentação para subitens */
-  border-radius: 8px;
-  color: #e0e0e0; /* Cor padrão para submenus */
-  font-weight: 500; /* Peso da fonte padrão para submenus */
-  text-decoration: none;
-  transition: background-color 0.2s ease, color 0.2s ease;
-  font-size: 0.9rem; /* Um pouco menor para subitens */
+  @apply flex items-center pl-8 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors duration-200 text-sm;
 }
 
-.sidebar-submenu-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: white;
-}
-
+/* Active state for submenu items */
 .sidebar-submenu-item.active {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-  font-weight: 600; /* Peso da fonte para submenus ativos */
+  @apply bg-blue-50 text-blue-700 font-medium;
+}
+
+/* Styles for the logout button */
+.sidebar-item.text-red-600.hover\:bg-red-100 {
+  @apply text-red-600 hover:bg-red-100;
 }
