@@ -43,7 +43,7 @@ const Sidebar = ({ sidebarItems, handleSignOut, appVersion, closeSidebar, user, 
                       key={subItem.to}
                       to={subItem.to}
                       end={subItem.to === '/app'}
-                      onClick={closeSidebar} // Subitens podem fechar a sidebar em mobile, se desejado
+                      // Removido onClick={closeSidebar} para evitar o fechamento automático
                       className={({ isActive }) => `sidebar-submenu-item ${isActive ? 'active' : ''}`}
                     >
                       <subItem.icon className="w-4 h-4 mr-2" />
