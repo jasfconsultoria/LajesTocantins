@@ -67,7 +67,7 @@ const BudgetEditorPage = () => {
     const [budget, setBudget] = useState(initialBudgetState);
     const [compositions, setCompositions] = useState([]);
     const [people, setPeople] = useState([]);
-    const [loading, setLoading] = true);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
     const [unitsMap, setUnitsMap] = useState(new Map()); // Novo estado para o mapa de unidades
