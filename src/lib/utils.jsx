@@ -32,6 +32,22 @@ export const normalizeCnpj = (cnpj) => {
   return cnpj.replace(/[^\d]/g, ''); // Remove todos os caracteres não numéricos
 };
 
+// Função para formatar CPF/CNPJ para exibição
+export const formatCpfCnpj = (doc, type) => {
+  if (!doc) return '';
+  const cleaned = doc.replace(/[^\d]/g, '');
+  if (type === 1) { // CPF
+    if (cleaned.length === 11) {
+      return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    }
+  } else if (type === 2) { // CNPJ
+    if (cleaned.length === 14) {
+      return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
+  }
+  return doc; // Retorna o original se não corresponder ao formato
+};
+
 // Função para validar CPF
 export const validateCPF = (cpf) => {
   cpf = cpf.replace(/[^\d]+/g, '');

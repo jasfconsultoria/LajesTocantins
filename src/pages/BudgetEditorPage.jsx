@@ -103,6 +103,44 @@ const BudgetEditorPage = () => {
         }
     }, [toast]);
 
+    const fetchPeople = useCallback(async () => {
+        try {
+            let allPeople = [];
+            let offset = 0;
+            const limit = 1000;
+            while (true) {
+                const { data, error } = await supabase
+                    .from('pessoas')
+                    .select('id, razao_social, nome_fantasia, pessoa_tipo, logradouro, numero, complemento, bairro, municipio, uf, cep, cpf_cnpj') // Adicionado cpf_cnpj
+                    .order('razao_social', { ascending: true })
+                    .range(offset, offset + limit - 1);
+                if (error) throw error;
+                if (data && data.length > 0) {
+                    allPeople = allPeople.concat(data);
+                    offset += data.length;
+                    if (data.length < limit) break;
+                } else {
+                    break;
+                }
+            }
+
+            // Enriquecer dados de pessoas com nome do município e nome completo do estado para exibição
+            const enrichedPeople = allPeople.map(p => {
+                const municipioObj = allMunicipalities.find(m => m.codigo === p.municipio);
+                const ufObj = allUfs.find(u => u.sigla === p.uf);
+                return {
+                    ...p,
+                    municipio_nome: municipioObj?.municipio || '',
+                    uf_estado_nome: ufObj?.estado || '',
+                };
+            });
+            setPeople(enrichedPeople);
+        } catch (error) {
+            console.error("Error fetching people:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar a lista de pessoas.' });
+        }
+    }, [toast, allMunicipalities, allUfs]); // Adicionado allMunicipalities e allUfs às dependências
+
     const fetchBudget = useCallback(async () => {
         if (!id) {
             setLoading(false);
@@ -168,33 +206,6 @@ const BudgetEditorPage = () => {
         }
     }, [id, user, activeCompany, toast, allMunicipalities]);
 
-    const fetchPeople = useCallback(async () => {
-        try {
-            let allPeople = [];
-            let offset = 0;
-            const limit = 1000;
-            while (true) {
-                const { data, error } = await supabase
-                    .from('pessoas')
-                    .select('id, razao_social, nome_fantasia, pessoa_tipo, logradouro, numero, complemento, bairro, municipio, uf, cep') // Select all address fields
-                    .order('razao_social', { ascending: true })
-                    .range(offset, offset + limit - 1);
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    allPeople = allPeople.concat(data);
-                    offset += data.length;
-                    if (data.length < limit) break;
-                } else {
-                    break;
-                }
-            }
-            setPeople(allPeople);
-        } catch (error) {
-            console.error("Error fetching people:", error.message);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar a lista de pessoas.' });
-        }
-    }, [toast]);
-
     const fetchUnits = useCallback(async () => {
         try {
             const { data, error } = await supabase
@@ -212,15 +223,15 @@ const BudgetEditorPage = () => {
 
     useEffect(() => {
         fetchUfsAndMunicipalities();
-        fetchPeople();
         fetchUnits();
-    }, [fetchUfsAndMunicipalities, fetchPeople, fetchUnits]);
+    }, [fetchUfsAndMunicipalities, fetchUnits]);
 
     useEffect(() => {
-        // Only fetch budget after UFs and Municipalities are loaded
+        // Somente busca orçamento e pessoas depois que UFs e Municípios são carregados
         if (allUfs.length > 0 && allMunicipalities.length > 0) {
             fetchBudget();
-        } else if (!id) { // If it's a new budget, and no ID, we can proceed without waiting for location data
+            fetchPeople(); // Chamar fetchPeople aqui
+        } else if (!id) { // Se for um novo orçamento, e sem ID, podemos prosseguir sem esperar pelos dados de localização
             setLoading(false);
             setBudget(prev => ({
                 ...prev,
@@ -229,7 +240,7 @@ const BudgetEditorPage = () => {
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
             }));
         }
-    }, [allUfs, allMunicipalities, fetchBudget, id, activeCompany, user]);
+    }, [allUfs, allMunicipalities, fetchBudget, fetchPeople, id, activeCompany, user]);
 
 
     const handleInputChange = (e) => {
@@ -244,7 +255,7 @@ const BudgetEditorPage = () => {
         setBudget(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectClient = (person) => { // Now receives the full person object
+    const handleSelectClient = (person) => { // Agora recebe o objeto completo da pessoa
         const municipioNome = allMunicipalities.find(m => m.codigo === person.municipio)?.municipio || '';
         setBudget(prev => ({
             ...prev,
