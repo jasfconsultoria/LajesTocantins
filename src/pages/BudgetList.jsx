@@ -1,9 +1,11 @@
+"use client";
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -32,6 +34,8 @@ const BudgetList = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [sortColumn, setSortColumn] = useState('data_orcamento'); // Default sort by date
+    const [sortDirection, setSortDirection] = useState('desc'); // Default sort descending
 
     const ITEMS_PER_PAGE = 10;
 
@@ -52,7 +56,7 @@ const BudgetList = () => {
                     .from('orcamento')
                     .select('*')
                     .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj)) // Normaliza o CNPJ aqui
-                    .order('data_orcamento', { ascending: false })
+                    .order('data_orcamento', { ascending: false }) // Keep initial order for fetching
                     .range(offset, offset + limit - 1);
 
                 if (error) throw error;
@@ -68,14 +72,35 @@ const BudgetList = () => {
                 }
             }
 
-            // Sort after fetching all data
-            const sortedBudgets = allBudgets.sort((a, b) => {
-                const dateA = new Date(a.data_orcamento);
-                const dateB = new Date(b.data_orcamento);
-                return dateB.getTime() - dateA.getTime(); // Most recent first
-            });
+            // Now, for each budget, fetch its compositions to calculate totals
+            // WARNING: This can be inefficient for a large number of budgets (N+1 queries).
+            // For better performance, consider a Supabase function or database view to pre-calculate these totals.
+            const budgetsWithCalculatedTotals = await Promise.all(allBudgets.map(async (budget) => {
+                const { data: compositionsData, error: compError } = await supabase
+                    .from('orcamento_composicao')
+                    .select('quantidade, valor_venda, desconto_total')
+                    .eq('orcamento_id', budget.id);
 
-            setBudgets(sortedBudgets);
+                if (compError) {
+                    console.error(`Error fetching compositions for budget ${budget.id}:`, compError.message);
+                    return { ...budget, totalBrutoItens: 0, totalDescontoItens: 0, totalLiquidoCalculated: budget.total_venda };
+                }
+
+                const totalBrutoItens = compositionsData.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
+                const totalDescontoItens = compositionsData.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
+                
+                // Total Líq. do Pedido R$ = Total Bruto dos Itens - Total Desconto dos Itens
+                const totalLiquidoCalculated = totalBrutoItens - totalDescontoItens;
+
+                return {
+                    ...budget,
+                    totalBrutoItens,
+                    totalDescontoItens,
+                    totalLiquidoCalculated,
+                };
+            }));
+
+            setBudgets(budgetsWithCalculatedTotals);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -91,28 +116,85 @@ const BudgetList = () => {
         fetchBudgets();
     }, [fetchBudgets]);
 
-    const filteredBudgets = useMemo(() => {
+    const handleSort = (column) => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc'); // Default to asc when changing column
+        }
+        setCurrentPage(1); // Reset to first page on sort change
+    };
+
+    const renderSortIcon = (column) => {
+        if (sortColumn === column) {
+            return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+        }
+        return null;
+    };
+
+    const sortedAndFilteredBudgets = useMemo(() => {
         const normalizedSearchTerm = normalizeString(searchTerm);
 
-        return budgets.filter(b => {
-            const normalizedNomeCliente = normalizeString(b.nome_cliente);
-            const normalizedNumeroPedido = normalizeString(b.numero_pedido);
-            const normalizedVendedor = normalizeString(b.vendedor);
+        let currentFilteredBudgets = budgets;
 
-            return (
-                normalizedNomeCliente.includes(normalizedSearchTerm) ||
-                normalizedNumeroPedido.includes(normalizedSearchTerm) ||
-                normalizedVendedor.includes(normalizedSearchTerm)
-            );
+        // 1. Aplicar filtragem se houver termo de busca
+        if (normalizedSearchTerm) {
+            currentFilteredBudgets = budgets.filter(b => {
+                const normalizedNomeCliente = normalizeString(b.nome_cliente);
+                const normalizedNumeroPedido = normalizeString(b.numero_pedido);
+                const normalizedVendedor = normalizeString(b.vendedor);
+
+                return (
+                    normalizedNomeCliente.includes(normalizedSearchTerm) ||
+                    normalizedNumeroPedido.includes(normalizedSearchTerm) ||
+                    normalizedVendedor.includes(normalizedSearchTerm)
+                );
+            });
+        }
+
+        // 2. Aplicar ordenação aos resultados filtrados (ou à lista completa se não houver busca)
+        return [...currentFilteredBudgets].sort((a, b) => { // Cria uma cópia para não modificar o array original
+            let aValue, bValue;
+
+            switch (sortColumn) {
+                case 'numero_pedido':
+                case 'nome_cliente':
+                case 'vendedor':
+                    aValue = normalizeString(a[sortColumn] || '');
+                    bValue = normalizeString(b[sortColumn] || '');
+                    break;
+                case 'data_orcamento':
+                    aValue = new Date(a.data_orcamento).getTime();
+                    bValue = new Date(b.data_orcamento).getTime();
+                    break;
+                case 'totalBrutoItens':
+                case 'totalDescontoItens':
+                case 'totalLiquidoCalculated':
+                    aValue = a[sortColumn] || 0;
+                    bValue = b[sortColumn] || 0;
+                    break;
+                case 'faturado':
+                    aValue = a.faturado ? 1 : 0;
+                    bValue = b.faturado ? 1 : 0;
+                    break;
+                default:
+                    aValue = normalizeString(a[sortColumn] || '');
+                    bValue = normalizeString(b[sortColumn] || '');
+            }
+
+            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
         });
-    }, [budgets, searchTerm]);
+    }, [budgets, searchTerm, sortColumn, sortDirection]);
 
     const paginatedBudgets = useMemo(() => {
         const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        return filteredBudgets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-    }, [filteredBudgets, currentPage]);
+        return sortedAndFilteredBudgets.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [sortedAndFilteredBudgets, currentPage]);
 
-    const totalPages = Math.ceil(filteredBudgets.length / ITEMS_PER_PAGE);
+    const totalPages = Math.ceil(sortedAndFilteredBudgets.length / ITEMS_PER_PAGE);
 
     const handleNextPage = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
@@ -210,12 +292,30 @@ const BudgetList = () => {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Nº Pedido</TableHead>
-                                    <TableHead>Cliente</TableHead>
-                                    <TableHead>Data</TableHead>
-                                    <TableHead>Vendedor</TableHead>
-                                    <TableHead>Total</TableHead>
-                                    <TableHead>Status</TableHead>
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('numero_pedido')}>
+                                        <div className="flex items-center">Nº Pedido {renderSortIcon('numero_pedido')}</div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('data_orcamento')}>
+                                        <div className="flex items-center">Data {renderSortIcon('data_orcamento')}</div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('nome_cliente')}>
+                                        <div className="flex items-center">Cliente {renderSortIcon('nome_cliente')}</div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('vendedor')}>
+                                        <div className="flex items-center">Vendedor {renderSortIcon('vendedor')}</div>
+                                    </TableHead>
+                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('totalBrutoItens')}>
+                                        <div className="flex items-center justify-end">Total R$ {renderSortIcon('totalBrutoItens')}</div>
+                                    </TableHead>
+                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('totalDescontoItens')}>
+                                        <div className="flex items-center justify-end">Desconto R$ {renderSortIcon('totalDescontoItens')}</div>
+                                    </TableHead>
+                                    <TableHead className="text-right cursor-pointer" onClick={() => handleSort('totalLiquidoCalculated')}>
+                                        <div className="flex items-center justify-end">Líquido R$ {renderSortIcon('totalLiquidoCalculated')}</div>
+                                    </TableHead>
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('faturado')}>
+                                        <div className="flex items-center justify-end">Status {renderSortIcon('faturado')}</div>
+                                    </TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -223,11 +323,13 @@ const BudgetList = () => {
                                 {paginatedBudgets.map((b) => (
                                     <TableRow key={b.id}>
                                         <TableCell className="font-medium">{b.numero_pedido || 'N/A'}</TableCell>
-                                        <TableCell>{b.nome_cliente || 'Cliente Não Informado'}</TableCell>
                                         <TableCell>{formatDate(b.data_orcamento)}</TableCell>
+                                        <TableCell>{b.nome_cliente || 'Cliente Não Informado'}</TableCell>
                                         <TableCell>{b.vendedor || 'N/A'}</TableCell>
-                                        <TableCell>{formatCurrency(b.total_venda)}</TableCell>
-                                        <TableCell>
+                                        <TableCell className="text-right">{formatCurrency(b.totalBrutoItens)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(b.totalDescontoItens)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(b.totalLiquidoCalculated)}</TableCell>
+                                        <TableCell className="text-right">
                                             {b.faturado ? (
                                                 <span className="status-badge bg-green-100 text-green-800">
                                                     <CheckCircle className="w-3 h-3 mr-1" /> Faturado
@@ -257,7 +359,7 @@ const BudgetList = () => {
                     <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
                         <div>
                             Exibindo {paginatedBudgets.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-                            {Math.min(currentPage * ITEMS_PER_PAGE, filteredBudgets.length)} de {filteredBudgets.length} registros
+                            {Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredBudgets.length)} de {sortedAndFilteredBudgets.length} registros
                         </div>
                         <div className="flex items-center gap-2">
                             <span>Página {currentPage} de {totalPages}</span>
