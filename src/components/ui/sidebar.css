@@ -15,7 +15,8 @@
   align-items: center;
   padding: 12px 16px;
   border-radius: 8px;
-  color: #e0e0e0;
+  color: #e0e0e0; /* Cor padrão para itens não ativos */
+  font-weight: 500; /* Peso da fonte padrão para itens não ativos */
   text-decoration: none;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -28,7 +29,7 @@
 .sidebar-item.active {
   background-color: rgba(255, 255, 255, 0.2);
   color: white;
-  font-weight: 600;
+  font-weight: 600; /* Peso da fonte para itens ativos */
 }
 
 /* Estilos para cabeçalhos de categoria */
@@ -38,10 +39,10 @@
   justify-content: space-between; /* Para empurrar o chevron para a direita */
   padding: 12px 16px;
   border-radius: 8px;
-  color: #e0e0e0;
+  color: #e0e0e0; /* Cor padrão para categorias */
+  font-weight: 500; /* Peso da fonte padrão para categorias */
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
-  font-weight: 500; /* Normalizar peso da fonte */
 }
 
 .sidebar-category-header:hover {
@@ -55,7 +56,8 @@
   align-items: center;
   padding: 8px 16px 8px 32px; /* Indentação para subitens */
   border-radius: 8px;
-  color: #c0c0c0;
+  color: #e0e0e0; /* Cor padrão para submenus */
+  font-weight: 500; /* Peso da fonte padrão para submenus */
   text-decoration: none;
   transition: background-color 0.2s ease, color 0.2s ease;
   font-size: 0.9rem; /* Um pouco menor para subitens */
@@ -69,5 +71,5 @@
 .sidebar-submenu-item.active {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
-  font-weight: 500;
+  font-weight: 600; /* Peso da fonte para submenus ativos */
 }
