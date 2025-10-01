@@ -39,7 +39,7 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
   }, [people, searchTerm]);
 
   const handleSelect = (person) => {
-    onSelectClient(person.id, person.razao_social || person.nome_fantasia);
+    onSelectClient(person); // Pass the full person object
     setIsOpen(false);
     setSearchTerm(''); // Clear search term on close
   };

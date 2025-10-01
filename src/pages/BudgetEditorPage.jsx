@@ -36,7 +36,6 @@ const initialBudgetState = {
     faturado: false,
     vendedor: '',
     desconto: 0.0, // Desconto global do orçamento (mantido no estado, mas não usado nos cálculos do resumo)
-    // tipo: 'Orçamento', // Default to Orçamento - REMOVIDO, agora é derivado
     condicao_pagamento: '',
     endereco_entrega_completo: '',
     obra: '',
@@ -55,6 +54,15 @@ const initialBudgetState = {
     telefone: '',
     codigo_antigo: null,
     previsao_entrega: null, // Novo campo
+
+    // Campos de endereço do cliente (somente leitura)
+    cliente_logradouro: '',
+    cliente_numero: '',
+    cliente_complemento: '',
+    cliente_bairro: '',
+    cliente_municipio_nome: '',
+    cliente_uf_sigla: '',
+    cliente_cep: '',
 };
 
 const BudgetEditorPage = () => {
@@ -66,11 +74,34 @@ const BudgetEditorPage = () => {
 
     const [budget, setBudget] = useState(initialBudgetState);
     const [compositions, setCompositions] = useState([]);
-    const [people, setPeople] = useState([]);
+    const [people, setPeople] = useState([]); // All people for search dialog
+    const [allUfs, setAllUfs] = useState([]); // All UFs for mapping
+    const [allMunicipalities, setAllMunicipalities] = useState([]); // All municipalities for mapping
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
     const [unitsMap, setUnitsMap] = useState(new Map()); // Novo estado para o mapa de unidades
+
+    const fetchUfsAndMunicipalities = useCallback(async () => {
+        try {
+            const { data: ufsData, error: ufsError } = await supabase
+                .from('estados')
+                .select('uf, sigla, estado')
+                .order('sigla');
+            if (ufsError) throw ufsError;
+            setAllUfs(ufsData);
+
+            const { data: municipalitiesData, error: municipalitiesError } = await supabase
+                .from('municipios')
+                .select('codigo, municipio')
+                .order('municipio');
+            if (municipalitiesError) throw municipalitiesError;
+            setAllMunicipalities(municipalitiesData);
+        } catch (error) {
+            console.error("Error fetching UFs or Municipalities:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar dados de localização.' });
+        }
+    }, [toast]);
 
     const fetchBudget = useCallback(async () => {
         if (!id) {
@@ -92,12 +123,35 @@ const BudgetEditorPage = () => {
                 .single();
             if (error) throw error;
             if (data) {
-                setBudget({
+                const budgetData = {
                     ...data,
                     data_orcamento: data.data_orcamento ? data.data_orcamento.split('T')[0] : '',
                     data_venda: data.data_venda ? data.data_venda.split('T')[0] : null,
-                    previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null, // Carregar novo campo
-                });
+                    previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null,
+                };
+
+                // Fetch client details if cliente_id exists
+                if (data.cliente_id) {
+                    const { data: clientData, error: clientError } = await supabase
+                        .from('pessoas')
+                        .select('*')
+                        .eq('id', data.cliente_id)
+                        .single();
+                    if (clientError) throw clientError;
+
+                    if (clientData) {
+                        const municipioNome = allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
+                        budgetData.nome_cliente = clientData.razao_social || clientData.nome_fantasia;
+                        budgetData.cliente_logradouro = clientData.logradouro || '';
+                        budgetData.cliente_numero = clientData.numero || '';
+                        budgetData.cliente_complemento = clientData.complemento || '';
+                        budgetData.cliente_bairro = clientData.bairro || '';
+                        budgetData.cliente_municipio_nome = municipioNome;
+                        budgetData.cliente_uf_sigla = clientData.uf || '';
+                        budgetData.cliente_cep = clientData.cep || '';
+                    }
+                }
+                setBudget(budgetData);
             }
 
             const { data: compData, error: compError } = await supabase
@@ -112,7 +166,7 @@ const BudgetEditorPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, user, activeCompany, toast]);
+    }, [id, user, activeCompany, toast, allMunicipalities]);
 
     const fetchPeople = useCallback(async () => {
         try {
@@ -122,7 +176,7 @@ const BudgetEditorPage = () => {
             while (true) {
                 const { data, error } = await supabase
                     .from('pessoas')
-                    .select('id, razao_social, nome_fantasia, pessoa_tipo')
+                    .select('id, razao_social, nome_fantasia, pessoa_tipo, logradouro, numero, complemento, bairro, municipio, uf, cep') // Select all address fields
                     .order('razao_social', { ascending: true })
                     .range(offset, offset + limit - 1);
                 if (error) throw error;
@@ -157,10 +211,26 @@ const BudgetEditorPage = () => {
     }, [toast]);
 
     useEffect(() => {
-        fetchBudget();
+        fetchUfsAndMunicipalities();
         fetchPeople();
-        fetchUnits(); // Chamar a busca de unidades
-    }, [fetchBudget, fetchPeople, fetchUnits]);
+        fetchUnits();
+    }, [fetchUfsAndMunicipalities, fetchPeople, fetchUnits]);
+
+    useEffect(() => {
+        // Only fetch budget after UFs and Municipalities are loaded
+        if (allUfs.length > 0 && allMunicipalities.length > 0) {
+            fetchBudget();
+        } else if (!id) { // If it's a new budget, and no ID, we can proceed without waiting for location data
+            setLoading(false);
+            setBudget(prev => ({
+                ...prev,
+                cnpj_empresa: activeCompany?.cnpj || '',
+                funcionario_id: user?.id || null,
+                vendedor: user?.user_metadata?.full_name || user?.email || '',
+            }));
+        }
+    }, [allUfs, allMunicipalities, fetchBudget, id, activeCompany, user]);
+
 
     const handleInputChange = (e) => {
         const { id, value, type, checked } = e.target;
@@ -174,11 +244,19 @@ const BudgetEditorPage = () => {
         setBudget(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectClient = (clientId, clientName) => {
+    const handleSelectClient = (person) => { // Now receives the full person object
+        const municipioNome = allMunicipalities.find(m => m.codigo === person.municipio)?.municipio || '';
         setBudget(prev => ({
             ...prev,
-            cliente_id: clientId,
-            nome_cliente: clientName,
+            cliente_id: person.id,
+            nome_cliente: person.razao_social || person.nome_fantasia,
+            cliente_logradouro: person.logradouro || '',
+            cliente_numero: person.numero || '',
+            cliente_complemento: person.complemento || '',
+            cliente_bairro: person.bairro || '',
+            cliente_municipio_nome: municipioNome,
+            cliente_uf_sigla: person.uf || '',
+            cliente_cep: person.cep || '',
         }));
     };
 
@@ -196,10 +274,18 @@ const BudgetEditorPage = () => {
                 funcionario_id: user?.id,
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
-                previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null, // Salvar novo campo
+                previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
                 updated_at: new Date().toISOString(),
-                // O campo 'tipo' não é mais salvo diretamente, é derivado
             };
+
+            // Remove client address fields before saving to 'orcamento' table
+            delete saveData.cliente_logradouro;
+            delete saveData.cliente_numero;
+            delete saveData.cliente_complemento;
+            delete saveData.cliente_bairro;
+            delete saveData.cliente_municipio_nome;
+            delete saveData.cliente_uf_sigla;
+            delete saveData.cliente_cep;
 
             let error;
             let actionType;
@@ -255,12 +341,10 @@ const BudgetEditorPage = () => {
     // Cálculos de totais conforme a lógica do usuário
     const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
     const totalServicosBruto = 0; // Placeholder para serviços
-    // const totalAcrescimoGlobal = budget.acrescimo || 0; // Não usado no resumo conforme a nova lógica
 
     // Soma dos descontos de cada item
     const sumOfItemDiscounts = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
-    // O desconto global (budget.desconto) NÃO é usado nos cálculos do resumo.
-
+    
     // Total do Pedido R$ (total dos produtos + total servicos)
     const totalDoPedido = totalProdutosBruto + totalServicosBruto;
 
@@ -347,27 +431,48 @@ const BudgetEditorPage = () => {
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Row 3: Endereço Cliente, Cidade, UF */}
-                    <div className="form-group lg:col-span-7">
-                        <Label htmlFor="endereco_entrega" className="form-label">Endereço Cliente</Label>
-                        <Input id="endereco_entrega" type="text" className="form-input" value={budget.endereco_entrega || ''} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group lg:col-span-3">
-                        <Label htmlFor="municipio" className="form-label">Cidade</Label>
-                        <Input id="municipio" type="text" className="form-input" value={budget.municipio || ''} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group lg:col-span-2">
-                        <Label htmlFor="uf" className="form-label">UF</Label>
-                        <Input id="uf" type="text" className="form-input" value={budget.uf || ''} onChange={handleInputChange} />
+                    {/* Endereço do Cliente Selecionado (campos desabilitados) */}
+                    <div className="lg:col-span-12 pt-4 border-t border-slate-200 mt-4">
+                        <h4 className="config-title mb-4 text-base font-semibold text-slate-700">Endereço do Cliente Selecionado</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
+                            <div className="form-group lg:col-span-8">
+                                <Label htmlFor="cliente_logradouro" className="form-label">Logradouro</Label>
+                                <Input id="cliente_logradouro" type="text" className="form-input" value={budget.cliente_logradouro} readOnly disabled />
+                            </div>
+                            <div className="form-group lg:col-span-4">
+                                <Label htmlFor="cliente_numero" className="form-label">Número</Label>
+                                <Input id="cliente_numero" type="text" className="form-input" value={budget.cliente_numero} readOnly disabled />
+                            </div>
+                            <div className="form-group lg:col-span-6">
+                                <Label htmlFor="cliente_complemento" className="form-label">Complemento</Label>
+                                <Input id="cliente_complemento" type="text" className="form-input" value={budget.cliente_complemento} readOnly disabled />
+                            </div>
+                            <div className="form-group lg:col-span-6">
+                                <Label htmlFor="cliente_bairro" className="form-label">Bairro</Label>
+                                <Input id="cliente_bairro" type="text" className="form-input" value={budget.cliente_bairro} readOnly disabled />
+                            </div>
+                            <div className="form-group lg:col-span-4">
+                                <Label htmlFor="cliente_municipio_nome" className="form-label">Cidade</Label>
+                                <Input id="cliente_municipio_nome" type="text" className="form-input" value={budget.cliente_municipio_nome} readOnly disabled />
+                            </div>
+                            <div className="form-group lg:col-span-4">
+                                <Label htmlFor="cliente_uf_sigla" className="form-label">UF</Label>
+                                <Input id="cliente_uf_sigla" type="text" className="form-input" value={budget.cliente_uf_sigla} readOnly disabled />
+                            </div>
+                            <div className="form-group lg:col-span-4">
+                                <Label htmlFor="cliente_cep" className="form-label">CEP</Label>
+                                <Input id="cliente_cep" type="text" className="form-input" value={budget.cliente_cep} readOnly disabled />
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Row 4: Endereço de Entrega */}
-                    <div className="form-group lg:col-span-12">
+                    {/* Endereço de Entrega (mantido como editável) */}
+                    <div className="form-group lg:col-span-12 pt-4 border-t border-slate-200 mt-4">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
                         <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
                     </div>
 
-                    {/* Row 5: Natureza da Operação, NF-e Nº */}
+                    {/* Natureza da Operação, NF-e Nº */}
                     <div className="form-group lg:col-span-9">
                         <Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label>
                         <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} />
