@@ -67,7 +67,7 @@ const BudgetEditorPage = () => {
     const [budget, setBudget] = useState(initialBudgetState);
     const [compositions, setCompositions] = useState([]);
     const [people, setPeople] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = true);
     const [saving, setSaving] = useState(false);
     const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
     const [unitsMap, setUnitsMap] = useState(new Map()); // Novo estado para o mapa de unidades
@@ -252,16 +252,15 @@ const BudgetEditorPage = () => {
     const configTitle = `Dados do ${displayTipo}`;
     const numeroLabel = `Número do ${displayTipo}`;
 
-    // Cálculos de totais
+    // Cálculos de totais conforme a lógica do usuário
     const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
     const totalServicosBruto = 0; // Placeholder para serviços
-    const totalDescontosItens = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
-    const totalDescontoGlobal = budget.desconto || 0;
     const totalAcrescimoGlobal = budget.acrescimo || 0;
 
-    const totalBrutoGeral = totalProdutosBruto + totalServicosBruto;
-    const totalDescontosGeral = totalDescontosItens + totalDescontoGlobal;
-    const totalLiquidoFinal = totalBrutoGeral - totalDescontosGeral + totalAcrescimoGlobal;
+    const totalDescontosCalculated = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0) + (budget.desconto || 0);
+    
+    const totalDoPedido = totalProdutosBruto + totalServicosBruto + totalAcrescimoGlobal;
+    const totalLiquidoFinal = totalDoPedido - totalDescontosCalculated;
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
@@ -472,8 +471,8 @@ const BudgetEditorPage = () => {
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProdutosBruto)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalServicosBruto)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalBrutoGeral)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDescontosGeral)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDoPedido)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDescontosCalculated)}</span></div>
                         <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalLiquidoFinal)}</span></div>
                     </div>
                 </div>
