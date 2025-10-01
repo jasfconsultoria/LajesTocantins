@@ -254,10 +254,11 @@ const BudgetEditorPage = () => {
 
     // Cálculos de totais
     const totalProdutos = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
-    const totalDescontoItens = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0); // Usando desconto_total
-    
-    const totalAllDiscounts = totalDescontoItens + (budget.desconto || 0); // Soma dos descontos por item e desconto global
-    const totalPedido = totalProdutos - totalAllDiscounts + (budget.acrescimo || 0);
+    const sumOfItemDiscounts = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0); // Soma dos descontos por item
+    const globalBudgetDiscount = budget.desconto || 0; // Desconto global do orçamento
+
+    // O total do pedido subtrai a soma dos descontos dos itens E o desconto global
+    const totalPedido = totalProdutos - sumOfItemDiscounts - globalBudgetDiscount + (budget.acrescimo || 0);
     const totalLiquidoPedido = totalPedido; // Simplificado para este exemplo
 
     if (loading) {
@@ -401,8 +402,8 @@ const BudgetEditorPage = () => {
                                         <TableCell className="text-right">{comp.quantidade}</TableCell>
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}</TableCell>
                                         <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.quantidade * comp.valor_venda)}</TableCell>
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.desconto_total || 0)}</TableCell> {/* Usando desconto_total */}
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell> {/* Usando desconto_total */}
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.desconto_total || 0)}</TableCell>
+                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <Button variant="ghost" size="icon" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" })}>
@@ -470,7 +471,7 @@ const BudgetEditorPage = () => {
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProdutos)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(0)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalPedido)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalAllDiscounts)}</span></div> {/* Usando totalAllDiscounts */}
+                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(sumOfItemDiscounts)}</span></div> {/* Exibe apenas a soma dos descontos dos itens */}
                         <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalLiquidoPedido)}</span></div>
                     </div>
                 </div>
