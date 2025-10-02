@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Input } => '@/components/ui/input';
+import { Input } from '@/components/ui/input'; // Corrigido de `=>` para `from`
 import { Button } from '@/components/ui/button';
 import { User, Building2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
