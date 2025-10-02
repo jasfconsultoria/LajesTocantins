@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -16,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
 
-// Helper function for normalization (moved outside component)
+// Helper function for normalization (copied from PeopleList.jsx)
 const normalizeString = (str) => {
     if (typeof str !== 'string') return ''; // Handle non-string inputs
     return str
@@ -118,9 +120,15 @@ const PeopleList = () => {
                     aValue = a.pessoa_tipo;
                     bValue = b.pessoa_tipo;
                     break;
-                case 'nome_completo_busca':
-                    aValue = normalizeString(a.nome_completo_busca);
-                    bValue = normalizeString(b.nome_completo_busca);
+                case 'nome_completo_busca': // Mantém o nome da coluna para a lógica de ordenação
+                    const getDisplayName = (person) => {
+                        if (person.nome_fantasia && person.razao_social) {
+                            return `${person.nome_fantasia} - ${person.razao_social}`;
+                        }
+                        return person.razao_social || person.nome_fantasia || '';
+                    };
+                    aValue = normalizeString(getDisplayName(a));
+                    bValue = normalizeString(getDisplayName(b));
                     break;
                 case 'cpf_cnpj':
                     aValue = a.cpf_cnpj ? a.cpf_cnpj.replace(/[^\d]/g, '') : '';
@@ -262,7 +270,11 @@ const PeopleList = () => {
                                         {getPessoaTipoIcon(p.pessoa_tipo)}
                                         {getPessoaTipoText(p.pessoa_tipo)}
                                     </TableCell>
-                                    <TableCell>{p.nome_completo_busca}</TableCell>
+                                    <TableCell>
+                                        {p.nome_fantasia && p.razao_social 
+                                            ? `${p.nome_fantasia} - ${p.razao_social}` 
+                                            : p.razao_social || p.nome_fantasia}
+                                    </TableCell>
                                     <TableCell>{p.cpf_cnpj}</TableCell>
                                     <TableCell>{p.municipio_nome || p.municipio_codigo}/{p.uf}</TableCell>
                                     <TableCell className="text-right">
