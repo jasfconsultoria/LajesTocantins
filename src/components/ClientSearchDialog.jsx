@@ -126,9 +126,9 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
                     {/* Display CPF/CNPJ without parentheses */}
                     {person.cpf_cnpj && `${person.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} ${formatCpfCnpj(person.cpf_cnpj, person.pessoa_tipo)}`}
                     {/* Display City/UF, ensuring a separator if CPF/CNPJ exists */}
-                    {person.cpf_cnpj && (person.municipio_nome || person.uf) && ' - '}
-                    {person.municipio_nome && `${person.municipio_nome}`}
-                    {person.municipio_nome && person.uf && '/'}
+                    {person.cpf_cnpj && (person.municipio_nome || person.municipio || person.uf) && ' - '}
+                    {(person.municipio_nome || person.municipio) && `${person.municipio_nome || person.municipio}`}
+                    {(person.municipio_nome || person.municipio) && person.uf && '/'}
                     {person.uf}
                   </div>
                 </Button>
