@@ -105,14 +105,17 @@ const BudgetEditorPage = () => {
         if (clientData.complemento) parts.push(clientData.complemento);
         if (clientData.bairro) parts.push(clientData.bairro);
         
-        const municipioNome = allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
+        // Priorize municipio_nome se já disponível em clientData (do enrichedPeople)
+        // Caso contrário, busque pelo código na lista allMunicipalities
+        const municipioNome = clientData.municipio_nome || allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
         const ufSigla = clientData.uf || '';
 
-        // Adiciona Município e UF separadamente se existirem
-        if (municipioNome) {
+        // Combine municipality and UF into one part if both exist
+        if (municipioNome && ufSigla) {
+            parts.push(`${municipioNome}/${ufSigla}`);
+        } else if (municipioNome) { // Add only municipality if UF is missing
             parts.push(municipioNome);
-        }
-        if (ufSigla) {
+        } else if (ufSigla) { // Add only UF if municipality is missing
             parts.push(ufSigla);
         }
 
