@@ -176,7 +176,7 @@ const BudgetEditorPage = () => {
             const { data, error } = await supabase
                 .from('orcamento')
                 .select('*')
-                .eq('id', parseInt(id, 10)) // Convertendo o ID para inteiro aqui
+                .eq('id', parseInt(id, 10)) // Convertendo o ID do orçamento para inteiro
                 .single();
             if (error) throw error;
             if (data) {
@@ -192,7 +192,7 @@ const BudgetEditorPage = () => {
                     const { data: clientData, error: clientError } = await supabase
                         .from('pessoas')
                         .select('*')
-                        .eq('id', data.cliente_id)
+                        .eq('id', parseInt(data.cliente_id, 10)) // Convertendo cliente_id para inteiro para consultar 'pessoas'
                         .single();
                     if (clientError) throw clientError;
 
@@ -207,7 +207,7 @@ const BudgetEditorPage = () => {
             const { data: compData, error: compError } = await supabase
                 .from('orcamento_composicao')
                 .select('*, produtos!produto_id(prod_xProd, prod_uCOM)')
-                .eq('orcamento_id', parseInt(id, 10)); // Convertendo o ID para inteiro aqui também
+                .eq('orcamento_id', parseInt(id, 10)); // Convertendo o ID do orçamento para inteiro
             if (compError) throw compError;
             if (compData) setCompositions(compData);
 
@@ -270,7 +270,7 @@ const BudgetEditorPage = () => {
     const handleSelectClient = (person) => { // Agora recebe o objeto completo da pessoa
         setBudget(prev => ({
             ...prev,
-            cliente_id: person.id,
+            cliente_id: person.id.toString(), // Convertendo para string para o campo TEXT
             nome_cliente: person.razao_social || person.nome_fantasia,
             cliente_endereco_completo: buildClientAddressString(person),
         }));
@@ -306,7 +306,7 @@ const BudgetEditorPage = () => {
                 const { error: updateError } = await supabase
                     .from('orcamento')
                     .update(saveData)
-                    .eq('id', parseInt(id, 10)); // Convertendo o ID para inteiro aqui
+                    .eq('id', parseInt(id, 10)); // Convertendo o ID do orçamento para inteiro
                 error = updateError;
                 actionType = 'budget_update';
                 description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
