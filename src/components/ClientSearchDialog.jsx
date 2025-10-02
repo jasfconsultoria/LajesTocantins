@@ -10,26 +10,26 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { User, Building2, Search, ChevronLeft, ChevronRight } from 'lucide-react'; // Importar ChevronLeft e ChevronRight
-import { ScrollArea } from '@/components/ui/scroll-area'; // Importar ScrollArea
-import { formatCpfCnpj } from '@/lib/utils'; // Importar a função de formatação
+import { User, Building2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { formatCpfCnpj } from '@/lib/utils';
 
 // Helper function for normalization (copied from PeopleList.jsx)
 const normalizeString = (str) => {
     if (typeof str !== 'string') return '';
     return str
-        .normalize("NFD") // Normalize diacritics
-        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-        .toLowerCase() // Convert to lowercase
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"") // Remove common punctuation
-        .replace(/\s{2,}/g," ") // Replace multiple spaces with a single space
-        .trim(); // Trim leading/trailing whitespace
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
+        .replace(/\s{2,}/g," ")
+        .trim();
 };
 
 const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1); // Estado para a página atual
-  const ITEMS_PER_PAGE = 10; // Itens por página
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const filteredPeople = useMemo(() => {
     const normalizedSearchTerm = normalizeString(searchTerm);
@@ -37,13 +37,15 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
       return people;
     }
     return people.filter(p => {
-      const normalizedName = normalizeString(p.razao_social || p.nome_fantasia);
+      const normalizedRazaoSocial = normalizeString(p.razao_social || '');
+      const normalizedNomeFantasia = normalizeString(p.nome_fantasia || '');
       const normalizedCpfCnpj = normalizeString(p.cpf_cnpj || '');
       const normalizedMunicipio = normalizeString(p.municipio_nome || '');
       const normalizedUf = normalizeString(p.uf || '');
 
       return (
-        normalizedName.includes(normalizedSearchTerm) ||
+        normalizedRazaoSocial.includes(normalizedSearchTerm) ||
+        normalizedNomeFantasia.includes(normalizedSearchTerm) ||
         normalizedCpfCnpj.includes(normalizedSearchTerm) ||
         normalizedMunicipio.includes(normalizedSearchTerm) ||
         normalizedUf.includes(normalizedSearchTerm)
@@ -67,13 +69,12 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
   };
 
   const handleSelect = (person) => {
-    onSelectClient(person); // Pass the full person object
+    onSelectClient(person);
     setIsOpen(false);
-    setSearchTerm(''); // Clear search term on close
-    setCurrentPage(1); // Reset pagination
+    setSearchTerm('');
+    setCurrentPage(1);
   };
 
-  // Clear search term and reset pagination when dialog opens/closes
   useEffect(() => {
     if (!isOpen) {
       setSearchTerm('');
@@ -83,7 +84,7 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-[700px] p-0"> {/* Largura ajustada para 700px */}
+      <DialogContent className="sm:max-w-[700px] p-0">
         <DialogHeader className="p-6 pb-4">
           <DialogTitle>Selecionar Cliente</DialogTitle>
           <DialogDescription>
@@ -97,12 +98,12 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
             value={searchTerm}
             onChange={(e) => {
                 setSearchTerm(e.target.value);
-                setCurrentPage(1); // Reset page on search
+                setCurrentPage(1);
             }}
             className="pl-10"
           />
         </div>
-        <ScrollArea className="h-[400px] px-6 pb-6"> {/* Altura ajustada para 400px */}
+        <ScrollArea className="h-[400px] px-6 pb-6">
           {paginatedPeople.length === 0 ? (
             <p className="text-center text-slate-500 py-4">Nenhum cliente encontrado.</p>
           ) : (
