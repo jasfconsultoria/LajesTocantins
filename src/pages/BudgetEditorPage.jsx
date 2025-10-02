@@ -108,12 +108,11 @@ const BudgetEditorPage = () => {
         const municipioNome = allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
         const ufSigla = clientData.uf || '';
 
-        // Adiciona Município/UF se ambos existirem
-        if (municipioNome && ufSigla) {
-            parts.push(`${municipioNome}/${ufSigla}`);
-        } else if (municipioNome) { // Adiciona apenas município se UF não existir
+        // Adiciona Município e UF separadamente se existirem
+        if (municipioNome) {
             parts.push(municipioNome);
-        } else if (ufSigla) { // Adiciona apenas UF se município não existir
+        }
+        if (ufSigla) {
             parts.push(ufSigla);
         }
 
