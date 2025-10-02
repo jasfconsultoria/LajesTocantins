@@ -11,8 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, formatCpfCnpj } from '@/lib/utils'; // Importar formatCpfCnpj
+import { normalizeCnpj, formatCpfCnpj, formatCurrency } from '@/lib/utils'; // Importar formatCpfCnpj e formatCurrency
 import ClientSearchDialog from '@/components/ClientSearchDialog';
+import ProductSearchDialog from '@/components/ProductSearchDialog'; // Importar o novo diálogo
+import { v4 as uuidv4 } from 'uuid'; // Importar uuid para IDs temporários
 import {
   Table,
   TableBody,
@@ -74,6 +76,7 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
+    const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false); // Novo estado para o diálogo de produtos
     const [unitsMap, setUnitsMap] = useState(new Map()); // Novo estado para o mapa de unidades
 
     const fetchUfsAndMunicipalities = useCallback(async () => {
@@ -289,6 +292,25 @@ const BudgetEditorPage = () => {
         }));
     };
 
+    const handleSelectProduct = (product) => {
+        const newCompositionItem = {
+            id: uuidv4(), // Temporary ID for new items
+            orcamento_id: id ? parseInt(id, 10) : null, // If editing, link to existing budget
+            produto_id: product.id,
+            quantidade: 1,
+            valor_venda: product.prod_vUnCOM || 0,
+            desconto_total: 0,
+            // Include product details for display immediately
+            produtos: {
+                prod_xProd: product.prod_xProd,
+                prod_uCOM: product.prod_uCOM,
+            },
+            isNew: true, // Mark as new for saving logic
+        };
+        setCompositions(prev => [...prev, newCompositionItem]);
+        toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
+    };
+
     const handleSave = async () => {
         if (!activeCompanyId) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Nenhuma empresa ativa selecionada para salvar o orçamento.' });
@@ -339,6 +361,27 @@ const BudgetEditorPage = () => {
 
             if (error) throw error;
 
+            // Handle new compositions
+            if (budgetId) {
+                for (const comp of compositions) {
+                    if (comp.isNew) {
+                        const { error: compInsertError } = await supabase
+                            .from('orcamento_composicao')
+                            .insert({
+                                orcamento_id: budgetId,
+                                produto_id: comp.produto_id,
+                                quantidade: comp.quantidade,
+                                valor_venda: comp.valor_venda,
+                                desconto_total: comp.desconto_total,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString(),
+                            });
+                        if (compInsertError) throw compInsertError;
+                    }
+                    // TODO: Add logic for updating existing compositions and deleting removed ones
+                }
+            }
+
             if (user) {
                 await logAction(user.id, actionType, description, activeCompanyId, null);
             }
@@ -347,6 +390,44 @@ const BudgetEditorPage = () => {
             navigate('/app/budgets');
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleEditComposition = (compositionId) => {
+        // For now, just a toast. Full editing would involve another dialog/form.
+        toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" });
+    };
+
+    const handleDeleteComposition = async (compositionId, productName) => {
+        if (!window.confirm(`Tem certeza que deseja remover "${productName}" da composição?`)) {
+            return;
+        }
+        setSaving(true);
+        try {
+            // If it's a new item not yet saved to DB, just remove from state
+            const itemToDelete = compositions.find(c => c.id === compositionId);
+            if (itemToDelete && itemToDelete.isNew) {
+                setCompositions(prev => prev.filter(c => c.id !== compositionId));
+                toast({ title: "Item removido!", description: `"${productName}" foi removido da lista.` });
+            } else {
+                // If it's an existing item, delete from DB
+                const { error } = await supabase
+                    .from('orcamento_composicao')
+                    .delete()
+                    .eq('id', compositionId);
+
+                if (error) throw error;
+
+                setCompositions(prev => prev.filter(c => c.id !== compositionId));
+                toast({ title: 'Item excluído!', description: `"${productName}" foi removido(a) com sucesso.` });
+                if (user) {
+                    await logAction(user.id, 'budget_composition_delete', `Item "${productName}" (ID: ${compositionId}) excluído do orçamento (ID: ${id}).`, activeCompanyId, null);
+                }
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Erro ao excluir item', description: error.message });
         } finally {
             setSaving(false);
         }
@@ -518,16 +599,16 @@ const BudgetEditorPage = () => {
                                         <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
                                         <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell>
                                         <TableCell className="text-right">{comp.quantidade}</TableCell>
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.valor_venda)}</TableCell>
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.quantidade * comp.valor_venda)}</TableCell>
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(comp.desconto_total || 0)}</TableCell>
-                                        <TableCell className="text-right">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.quantidade * comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.desconto_total || 0)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" })}>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)}>
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de excluir itens de composição será adicionada em breve!" })}>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -538,7 +619,7 @@ const BudgetEditorPage = () => {
                         </TableBody>
                     </Table>
                     <div className="flex justify-center mt-4">
-                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "A funcionalidade de adicionar itens de composição será adicionada em breve!" })}>
+                        <Button variant="outline" onClick={() => setIsProductSearchDialogOpen(true)}>
                             <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Item
                         </Button>
                     </div>
@@ -586,11 +667,11 @@ const BudgetEditorPage = () => {
 
                     <div className="lg:col-span-1 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
-                        <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalProdutosBruto)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalServicosBruto)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDoPedido)}</span></div>
-                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalDescontoDisplay)}</span></div>
-                        <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{new Intl.NumberFormat('pt-BR', { style: 'decimal', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(totalLiquidoFinal)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{formatCurrency(totalProdutosBruto)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{formatCurrency(totalServicosBruto)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total do Pedido R$</span><span>{formatCurrency(totalDoPedido)}</span></div>
+                        <div className="flex justify-between text-slate-700"><span>Total Desconto R$</span><span>{formatCurrency(totalDescontoDisplay)}</span></div>
+                        <div className="flex justify-between font-bold text-lg text-blue-700 border-t border-slate-300 pt-2 mt-2"><span>Total Líq. do Pedido R$</span><span>{formatCurrency(totalLiquidoFinal)}</span></div>
                     </div>
                 </div>
                 
@@ -634,6 +715,13 @@ const BudgetEditorPage = () => {
                 setIsOpen={setIsClientSearchDialogOpen}
                 people={people}
                 onSelectClient={handleSelectClient}
+            />
+
+            <ProductSearchDialog
+                isOpen={isProductSearchDialogOpen}
+                setIsOpen={setIsProductSearchDialogOpen}
+                onSelectProduct={handleSelectProduct}
+                activeCompanyId={activeCompanyId}
             />
         </div>
     );
