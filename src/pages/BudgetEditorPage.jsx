@@ -201,11 +201,8 @@ const BudgetEditorPage = () => {
                             ? `${clientData.nome_fantasia} - ${clientData.razao_social}` 
                             : clientData.razao_social || clientData.nome_fantasia;
                         
-                        const clientDoc = clientData.cpf_cnpj 
-                            ? `${clientData.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} ${formatCpfCnpj(clientData.cpf_cnpj, clientData.pessoa_tipo)}`
-                            : '';
-
-                        budgetData.nome_cliente = clientDoc ? `${clientName} (${clientDoc})` : clientName;
+                        // Removido o CPF/CNPJ da exibição do nome do cliente
+                        budgetData.nome_cliente = clientName;
                         budgetData.cliente_endereco_completo = buildClientAddressString(clientData);
                     }
                 }
@@ -280,14 +277,11 @@ const BudgetEditorPage = () => {
             ? `${person.nome_fantasia} - ${person.razao_social}` 
             : person.razao_social || person.nome_fantasia;
         
-        const clientDoc = person.cpf_cnpj 
-            ? `${person.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} ${formatCpfCnpj(person.cpf_cnpj, person.pessoa_tipo)}`
-            : '';
-
+        // Removido o CPF/CNPJ da exibição do nome do cliente
         setBudget(prev => ({
             ...prev,
             cliente_id: person.cpf_cnpj, // Armazena o CPF/CNPJ
-            nome_cliente: clientDoc ? `${clientName} (${clientDoc})` : clientName, // Inclui CPF/CNPJ no nome para exibição
+            nome_cliente: clientName, // Apenas o nome do cliente
             cliente_endereco_completo: buildClientAddressString(person),
         }));
     };
