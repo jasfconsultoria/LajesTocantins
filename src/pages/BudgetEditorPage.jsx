@@ -107,7 +107,7 @@ const BudgetEditorPage = () => {
         
         // Priorize municipio_nome se já disponível em clientData (do enrichedPeople)
         // Caso contrário, busque pelo código na lista allMunicipalities
-        const municipioNome = clientData.municipio_nome || allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
+        const municipioNome = allMunicipalities.find(m => m.codigo === String(clientData.municipio))?.municipio || '';
         const ufSigla = clientData.uf || '';
 
         // Combine municipality and UF into one part if both exist

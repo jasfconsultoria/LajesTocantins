@@ -117,10 +117,15 @@ const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
                 >
                   <div className="flex items-center text-slate-800 font-medium">
                     {person.pessoa_tipo === 1 ? <User className="w-4 h-4 mr-2 text-blue-500" /> : <Building2 className="w-4 h-4 mr-2 text-purple-500" />}
-                    {person.nome_fantasia && person.razao_social ? `${person.nome_fantasia} - ${person.razao_social}` : person.razao_social || person.nome_fantasia}
+                    {/* Display nome_fantasia - razao_social, or just one if the other is missing */}
+                    {person.nome_fantasia && person.razao_social 
+                        ? `${person.nome_fantasia} - ${person.razao_social}` 
+                        : person.razao_social || person.nome_fantasia}
                   </div>
                   <div className="text-xs text-slate-500 mt-1 pl-6">
+                    {/* Display CPF/CNPJ without parentheses */}
                     {person.cpf_cnpj && `${person.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} ${formatCpfCnpj(person.cpf_cnpj, person.pessoa_tipo)}`}
+                    {/* Display City/UF, ensuring a separator if CPF/CNPJ exists */}
                     {person.cpf_cnpj && (person.municipio_nome || person.uf) && ' - '}
                     {person.municipio_nome && `${person.municipio_nome}`}
                     {person.municipio_nome && person.uf && '/'}
