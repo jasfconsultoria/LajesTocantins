@@ -188,7 +188,7 @@ const BudgetEditorPage = () => {
             if (data) {
                 const budgetData = {
                     ...data,
-                    data_orcamento: data.data_orcamento ? data.data.orcamento.split('T')[0] : '',
+                    data_orcamento: data.data_orcamento ? data.data_orcamento.split('T')[0] : '',
                     data_venda: data.data_venda ? data.data_venda.split('T')[0] : null,
                     previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null,
                 };
@@ -535,7 +535,7 @@ const BudgetEditorPage = () => {
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Endereço do Cliente Selecionado (somente leitura, sem título/linha) */}
+                    {/* Endereço do Cliente Selecionado (somente leitura) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
                         <Textarea id="cliente_endereco_completo" className="form-textarea" value={budget.cliente_endereco_completo || ''} readOnly rows={3} />
@@ -544,7 +544,7 @@ const BudgetEditorPage = () => {
                     {/* Endereço de Entrega (mantido como editável) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
-                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={3} />
+                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
                     </div>
 
                     {/* Natureza da Operação, NF-e Nº */}
