@@ -535,13 +535,13 @@ const BudgetEditorPage = () => {
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Endereço do Cliente Selecionado (somente leitura) */}
+                    {/* Endereço do Cliente Selecionado (somente leitura, 1 linha) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
-                        <Textarea id="cliente_endereco_completo" className="form-textarea" value={budget.cliente_endereco_completo || ''} readOnly rows={3} />
+                        <Textarea id="cliente_endereco_completo" className="form-textarea" value={budget.cliente_endereco_completo || ''} readOnly rows={1} />
                     </div>
 
-                    {/* Endereço de Entrega (mantido como editável) */}
+                    {/* Endereço de Entrega (mantido como editável, 2 linhas) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
                         <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
