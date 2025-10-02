@@ -24,7 +24,7 @@ import {
 
 const initialBudgetState = {
     data_orcamento: new Date().toISOString().split('T')[0], // YYYY-MM-DD
-    cliente_id: null,
+    cliente_id: null, // Agora armazenará o CPF/CNPJ do cliente
     funcionario_id: null,
     endereco_entrega: '',
     historico: '',
@@ -46,7 +46,7 @@ const initialBudgetState = {
     data_venda: null, // Can be null initially
     total_venda: 0.0,
     total_fatura: 0.0,
-    nome_cliente: '',
+    nome_cliente: '', // Nome do cliente para exibição
     numero_pedido: '',
     acrescimo: 0.0,
     validade: 0,
@@ -187,12 +187,12 @@ const BudgetEditorPage = () => {
                     previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null,
                 };
 
-                // Fetch client details if cliente_id exists
+                // Fetch client details if cliente_id (CPF/CNPJ) exists
                 if (data.cliente_id) {
                     const { data: clientData, error: clientError } = await supabase
                         .from('pessoas')
                         .select('*')
-                        .eq('id', parseInt(data.cliente_id, 10)) // Convertendo cliente_id para inteiro para consultar 'pessoas'
+                        .eq('cpf_cnpj', data.cliente_id) // Agora busca por cpf_cnpj
                         .single();
                     if (clientError) throw clientError;
 
@@ -286,7 +286,7 @@ const BudgetEditorPage = () => {
 
         setBudget(prev => ({
             ...prev,
-            cliente_id: person.id.toString(), // Convertendo para string para o campo TEXT
+            cliente_id: person.cpf_cnpj, // Armazena o CPF/CNPJ
             nome_cliente: clientDoc ? `${clientName} (${clientDoc})` : clientName, // Inclui CPF/CNPJ no nome para exibição
             cliente_endereco_completo: buildClientAddressString(person),
         }));
