@@ -55,14 +55,8 @@ const initialBudgetState = {
     codigo_antigo: null,
     previsao_entrega: null, // Novo campo
 
-    // Campos de endereço do cliente (somente leitura)
-    cliente_logradouro: '',
-    cliente_numero: '',
-    cliente_complemento: '',
-    cliente_bairro: '',
-    cliente_municipio_nome: '',
-    cliente_uf_sigla: '',
-    cliente_cep: '',
+    // Campo de endereço do cliente concatenado (somente leitura)
+    cliente_endereco_completo: '',
 };
 
 const BudgetEditorPage = () => {
@@ -102,6 +96,28 @@ const BudgetEditorPage = () => {
             toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar dados de localização.' });
         }
     }, [toast]);
+
+    const buildClientAddressString = useCallback((clientData) => {
+        if (!clientData) return '';
+        const parts = [];
+        if (clientData.logradouro) parts.push(clientData.logradouro);
+        if (clientData.numero) parts.push(clientData.numero);
+        if (clientData.complemento) parts.push(clientData.complemento);
+        if (clientData.bairro) parts.push(clientData.bairro);
+        
+        const municipioNome = allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
+        if (municipioNome && clientData.uf) {
+            parts.push(`${municipioNome}/${clientData.uf}`);
+        } else if (municipioNome) {
+            parts.push(municipioNome);
+        } else if (clientData.uf) {
+            parts.push(clientData.uf);
+        }
+
+        if (clientData.cep) parts.push(`CEP: ${clientData.cep}`);
+        
+        return parts.filter(Boolean).join(', ');
+    }, [allMunicipalities]);
 
     const fetchPeople = useCallback(async () => {
         try {
@@ -178,15 +194,8 @@ const BudgetEditorPage = () => {
                     if (clientError) throw clientError;
 
                     if (clientData) {
-                        const municipioNome = allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
                         budgetData.nome_cliente = clientData.razao_social || clientData.nome_fantasia;
-                        budgetData.cliente_logradouro = clientData.logradouro || '';
-                        budgetData.cliente_numero = clientData.numero || '';
-                        budgetData.cliente_complemento = clientData.complemento || '';
-                        budgetData.cliente_bairro = clientData.bairro || '';
-                        budgetData.cliente_municipio_nome = municipioNome;
-                        budgetData.cliente_uf_sigla = clientData.uf || '';
-                        budgetData.cliente_cep = clientData.cep || '';
+                        budgetData.cliente_endereco_completo = buildClientAddressString(clientData);
                     }
                 }
                 setBudget(budgetData);
@@ -204,7 +213,7 @@ const BudgetEditorPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, user, activeCompany, toast, allMunicipalities]);
+    }, [id, user, activeCompany, toast, buildClientAddressString]);
 
     const fetchUnits = useCallback(async () => {
         try {
@@ -256,18 +265,11 @@ const BudgetEditorPage = () => {
     };
 
     const handleSelectClient = (person) => { // Agora recebe o objeto completo da pessoa
-        const municipioNome = allMunicipalities.find(m => m.codigo === person.municipio)?.municipio || '';
         setBudget(prev => ({
             ...prev,
             cliente_id: person.id,
             nome_cliente: person.razao_social || person.nome_fantasia,
-            cliente_logradouro: person.logradouro || '',
-            cliente_numero: person.numero || '',
-            cliente_complemento: person.complemento || '',
-            cliente_bairro: person.bairro || '',
-            cliente_municipio_nome: municipioNome,
-            cliente_uf_sigla: person.uf || '',
-            cliente_cep: person.cep || '',
+            cliente_endereco_completo: buildClientAddressString(person),
         }));
     };
 
@@ -290,13 +292,7 @@ const BudgetEditorPage = () => {
             };
 
             // Remove client address fields before saving to 'orcamento' table
-            delete saveData.cliente_logradouro;
-            delete saveData.cliente_numero;
-            delete saveData.cliente_complemento;
-            delete saveData.cliente_bairro;
-            delete saveData.cliente_municipio_nome;
-            delete saveData.cliente_uf_sigla;
-            delete saveData.cliente_cep;
+            delete saveData.cliente_endereco_completo;
 
             let error;
             let actionType;
@@ -442,38 +438,19 @@ const BudgetEditorPage = () => {
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Endereço do Cliente Selecionado (campos desabilitados) */}
+                    {/* Endereço do Cliente Selecionado (campo concatenado desabilitado) */}
                     <div className="lg:col-span-12 pt-4 border-t border-slate-200 mt-4">
                         <h4 className="config-title mb-4 text-base font-semibold text-slate-700">Endereço do Cliente Selecionado</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                            <div className="form-group lg:col-span-8">
-                                <Label htmlFor="cliente_logradouro" className="form-label">Logradouro</Label>
-                                <Input id="cliente_logradouro" type="text" className="form-input" value={budget.cliente_logradouro} readOnly disabled />
-                            </div>
-                            <div className="form-group lg:col-span-4">
-                                <Label htmlFor="cliente_numero" className="form-label">Número</Label>
-                                <Input id="cliente_numero" type="text" className="form-input" value={budget.cliente_numero} readOnly disabled />
-                            </div>
-                            <div className="form-group lg:col-span-6">
-                                <Label htmlFor="cliente_complemento" className="form-label">Complemento</Label>
-                                <Input id="cliente_complemento" type="text" className="form-input" value={budget.cliente_complemento} readOnly disabled />
-                            </div>
-                            <div className="form-group lg:col-span-6">
-                                <Label htmlFor="cliente_bairro" className="form-label">Bairro</Label>
-                                <Input id="cliente_bairro" type="text" className="form-input" value={budget.cliente_bairro} readOnly disabled />
-                            </div>
-                            <div className="form-group lg:col-span-4">
-                                <Label htmlFor="cliente_municipio_nome" className="form-label">Cidade</Label>
-                                <Input id="cliente_municipio_nome" type="text" className="form-input" value={budget.cliente_municipio_nome} readOnly disabled />
-                            </div>
-                            <div className="form-group lg:col-span-4">
-                                <Label htmlFor="cliente_uf_sigla" className="form-label">UF</Label>
-                                <Input id="cliente_uf_sigla" type="text" className="form-input" value={budget.cliente_uf_sigla} readOnly disabled />
-                            </div>
-                            <div className="form-group lg:col-span-4">
-                                <Label htmlFor="cliente_cep" className="form-label">CEP</Label>
-                                <Input id="cliente_cep" type="text" className="form-input" value={budget.cliente_cep} readOnly disabled />
-                            </div>
+                        <div className="form-group col-span-full">
+                            <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
+                            <Textarea 
+                                id="cliente_endereco_completo" 
+                                className="form-textarea" 
+                                value={budget.cliente_endereco_completo} 
+                                readOnly 
+                                disabled 
+                                rows={2}
+                            />
                         </div>
                     </div>
 
