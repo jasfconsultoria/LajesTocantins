@@ -538,7 +538,7 @@ const BudgetEditorPage = () => {
                     {/* Endereço de Entrega (mantido como editável) */}
                     <div className="form-group lg:col-span-12 pt-4 border-t border-slate-200 mt-4">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
-                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={1} />
+                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={3} />
                     </div>
 
                     {/* Natureza da Operação, NF-e Nº */}
