@@ -176,7 +176,7 @@ const BudgetEditorPage = () => {
             const { data, error } = await supabase
                 .from('orcamento')
                 .select('*')
-                .eq('id', id)
+                .eq('id', parseInt(id, 10)) // Convertendo o ID para inteiro aqui
                 .single();
             if (error) throw error;
             if (data) {
@@ -207,7 +207,7 @@ const BudgetEditorPage = () => {
             const { data: compData, error: compError } = await supabase
                 .from('orcamento_composicao')
                 .select('*, produtos!produto_id(prod_xProd, prod_uCOM)')
-                .eq('orcamento_id', id);
+                .eq('orcamento_id', parseInt(id, 10)); // Convertendo o ID para inteiro aqui também
             if (compError) throw compError;
             if (compData) setCompositions(compData);
 
@@ -306,7 +306,7 @@ const BudgetEditorPage = () => {
                 const { error: updateError } = await supabase
                     .from('orcamento')
                     .update(saveData)
-                    .eq('id', id);
+                    .eq('id', parseInt(id, 10)); // Convertendo o ID para inteiro aqui
                 error = updateError;
                 actionType = 'budget_update';
                 description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
