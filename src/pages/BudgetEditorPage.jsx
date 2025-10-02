@@ -106,12 +106,15 @@ const BudgetEditorPage = () => {
         if (clientData.bairro) parts.push(clientData.bairro);
         
         const municipioNome = allMunicipalities.find(m => m.codigo === clientData.municipio)?.municipio || '';
-        if (municipioNome && clientData.uf) {
-            parts.push(`${municipioNome}/${clientData.uf}`);
-        } else if (municipioNome) {
+        const ufSigla = clientData.uf || '';
+
+        // Adiciona Município/UF se ambos existirem
+        if (municipioNome && ufSigla) {
+            parts.push(`${municipioNome}/${ufSigla}`);
+        } else if (municipioNome) { // Adiciona apenas município se UF não existir
             parts.push(municipioNome);
-        } else if (clientData.uf) {
-            parts.push(clientData.uf);
+        } else if (ufSigla) { // Adiciona apenas UF se município não existir
+            parts.push(ufSigla);
         }
 
         if (clientData.cep) parts.push(`CEP: ${clientData.cep}`);
@@ -443,13 +446,13 @@ const BudgetEditorPage = () => {
                         <h4 className="config-title mb-4 text-base font-semibold text-slate-700">Endereço do Cliente Selecionado</h4>
                         <div className="form-group col-span-full">
                             <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
-                            <Textarea 
+                            <Input 
                                 id="cliente_endereco_completo" 
-                                className="form-textarea" 
+                                type="text"
+                                className="form-input" 
                                 value={budget.cliente_endereco_completo} 
                                 readOnly 
                                 disabled 
-                                rows={2}
                             />
                         </div>
                     </div>
