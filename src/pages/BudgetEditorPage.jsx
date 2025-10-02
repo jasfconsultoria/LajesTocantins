@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj } from '@/lib/utils';
+import { normalizeCnpj, formatCpfCnpj } from '@/lib/utils'; // Importar formatCpfCnpj
 import ClientSearchDialog from '@/components/ClientSearchDialog';
 import {
   Table,
@@ -197,7 +197,15 @@ const BudgetEditorPage = () => {
                     if (clientError) throw clientError;
 
                     if (clientData) {
-                        budgetData.nome_cliente = clientData.razao_social || clientData.nome_fantasia;
+                        const clientName = clientData.nome_fantasia && clientData.razao_social 
+                            ? `${clientData.nome_fantasia} - ${clientData.razao_social}` 
+                            : clientData.razao_social || clientData.nome_fantasia;
+                        
+                        const clientDoc = clientData.cpf_cnpj 
+                            ? `${clientData.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} ${formatCpfCnpj(clientData.cpf_cnpj, clientData.pessoa_tipo)}`
+                            : '';
+
+                        budgetData.nome_cliente = clientDoc ? `${clientName} (${clientDoc})` : clientName;
                         budgetData.cliente_endereco_completo = buildClientAddressString(clientData);
                     }
                 }
@@ -216,7 +224,7 @@ const BudgetEditorPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, user, activeCompany, toast, buildClientAddressString]);
+    }, [id, user, activeCompany, toast, buildClientAddressString, allMunicipalities]); // Adicionado allMunicipalities
 
     const fetchUnits = useCallback(async () => {
         try {
@@ -268,10 +276,18 @@ const BudgetEditorPage = () => {
     };
 
     const handleSelectClient = (person) => { // Agora recebe o objeto completo da pessoa
+        const clientName = person.nome_fantasia && person.razao_social 
+            ? `${person.nome_fantasia} - ${person.razao_social}` 
+            : person.razao_social || person.nome_fantasia;
+        
+        const clientDoc = person.cpf_cnpj 
+            ? `${person.pessoa_tipo === 1 ? 'CPF' : 'CNPJ'} ${formatCpfCnpj(person.cpf_cnpj, person.pessoa_tipo)}`
+            : '';
+
         setBudget(prev => ({
             ...prev,
             cliente_id: person.id.toString(), // Convertendo para string para o campo TEXT
-            nome_cliente: person.razao_social || person.nome_fantasia,
+            nome_cliente: clientDoc ? `${clientName} (${clientDoc})` : clientName, // Inclui CPF/CNPJ no nome para exibição
             cliente_endereco_completo: buildClientAddressString(person),
         }));
     };
