@@ -538,7 +538,7 @@ const BudgetEditorPage = () => {
                     {/* Endereço do Cliente Selecionado (somente leitura, 1 linha) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
-                        <Textarea id="cliente_endereco_completo" className="form-textarea" value={budget.cliente_endereco_completo || ''} readOnly rows={1} />
+                        <Input id="cliente_endereco_completo" type="text" className="form-input" value={budget.cliente_endereco_completo || ''} readOnly />
                     </div>
 
                     {/* Endereço de Entrega (mantido como editável, 2 linhas) */}
