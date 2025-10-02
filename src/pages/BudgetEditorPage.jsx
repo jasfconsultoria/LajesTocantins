@@ -535,26 +535,10 @@ const BudgetEditorPage = () => {
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Endereço do Cliente Selecionado (campo concatenado desabilitado) */}
-                    <div className="lg:col-span-12 pt-4 border-t border-slate-200 mt-4">
-                        <h4 className="config-title mb-4 text-base font-semibold text-slate-700">Endereço do Cliente Selecionado</h4>
-                        <div className="form-group col-span-full">
-                            <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
-                            <Input 
-                                id="cliente_endereco_completo" 
-                                type="text"
-                                className="form-input" 
-                                value={budget.cliente_endereco_completo} 
-                                readOnly 
-                                disabled 
-                            />
-                        </div>
-                    </div>
-
                     {/* Endereço de Entrega (mantido como editável) */}
                     <div className="form-group lg:col-span-12 pt-4 border-t border-slate-200 mt-4">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
-                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
+                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={1} />
                     </div>
 
                     {/* Natureza da Operação, NF-e Nº */}
