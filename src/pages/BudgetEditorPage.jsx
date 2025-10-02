@@ -7,7 +7,7 @@ import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, Plus
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } => '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
@@ -535,13 +535,20 @@ const BudgetEditorPage = () => {
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Endereço do Cliente Selecionado (somente leitura, 1 linha) */}
+                    {/* Endereço do Cliente (Input de uma linha, desabilitado e somente leitura) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
-                        <Input id="cliente_endereco_completo" type="text" className="form-input" value={budget.cliente_endereco_completo || ''} readOnly />
+                        <Input 
+                            id="cliente_endereco_completo" 
+                            type="text" 
+                            className="form-input" 
+                            value={budget.cliente_endereco_completo || ''} 
+                            readOnly 
+                            disabled 
+                        />
                     </div>
 
-                    {/* Endereço de Entrega (mantido como editável, 2 linhas) */}
+                    {/* Endereço de Entrega (Textarea de 2 linhas) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
                         <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
