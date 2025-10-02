@@ -17,13 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
-import { normalizeCnpj } from '@/lib/utils'; // Importar a função de normalização
-
-// Helper function for normalization (moved outside component)
-const normalizeString = (str) => {
-    if (typeof str !== 'string') return '';
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-};
+import { normalizeCnpj, normalizeString } from '@/lib/utils'; // Importar normalizeString
 
 const BudgetList = () => {
     const { handleNotImplemented } = useOutletContext();

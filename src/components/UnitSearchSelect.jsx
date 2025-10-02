@@ -12,12 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Ruler } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-// Helper function for normalization
-const normalizeString = (str) => {
-    if (typeof str !== 'string') return '';
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-};
+import { normalizeString } from '@/lib/utils'; // Importar a função normalizeString
 
 const UnitSearchSelect = ({
   value, // current selected unit code (e.g., "UN")

@@ -8,23 +8,13 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { Input } => '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { User, Building2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatCpfCnpj } from '@/lib/utils';
+import { formatCpfCnpj, normalizeString } from '@/lib/utils'; // Importar normalizeString
 
-// Helper function for normalization (copied from PeopleList.jsx)
-const normalizeString = (str) => {
-    if (typeof str !== 'string') return '';
-    return str
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"")
-        .replace(/\s{2,}/g," ")
-        .trim();
-};
+const ITEMS_PER_PAGE = 10;
 
 const ClientSearchDialog = ({ isOpen, setIsOpen, people, onSelectClient }) => {
   const [searchTerm, setSearchTerm] = useState('');

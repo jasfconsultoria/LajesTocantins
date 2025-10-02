@@ -17,18 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
-
-// Helper function for normalization (copied from PeopleList.jsx)
-const normalizeString = (str) => {
-    if (typeof str !== 'string') return ''; // Handle non-string inputs
-    return str
-        .normalize("NFD") // Normalize diacritics
-        .replace(/[\u0300-\u036f]/g, "") // Remove diacritics
-        .toLowerCase() // Convert to lowercase
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"") // Remove common punctuation
-        .replace(/\s{2,}/g," ") // Replace multiple spaces with a single space
-        .trim(); // Trim leading/trailing whitespace
-};
+import { normalizeString } from '@/lib/utils'; // Importar normalizeString
 
 const PeopleList = () => {
     const { handleNotImplemented } = useOutletContext();

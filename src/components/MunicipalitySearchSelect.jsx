@@ -12,12 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, MapPin } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area'; // Assuming ScrollArea exists
-
-// Helper function for normalization (copied from PeopleList.jsx)
-const normalizeString = (str) => {
-    if (typeof str !== 'string') return '';
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-};
+import { normalizeString } from '@/lib/utils'; // Importar a função normalizeString
 
 const MunicipalitySearchSelect = ({
   value, // current selected municipality code
