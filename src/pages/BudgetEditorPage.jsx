@@ -107,7 +107,7 @@ const BudgetEditorPage = () => {
         
         // Priorize municipio_nome se já disponível em clientData (do enrichedPeople)
         // Caso contrário, busque pelo código na lista allMunicipalities
-        const municipioNome = allMunicipalities.find(m => m.codigo === String(clientData.municipio))?.municipio || '';
+        const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(clientData.municipio))?.municipio || '';
         const ufSigla = clientData.uf || '';
 
         // Combine municipality and UF into one part if both exist
@@ -147,7 +147,8 @@ const BudgetEditorPage = () => {
 
             // Enriquecer dados de pessoas com nome do município e nome completo do estado para exibição
             const enrichedPeople = allPeople.map(p => {
-                const municipioObj = allMunicipalities.find(m => m.codigo === p.municipio);
+                // Convert both sides to string for consistent comparison
+                const municipioObj = allMunicipalities.find(m => String(m.codigo) === String(p.municipio));
                 const ufObj = allUfs.find(u => u.sigla === p.uf);
                 return {
                     ...p,
@@ -228,7 +229,7 @@ const BudgetEditorPage = () => {
     const fetchUnits = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('unidade')
+                .from('unidade') // Nome da tabela corrigido para 'unidade'
                 .select('codigo, unidade')
                 .order('unidade', { ascending: true });
             if (error) throw error;
