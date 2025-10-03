@@ -78,6 +78,8 @@ const BudgetEditorPage = () => {
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
 
+    const isFaturado = budget.faturado; // Determina se o orçamento está faturado e deve ser bloqueado
+
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
             const { data: ufsData, error: ufsError } = await supabase
@@ -579,11 +581,11 @@ const BudgetEditorPage = () => {
                     {/* Row 1: Número do Pedido, Data do Orçamento, Cliente */}
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="numero_pedido" className="form-label">{numeroLabel}</Label>
-                        <Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} onChange={handleInputChange} />
+                        <Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="data_orcamento" className="form-label">Data do Orçamento *</Label>
-                        <Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required />
+                        <Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required disabled={isFaturado} />
                     </div>
                     <div className="form-group lg:col-span-8">
                         <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
@@ -592,21 +594,22 @@ const BudgetEditorPage = () => {
                             onValueChange={handleSelectClient}
                             people={people}
                             placeholder="Selecione um cliente..."
+                            disabled={isFaturado}
                         />
                     </div>
 
                     {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="solicitante" className="form-label">Solicitante</Label>
-                        <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} />
+                        <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="telefone" className="form-label">Fone Solicitante</Label>
-                        <Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} />
+                        <Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="vendedor" className="form-label">Vendedor</Label>
-                        <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
+                        <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     
                     {/* Endereço do Cliente */}
@@ -625,17 +628,17 @@ const BudgetEditorPage = () => {
                     {/* Endereço de Entrega */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
-                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
+                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} disabled={isFaturado} />
                     </div>
 
                     {/* Natureza da Operação, NF-e Nº */}
                     <div className="form-group lg:col-span-9">
                         <Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label>
-                        <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} />
+                        <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label>
-                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} />
+                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                 </div>
 
@@ -652,6 +655,7 @@ const BudgetEditorPage = () => {
                         onSelect={handleSelectProductFromSearch}
                         placeholder="Digite para buscar e adicionar produto..."
                         className="w-full"
+                        disabled={isFaturado}
                     />
                 </div>
 
@@ -683,8 +687,7 @@ const BudgetEditorPage = () => {
                                 compositions.map(comp => (
                                     <TableRow key={comp.id} className="hover:bg-slate-50">
                                         <TableCell className="font-medium">
-                                            {comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}
-                                        </TableCell>
+                                            {comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
                                         <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell>
                                         <TableCell>
                                             <Input
@@ -694,6 +697,7 @@ const BudgetEditorPage = () => {
                                                 value={comp.quantidade}
                                                 onChange={(e) => handleQuantityChange(comp.id, e.target.value)}
                                                 className="w-20 text-right"
+                                                disabled={isFaturado}
                                             />
                                         </TableCell>
                                         <TableCell>
@@ -704,6 +708,7 @@ const BudgetEditorPage = () => {
                                                 value={comp.valor_venda}
                                                 onChange={(e) => handleValueChange(comp.id, e.target.value)}
                                                 className="w-28 text-right"
+                                                disabled={isFaturado}
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
@@ -717,6 +722,7 @@ const BudgetEditorPage = () => {
                                                 value={comp.desconto_total || 0}
                                                 onChange={(e) => handleDiscountChange(comp.id, e.target.value)}
                                                 className="w-24 text-right"
+                                                disabled={isFaturado}
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-bold">
@@ -724,11 +730,12 @@ const BudgetEditorPage = () => {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)}>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)} disabled={isFaturado}>
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
                                                 <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" 
-                                                    onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}>
+                                                    onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}
+                                                    disabled={isFaturado}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -747,19 +754,19 @@ const BudgetEditorPage = () => {
                     <div className="lg:col-span-2">
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
-                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
+                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly disabled={isFaturado} /></div>
+                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly disabled={isFaturado} /></div>
                         </div>
 
                         <h3 className="config-title mt-8 mb-4">Condições</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                             <div className="form-group lg:col-span-4">
                                 <Label htmlFor="previsao_entrega" className="form-label">Previsão de Entrega</Label>
-                                <Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} />
+                                <Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} disabled={isFaturado} />
                             </div>
                             <div className="form-group lg:col-span-4">
                                 <Label htmlFor="status_orcamento" className="form-label">Status</Label>
-                                <Select onValueChange={(value) => handleSelectChange('faturado', value === 'true')} value={budget.faturado.toString()}>
+                                <Select onValueChange={(value) => handleSelectChange('faturado', value === 'true')} value={budget.faturado.toString()} disabled={isFaturado}>
                                     <SelectTrigger id="status_orcamento" className="form-select"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="true">FATURADO</SelectItem>
@@ -769,7 +776,7 @@ const BudgetEditorPage = () => {
                             </div>
                             <div className="form-group lg:col-span-4">
                                 <Label htmlFor="forma_pagamento" className="form-label">Forma de Pagamento *</Label>
-                                <Select onValueChange={(value) => handleSelectChange('forma_pagamento', value)} value={budget.forma_pagamento}>
+                                <Select onValueChange={(value) => handleSelectChange('forma_pagamento', value)} value={budget.forma_pagamento} disabled={isFaturado}>
                                     <SelectTrigger id="forma_pagamento" className="form-select">
                                         <SelectValue placeholder="Selecione a forma" />
                                     </SelectTrigger>
@@ -797,22 +804,22 @@ const BudgetEditorPage = () => {
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
                     <div className="form-group lg:col-span-5">
                         <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
-                        <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} />
+                        <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label>
-                        <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} />
+                        <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="lg:col-span-5 flex justify-end space-x-2">
-                        <Select defaultValue="1_via">
+                        <Select defaultValue="1_via" disabled={isFaturado}>
                             <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="1_via">1ª Via</SelectItem>
                                 <SelectItem value="2_via">2ª Via</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
-                        <Button onClick={handleSave} className="save-button" disabled={saving}>
+                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })} disabled={isFaturado}>Desconto</Button>
+                        <Button onClick={handleSave} className="save-button" disabled={saving || isFaturado}>
                             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                             Salvar Orçamento
                         </Button>
@@ -823,7 +830,7 @@ const BudgetEditorPage = () => {
                 <div className="pt-6">
                     <div className="form-group col-span-full">
                         <Label htmlFor="observacao" className="form-label">Observação</Label>
-                        <Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} />
+                        <Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} disabled={isFaturado} />
                     </div>
                 </div>
             </div>
