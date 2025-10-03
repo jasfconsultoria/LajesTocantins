@@ -359,6 +359,9 @@ const BudgetEditorPage = () => {
                     nome_cliente: clientName,
                 };
 
+                // EXCLUIR O CAMPO cliente_endereco_completo ANTES DE INSERIR
+                delete defaultBudget.cliente_endereco_completo;
+
                 // Lógica para gerar o próximo numero_pedido
                 let nextNumeroPedido = 1;
                 try {
