@@ -365,6 +365,7 @@ const BudgetEditorPage = () => {
                 // Lógica para gerar o próximo numero_pedido
                 let nextNumeroPedido = 1;
                 try {
+                    console.log("DEBUG: Fetching last numero_pedido for cnpj_empresa:", normalizeCnpj(activeCompany.cnpj));
                     const { data: lastBudget, error: lastBudgetError } = await supabase
                         .from('orcamento')
                         .select('numero_pedido')
@@ -374,21 +375,29 @@ const BudgetEditorPage = () => {
                         .single();
 
                     if (lastBudgetError && lastBudgetError.code !== 'PGRST116') { // PGRST116 means no rows found
+                        console.error("DEBUG: Supabase error fetching last numero_pedido:", lastBudgetError);
                         throw lastBudgetError;
                     }
+                    console.log("DEBUG: Last budget data from Supabase:", lastBudget);
 
                     if (lastBudget && lastBudget.numero_pedido) {
                         const lastNum = parseInt(lastBudget.numero_pedido, 10);
+                        console.log("DEBUG: Parsed lastNum:", lastNum);
                         if (!isNaN(lastNum)) {
                             nextNumeroPedido = lastNum + 1;
+                        } else {
+                            console.warn("DEBUG: lastBudget.numero_pedido is not a valid number, defaulting to 1:", lastBudget.numero_pedido);
                         }
+                    } else {
+                        console.log("DEBUG: No previous budget found or numero_pedido is null/undefined for this company. Starting from 1.");
                     }
                 } catch (numError) {
-                    console.error("Error fetching last numero_pedido during initial save:", numError.message);
+                    console.error("DEBUG: Error fetching last numero_pedido during initial save:", numError.message);
                     toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
                     setSaving(false);
                     return;
                 }
+                console.log("DEBUG: Calculated nextNumeroPedido:", nextNumeroPedido);
                 defaultBudget.numero_pedido = nextNumeroPedido.toString(); // Atribui o número gerado
 
                 const { data: newBudgetData, error: insertError } = await supabase
