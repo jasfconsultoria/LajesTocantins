@@ -15,7 +15,7 @@ import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString } from '@
 import SelectSearchClient from '@/components/SelectSearchClient';
 import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
-import SelectSearchNatureza from '@/components/SelectSearchNatureza'; // Importar o novo componente
+import SelectSearchNatureza from '@/components/SelectSearchNatureza';
 import { v4 as uuidv4 } from 'uuid';
 import {
   Table,
@@ -26,17 +26,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Helper function to get date + N days in YYYY-MM-DD format
+const getDatePlusDays = (days) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    return date.toISOString().split('T')[0];
+};
+
 const initialBudgetState = {
     data_orcamento: new Date().toISOString().split('T')[0],
     cliente_id: null,
-    usuario_id: null, // Alterado de funcionario_id para usuario_id
+    usuario_id: null,
     endereco_entrega: '',
     historico: '',
     debito_credito: 'D',
     forma_pagamento: '',
     cnpj_empresa: '',
-    cfop: '', // Manter cfop no estado
-    natureza: '', // Manter natureza no estado
+    cfop: '',
+    natureza: '',
     faturado: false,
     vendedor: '',
     desconto: 0.0,
@@ -51,13 +58,13 @@ const initialBudgetState = {
     total_venda: 0.0,
     total_fatura: 0.0,
     nome_cliente: '',
-    numero_pedido: '', // Inicia vazio para novos orçamentos
+    numero_pedido: '',
     acrescimo: 0.0,
     validade: 0,
     solicitante: '',
     telefone: '',
     codigo_antigo: null,
-    previsao_entrega: null,
+    previsao_entrega: getDatePlusDays(10), // Default to today + 10 days
     cliente_endereco_completo: '',
 };
 
@@ -76,10 +83,10 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map()); // Inicializado como Map vazio
+    const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
 
-    const isFaturado = budget.faturado; // Determina se o orçamento está faturado e deve ser bloqueado
+    const isFaturado = budget.faturado;
 
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
@@ -196,7 +203,7 @@ const BudgetEditorPage = () => {
             } else {
                 currentUnitsMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
             }
-            setUnitsMap(currentUnitsMap); // Update the unitsMap state
+            setUnitsMap(currentUnitsMap);
 
             const enrichedProducts = productsData.map(p => {
                 const unitDescription = currentUnitsMap.get(p.prod_uCOM) || '';
@@ -225,20 +232,19 @@ const BudgetEditorPage = () => {
                 description: error.message || 'Ocorreu um erro inesperado ao carregar os produtos.'
             });
             setAllProducts([]);
-            setUnitsMap(new Map()); // Clear unitsMap on error
+            setUnitsMap(new Map());
         }
     }, [activeCompanyId, toast]);
 
     const fetchBudget = useCallback(async () => {
         if (!id) {
             setLoading(false);
-            // Para novos orçamentos, o numero_pedido começa vazio
             setBudget(prev => ({
-                ...initialBudgetState, // Garante que todos os campos iniciem com o estado padrão
+                ...initialBudgetState,
                 cnpj_empresa: activeCompany?.cnpj || '',
-                usuario_id: user?.id || null, // Usar user?.id
+                usuario_id: user?.id || null,
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
-                numero_pedido: '', // Explicitamente vazio para novos orçamentos
+                numero_pedido: '',
             }));
             return;
         }
@@ -345,9 +351,9 @@ const BudgetEditorPage = () => {
             setBudget(prev => ({
                 ...initialBudgetState,
                 cnpj_empresa: activeCompany?.cnpj || '',
-                usuario_id: user?.id || null, // Garante que seja user?.id para novos orçamentos
+                usuario_id: user?.id || null,
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
-                numero_pedido: '', // Garante que seja vazio para novos orçamentos
+                numero_pedido: '',
             }));
         }
     }, [allUfs, allMunicipalities, fetchBudget, fetchPeople, id, activeCompany, user]);
@@ -381,7 +387,6 @@ const BudgetEditorPage = () => {
     };
 
     const handleSelectClient = async (person) => {
-        // Se person for null, significa que o campo foi limpo
         if (!person) {
             setBudget(prev => ({
                 ...prev,
@@ -396,24 +401,21 @@ const BudgetEditorPage = () => {
             ? `${person.nome_fantasia} - ${person.razao_social}` 
             : person.razao_social || person.nome_fantasia;
         
-        // Se for um novo orçamento (sem ID na URL), salva o orçamento no banco
         if (!id) {
-            setSaving(true); // Indica que está salvando
+            setSaving(true);
             try {
                 const defaultBudget = {
-                    ...initialBudgetState, // Começa com o estado inicial
+                    ...initialBudgetState,
                     cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                    usuario_id: user?.id || null, // Usar user?.id
-                    data_orcamento: budget.data_orcamento, // Usa a data atual do estado
+                    usuario_id: user?.id || null,
+                    data_orcamento: budget.data_orcamento,
                     vendedor: user?.user_metadata?.full_name || user?.email || '',
                     cliente_id: person.cpf_cnpj,
                     nome_cliente: clientName,
                 };
 
-                // EXCLUIR O CAMPO cliente_endereco_completo ANTES DE INSERIR
                 delete defaultBudget.cliente_endereco_completo;
 
-                // Lógica para gerar o próximo numero_pedido
                 let nextNumeroPedido = 1;
                 try {
                     console.log("DEBUG: Fetching max numero_pedido for cnpj_empresa:", normalizeCnpj(activeCompany.cnpj));
@@ -421,11 +423,11 @@ const BudgetEditorPage = () => {
                         .from('orcamento')
                         .select('numero_pedido')
                         .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
-                        .order('numero_pedido', { ascending: false }) // Order by numero_pedido descending
-                        .limit(1) // Get only the top one
-                        .single(); // Expect a single row or null
+                        .order('numero_pedido', { ascending: false })
+                        .limit(1)
+                        .single();
 
-                    if (maxBudgetNumberError && maxBudgetNumberError.code !== 'PGRST116') { // PGRST116 means no rows found
+                    if (maxBudgetNumberError && maxBudgetNumberError.code !== 'PGRST116') {
                         console.error("DEBUG: Supabase error fetching max numero_pedido:", maxBudgetNumberError);
                         throw maxBudgetNumberError;
                     }
@@ -448,12 +450,12 @@ const BudgetEditorPage = () => {
                     return;
                 }
                 console.log("DEBUG: Calculated nextNumeroPedido:", nextNumeroPedido);
-                defaultBudget.numero_pedido = nextNumeroPedido; // Atribui o número gerado (como número)
+                defaultBudget.numero_pedido = nextNumeroPedido;
 
                 const { data: newBudgetData, error: insertError } = await supabase
                     .from('orcamento')
                     .insert([defaultBudget])
-                    .select(); // Seleciona os dados inseridos para obter o novo ID
+                    .select();
 
                 if (insertError) {
                     console.error("Error inserting new budget (BudgetEditorPage):", insertError);
@@ -462,13 +464,12 @@ const BudgetEditorPage = () => {
 
                 const newBudgetId = newBudgetData[0].id;
                 
-                // Atualiza o estado local com o novo ID do orçamento e numero_pedido
                 setBudget(prev => ({
                     ...prev,
-                    ...newBudgetData[0], // Atualiza todos os campos com a resposta do DB
-                    data_orcamento: newBudgetData[0].data_orcamento.split('T')[0], // Formata a data
-                    numero_pedido: defaultBudget.numero_pedido, // Garante que o número gerado seja definido
-                    cliente_endereco_completo: buildClientAddressString(person), // Define o endereço do cliente
+                    ...newBudgetData[0],
+                    data_orcamento: newBudgetData[0].data_orcamento.split('T')[0],
+                    numero_pedido: defaultBudget.numero_pedido,
+                    cliente_endereco_completo: buildClientAddressString(person),
                 }));
 
                 if (user) {
@@ -476,7 +477,7 @@ const BudgetEditorPage = () => {
                 }
 
                 toast({ title: 'Orçamento Criado!', description: `Orçamento ${defaultBudget.numero_pedido} criado com sucesso.`, duration: 3000 });
-                navigate(`/app/budgets/${newBudgetId}/edit`); // Redireciona para a página de edição do orçamento salvo
+                navigate(`/app/budgets/${newBudgetId}/edit`);
             } catch (error) {
                 console.error("Caught error in handleSelectClient (new budget creation):", error);
                 toast({ variant: 'destructive', title: 'Erro ao criar orçamento', description: error.message || 'Ocorreu um erro inesperado ao criar o orçamento.' });
@@ -484,7 +485,6 @@ const BudgetEditorPage = () => {
                 setSaving(false);
             }
         } else {
-            // Orçamento existente: apenas atualiza o estado local
             setBudget(prev => ({
                 ...prev,
                 cliente_id: person.cpf_cnpj,
@@ -534,7 +534,6 @@ const BudgetEditorPage = () => {
         });
     };
 
-    // Funções para editar os campos da composição
     const handleQuantityChange = (compositionId, newQuantity) => {
         setCompositions(prev => 
             prev.map(comp => 
@@ -571,8 +570,6 @@ const BudgetEditorPage = () => {
             return;
         }
 
-        // Se não há ID, significa que o orçamento ainda não foi criado (deveria ter sido em handleSelectClient)
-        // Isso é um fallback ou um aviso, pois o fluxo esperado é que o ID já exista aqui.
         if (!id) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Orçamento ainda não foi criado. Selecione um cliente primeiro.' });
             return;
@@ -583,7 +580,7 @@ const BudgetEditorPage = () => {
             const saveData = {
                 ...budget,
                 cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                usuario_id: user?.id || null, // Usar user?.id
+                usuario_id: user?.id || null,
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
@@ -597,7 +594,6 @@ const BudgetEditorPage = () => {
             let description;
             let budgetId = id;
 
-            // Este bloco agora só lida com a atualização de orçamentos existentes
             const { error: updateError } = await supabase
                 .from('orcamento')
                 .update(saveData)
@@ -612,7 +608,6 @@ const BudgetEditorPage = () => {
             }
 
             if (budgetId) {
-                // Lógica para salvar as composições (itens do orçamento)
                 for (const comp of compositions) {
                     if (comp.isNew) {
                         const { error: compInsertError } = await supabase
@@ -631,7 +626,6 @@ const BudgetEditorPage = () => {
                             throw compInsertError;
                         }
                     }
-                    // TODO: Adicionar lógica para atualizar composições existentes e deletar as removidas
                 }
             }
 
@@ -640,7 +634,7 @@ const BudgetEditorPage = () => {
             }
 
             toast({ title: 'Sucesso!', description: `Orçamento ${id ? 'atualizado' : 'criado'} com sucesso.` });
-            navigate('/app/budgets'); // Redireciona para a lista de orçamentos após a atualização
+            navigate('/app/budgets');
         } catch (error) {
             console.error("Caught error in handleSave (BudgetEditorPage):", error);
             toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message || 'Ocorreu um erro inesperado ao salvar o orçamento.' });
@@ -841,9 +835,6 @@ const BudgetEditorPage = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {/* Remover a linha de busca que estava aqui */}
-                            
-                            {/* Itens existentes */}
                             {compositions.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={8} className="text-center text-slate-500 py-8">
@@ -914,9 +905,6 @@ const BudgetEditorPage = () => {
                     </Table>
                 </div>
 
-                {/*// ... resto do código mantido igual ...*/}
-
-
                 <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
@@ -967,7 +955,6 @@ const BudgetEditorPage = () => {
                     </div>
                 </div>
                 
-                {/* Nova linha para Condição de Pagamento, Validade e Botões de Ação */}
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
                     <div className="form-group lg:col-span-5">
                         <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
