@@ -50,7 +50,7 @@ const initialBudgetState = {
     total_venda: 0.0,
     total_fatura: 0.0,
     nome_cliente: '',
-    numero_pedido: '',
+    numero_pedido: '', // Inicia vazio para novos orçamentos
     acrescimo: 0.0,
     validade: 0,
     solicitante: '',
@@ -215,42 +215,14 @@ const BudgetEditorPage = () => {
     const fetchBudget = useCallback(async () => {
         if (!id) {
             setLoading(false);
-            const defaultBudget = {
-                ...initialBudgetState,
+            // Para novos orçamentos, o numero_pedido começa vazio
+            setBudget(prev => ({
+                ...initialBudgetState, // Garante que todos os campos iniciem com o estado padrão
                 cnpj_empresa: activeCompany?.cnpj || '',
                 funcionario_id: user?.id || null,
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
-            };
-
-            if (activeCompany?.cnpj) {
-                try {
-                    const { data: lastBudget, error: lastBudgetError } = await supabase
-                        .from('orcamento')
-                        .select('numero_pedido')
-                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
-                        .order('numero_pedido', { ascending: false }) 
-                        .limit(1)
-                        .single();
-
-                    if (lastBudgetError && lastBudgetError.code !== 'PGRST116') { // PGRST116 means no rows found
-                        throw lastBudgetError;
-                    }
-
-                    let nextNumeroPedido = 1;
-                    if (lastBudget && lastBudget.numero_pedido) {
-                        const lastNum = parseInt(lastBudget.numero_pedido, 10);
-                        if (!isNaN(lastNum)) {
-                            nextNumeroPedido = lastNum + 1;
-                        }
-                    }
-                    defaultBudget.numero_pedido = nextNumeroPedido.toString();
-
-                } catch (error) {
-                    console.error("Error fetching last numero_pedido:", error.message);
-                    toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
-                }
-            }
-            setBudget(defaultBudget);
+                numero_pedido: '', // Explicitamente vazio para novos orçamentos
+            }));
             return;
         }
         setLoading(true);
@@ -336,10 +308,11 @@ const BudgetEditorPage = () => {
         } else if (!id) {
             setLoading(false);
             setBudget(prev => ({
-                ...prev,
+                ...initialBudgetState,
                 cnpj_empresa: activeCompany?.cnpj || '',
                 funcionario_id: user?.id || null,
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
+                numero_pedido: '', // Garante que seja vazio para novos orçamentos
             }));
         }
     }, [allUfs, allMunicipalities, fetchBudget, fetchPeople, id, activeCompany, user]);
@@ -477,6 +450,7 @@ const BudgetEditorPage = () => {
             let budgetId = id;
 
             if (id) {
+                // Atualiza um orçamento existente
                 const { error: updateError } = await supabase
                     .from('orcamento')
                     .update(saveData)
@@ -485,7 +459,38 @@ const BudgetEditorPage = () => {
                 actionType = 'budget_update';
                 description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
             } else {
+                // Cria um novo orçamento
                 delete saveData.id; 
+
+                // Lógica para gerar o próximo numero_pedido
+                let nextNumeroPedido = 1;
+                try {
+                    const { data: lastBudget, error: lastBudgetError } = await supabase
+                        .from('orcamento')
+                        .select('numero_pedido')
+                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
+                        .order('numero_pedido', { ascending: false }) 
+                        .limit(1)
+                        .single();
+
+                    if (lastBudgetError && lastBudgetError.code !== 'PGRST116') { // PGRST116 means no rows found
+                        throw lastBudgetError;
+                    }
+
+                    if (lastBudget && lastBudget.numero_pedido) {
+                        const lastNum = parseInt(lastBudget.numero_pedido, 10);
+                        if (!isNaN(lastNum)) {
+                            nextNumeroPedido = lastNum + 1;
+                        }
+                    }
+                } catch (numError) {
+                    console.error("Error fetching last numero_pedido during save:", numError.message);
+                    toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
+                    setSaving(false);
+                    return;
+                }
+                saveData.numero_pedido = nextNumeroPedido.toString(); // Atribui o número gerado
+
                 const { data: newBudgetData, error: insertError } = await supabase
                     .from('orcamento')
                     .insert([saveData])
@@ -501,6 +506,7 @@ const BudgetEditorPage = () => {
             if (error) throw error;
 
             if (budgetId) {
+                // Lógica para salvar as composições (itens do orçamento)
                 for (const comp of compositions) {
                     if (comp.isNew) {
                         const { error: compInsertError } = await supabase
@@ -516,6 +522,7 @@ const BudgetEditorPage = () => {
                             });
                         if (compInsertError) throw compInsertError;
                     }
+                    // TODO: Adicionar lógica para atualizar composições existentes e deletar as removidas
                 }
             }
 
@@ -524,7 +531,7 @@ const BudgetEditorPage = () => {
             }
 
             toast({ title: 'Sucesso!', description: `Orçamento ${id ? 'atualizado' : 'criado'} com sucesso.` });
-            navigate('/app/budgets');
+            navigate(`/app/budgets/${budgetId}/edit`); // Redireciona para a página de edição do orçamento salvo
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
         } finally {
