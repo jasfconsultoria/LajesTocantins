@@ -1,13 +1,6 @@
 "use client";
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, FileText, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
@@ -24,6 +17,7 @@ const SelectSearchNatureza = ({
   disabled,
   placeholder = "Selecione a Natureza da Operação",
   required = false,
+  className = "",
 }) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +25,17 @@ const SelectSearchNatureza = ({
   const [isOpen, setIsOpen] = useState(false);
   const [allCfops, setAllCfops] = useState([]);
   const [loadingCfops, setLoadingCfops] = useState(true);
+  const inputRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // Update searchTerm when external value changes
+  useEffect(() => {
+    if (value) {
+      setSearchTerm(value);
+    } else {
+      setSearchTerm('');
+    }
+  }, [value]);
 
   const fetchCfops = useCallback(async () => {
     setLoadingCfops(true);
@@ -83,99 +88,117 @@ const SelectSearchNatureza = ({
   };
 
   const handleSelect = (cfopObject) => {
-    onValueChange(cfopObject); // Passa o objeto completo
+    onValueChange(cfopObject); // Pass the full object
+    setSearchTerm(cfopObject.descricao); // Set input to description
     setIsOpen(false);
-    setSearchTerm('');
     setCurrentPage(1);
   };
 
-  const handleClear = () => {
-    onValueChange(null); // Limpa a seleção
+  const handleClear = (e) => {
+    e.stopPropagation(); // Prevent event from propagating and closing dropdown
+    onValueChange(null); // Clear the selection
     setSearchTerm('');
+    setIsOpen(false);
     setCurrentPage(1);
+    inputRef.current?.focus();
   };
 
-  const selectedCfop = value ? allCfops.find(c => c.descricao === value) : null;
-
-  const getDisplayText = (cfopObj) => {
-    if (!cfopObj) return placeholder;
-    return `${cfopObj.cfop} - ${cfopObj.descricao}`;
+  const handleInputChange = (e) => {
+    setSearchTerm(e.target.value);
+    setIsOpen(true);
+    onValueChange(null); // Clear selected value when user starts typing
   };
+
+  const handleInputFocus = () => {
+    setIsOpen(true);
+  };
+
+  const handleInputBlur = () => {
+    // Small delay to allow click on items before closing dropdown
+    setTimeout(() => {
+      if (containerRef.current && !containerRef.current.contains(document.activeElement)) {
+        setIsOpen(false);
+        // If input was cleared and no value selected, clear search term
+        if (!value && searchTerm) {
+            setSearchTerm('');
+        } else if (value && searchTerm !== value) {
+            // If user typed something but didn't select, restore previous value
+            setSearchTerm(value);
+        }
+      }
+    }, 200);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+        if (!value && searchTerm) {
+            setSearchTerm('');
+        } else if (value && searchTerm !== value) {
+            setSearchTerm(value);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [value, searchTerm]);
 
   return (
-    <div className="relative">
-      <Select open={isOpen} onOpenChange={setIsOpen} value={selectedCfop?.descricao || ''} required={required}>
-        <SelectTrigger className="w-full" disabled={disabled || loadingCfops}>
-          <SelectValue>
-            {loadingCfops ? (
-                <div className="flex items-center text-slate-500">
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Carregando...
+    <div ref={containerRef} className={`relative ${className}`}>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Input
+          ref={inputRef}
+          type="text"
+          placeholder={placeholder}
+          value={loadingCfops ? "Carregando..." : searchTerm}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          className="pl-9 pr-9 w-full"
+          disabled={disabled || loadingCfops}
+          required={required}
+        />
+        {value && !disabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 flex items-center justify-center text-slate-500 hover:text-slate-700 rounded-full"
+            onClick={handleClear}
+            tabIndex={-1} // Prevents button from receiving focus
+          >
+            <X className="w-3 h-3" />
+          </Button>
+        )}
+      </div>
+
+      {isOpen && (filteredCfops.length > 0 || searchTerm) && !loadingCfops && ( 
+        <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-md shadow-lg">
+          <ScrollArea className="max-h-[200px] overflow-y-auto">
+            <div className="py-1">
+              {filteredCfops.length === 0 && searchTerm ? (
+                <div className="text-sm text-slate-500 text-center py-3">
+                  Nenhuma natureza de operação encontrada.
                 </div>
-            ) : selectedCfop ? (
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center">
-                  <FileText className="w-4 h-4 mr-2 text-slate-500" />
-                  <span className="truncate">{getDisplayText(selectedCfop)}</span>
-                </div>
-                {value && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 hover:bg-slate-200 ml-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClear();
-                    }}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <span className="text-slate-500">{placeholder}</span>
-            )}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="p-0 max-h-[400px]">
-          <div className="relative p-3 border-b">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input
-              placeholder="Buscar por CFOP ou descrição..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="pl-9"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-          
-          <ScrollArea className="h-[300px]">
-            {filteredCfops.length === 0 ? (
-              <div className="text-center text-slate-500 py-4">
-                {searchTerm ? 'Nenhuma natureza de operação encontrada.' : 'Nenhuma natureza de operação disponível.'}
-              </div>
-            ) : (
-              <div className="space-y-1 p-1">
-                {filteredCfops.map(cfopObj => (
-                  <SelectItem
+              ) : (
+                filteredCfops.map((cfopObj) => (
+                  <button
                     key={cfopObj.cfop}
-                    value={cfopObj.descricao} // O valor do SelectItem é a descrição
-                    className="flex items-start py-2 px-3 h-auto"
-                    onClick={() => handleSelect(cfopObj)} // Passa o objeto completo no clique
+                    type="button"
+                    className="w-full text-left px-3 py-2 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none transition-colors"
+                    onMouseDown={(e) => e.preventDefault()} 
+                    onClick={() => handleSelect(cfopObj)}
                   >
-                    <div className="flex items-center text-slate-800">
-                      <FileText className="w-4 h-4 mr-2 text-slate-500" />
-                      <div>
-                        <div className="font-medium">{cfopObj.cfop}</div>
-                        <div className="text-xs text-slate-500">{cfopObj.descricao}</div>
-                      </div>
+                    <div className="flex items-center text-sm font-medium text-slate-800">
+                      <FileText className="w-3 h-3 mr-2 text-slate-500 flex-shrink-0" />
+                      <span className="truncate">{cfopObj.cfop} - {cfopObj.descricao}</span>
                     </div>
-                  </SelectItem>
-                ))}
-              </div>
-            )}
+                  </button>
+                ))
+              )}
+            </div>
           </ScrollArea>
 
           {filteredCfops.length > ITEMS_PER_PAGE && (
@@ -195,8 +218,8 @@ const SelectSearchNatureza = ({
               </div>
             </div>
           )}
-        </SelectContent>
-      </Select>
+        </div>
+      )}
     </div>
   );
 };
