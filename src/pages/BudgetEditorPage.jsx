@@ -733,14 +733,14 @@ const BudgetEditorPage = () => {
                 </h3>
 
                 
-                {/* Mover o SelectSearchProduct para fora da tabela */}
+                {/* Desabilita se não houver ID de orçamento */}
                 <div className="mt-4 mb-4">
                     <SelectSearchProduct
                         products={allProducts}
                         onSelect={handleSelectProductFromSearch}
                         placeholder="Digite para buscar e adicionar produto..."
                         className="w-full"
-                        disabled={isFaturado || !id} {/* Desabilita se não houver ID de orçamento */}
+                        disabled={isFaturado || !id} 
                     />
                 </div>
 
