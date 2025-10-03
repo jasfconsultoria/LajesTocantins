@@ -327,6 +327,17 @@ const BudgetEditorPage = () => {
     };
 
     const handleSelectClient = (person) => {
+        // Se person for null, significa que o campo foi limpo
+        if (!person) {
+            setBudget(prev => ({
+                ...prev,
+                cliente_id: null,
+                nome_cliente: '',
+                cliente_endereco_completo: '',
+            }));
+            return;
+        }
+
         const clientName = person.nome_fantasia && person.razao_social 
             ? `${person.nome_fantasia} - ${person.razao_social}` 
             : person.razao_social || person.nome_fantasia;
