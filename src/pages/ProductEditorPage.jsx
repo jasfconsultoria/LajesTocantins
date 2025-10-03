@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { logAction } from '@/lib/log';
-import SelectSearchUnit from '@/components/SelectSearchUnit'; // Nome atualizado
+import SelectSearchUnit from '@/components/SelectSearchUnit'; // Importar o novo componente
 
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
@@ -58,7 +58,7 @@ const ProductEditorPage = () => {
     const [product, setProduct] = useState(initialProductState);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [units, setUnits] = useState([]);
+    // Removido o estado 'units' pois o SelectSearchUnit fará a própria busca
 
     const formatCurrency = (value) => {
         if (value === null || value === undefined) return '';
@@ -93,32 +93,14 @@ const ProductEditorPage = () => {
         }
     }, [id, toast]);
 
-    const fetchUnits = useCallback(async () => {
-        try {
-            const { data, error } = await supabase
-                .from('unidade')
-                .select('codigo, unidade')
-                .order('unidade', { ascending: true });
-            if (error) {
-                console.error("Error fetching units (ProductEditorPage):", error);
-                throw error;
-            }
-            setUnits(data);
-        } catch (error) {
-            console.error("Caught error fetching units (ProductEditorPage):", error);
-            toast({ 
-                variant: 'destructive', 
-                title: 'Erro ao carregar unidades comerciais', 
-                description: error.message || 'Verifique as configurações do banco de dados ou permissões (RLS).' 
-            });
-            setUnits([]);
-        }
-    }, [toast]);
+    // A função fetchUnits não é mais necessária aqui, pois o SelectSearchUnit fará a própria busca.
+    // No entanto, se você precisar de 'units' em outro lugar nesta página, pode mantê-la.
+    // Por enquanto, vou removê-la para simplificar.
 
     useEffect(() => {
         fetchProduct();
-        fetchUnits();
-    }, [fetchProduct, fetchUnits]);
+        // fetchUnits(); // Removido
+    }, [fetchProduct]); // Removido fetchUnits das dependências
 
     const handleInputChange = (e) => {
         const { id, value, type } = e.target;
@@ -141,7 +123,7 @@ const ProductEditorPage = () => {
     const handleSelectChange = (id, value) => {
         setProduct(prev => ({
             ...prev,
-            [id]: id === 'prod_uCOM' ? parseInt(value, 10) : value
+            [id]: id === 'prod_uCOM' ? parseInt(value, 10) : value // Converte para inteiro para prod_uCOM
         }));
     };
 
@@ -243,14 +225,13 @@ const ProductEditorPage = () => {
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_cEAN" className="form-label">GTIN/EAN</Label>
-                        <Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEAN} onChange={handleInputChange} placeholder="Ex: 7891234567890" />
+                        <Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEEAN} onChange={handleInputChange} placeholder="Ex: 7891234567890" />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial *</Label>
                         <SelectSearchUnit
                             value={product.prod_uCOM?.toString()}
                             onValueChange={(value) => handleSelectChange('prod_uCOM', value)}
-                            units={units}
                             disabled={saving}
                             placeholder="Selecione a Unidade"
                             required
@@ -314,7 +295,6 @@ const ProductEditorPage = () => {
                     </div>
                 </div>
 
-                {/* Resto do código permanece igual... */}
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">ICMS</h3>
                 <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                     {/* Primeira linha */}
