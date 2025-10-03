@@ -363,7 +363,7 @@ const BudgetEditorPage = () => {
         setBudget(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectClient = async (person) => { // Tornando a função assíncrona
+    const handleSelectClient = async (person) => {
         // Se person for null, significa que o campo foi limpo
         if (!person) {
             setBudget(prev => ({
@@ -386,7 +386,7 @@ const BudgetEditorPage = () => {
                 const defaultBudget = {
                     ...initialBudgetState, // Começa com o estado inicial
                     cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                    funcionario_id: 1, // HARDCODED para '1' conforme solicitado
+                    funcionario_id: user?.id, // Usar o ID do usuário logado
                     data_orcamento: budget.data_orcamento, // Usa a data atual do estado
                     vendedor: user?.user_metadata?.full_name || user?.email || '',
                     cliente_id: person.cpf_cnpj,
@@ -399,31 +399,30 @@ const BudgetEditorPage = () => {
                 // Lógica para gerar o próximo numero_pedido
                 let nextNumeroPedido = 1;
                 try {
-                    console.log("DEBUG: Fetching all numero_pedido for numerical max for cnpj_empresa:", normalizeCnpj(activeCompany.cnpj));
-                    const { data: allBudgetNumbers, error: allBudgetNumbersError } = await supabase
+                    console.log("DEBUG: Fetching max numero_pedido for cnpj_empresa:", normalizeCnpj(activeCompany.cnpj));
+                    const { data: maxBudgetNumberData, error: maxBudgetNumberError } = await supabase
                         .from('orcamento')
                         .select('numero_pedido')
-                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj));
+                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
+                        .order('numero_pedido', { ascending: false }) // Order by numero_pedido descending
+                        .limit(1) // Get only the top one
+                        .single(); // Expect a single row or null
 
-                    if (allBudgetNumbersError) {
-                        console.error("DEBUG: Supabase error fetching all numero_pedido:", allBudgetNumbersError);
-                        throw allBudgetNumbersError;
+                    if (maxBudgetNumberError && maxBudgetNumberError.code !== 'PGRST116') { // PGRST116 means no rows found
+                        console.error("DEBUG: Supabase error fetching max numero_pedido:", maxBudgetNumberError);
+                        throw maxBudgetNumberError;
                     }
-                    console.log("DEBUG: All budget numbers fetched:", allBudgetNumbers);
+                    console.log("DEBUG: Max budget number data fetched:", maxBudgetNumberData);
 
-                    if (allBudgetNumbers && allBudgetNumbers.length > 0) {
-                        const numericNumbers = allBudgetNumbers
-                            .map(b => parseInt(b.numero_pedido, 10))
-                            .filter(num => !isNaN(num)); // Filter out any non-numeric parsed values
-
-                        if (numericNumbers.length > 0) {
-                            const maxNumeric = Math.max(...numericNumbers);
+                    if (maxBudgetNumberData && maxBudgetNumberData.numero_pedido !== null) {
+                        const maxNumeric = parseInt(maxBudgetNumberData.numero_pedido, 10);
+                        if (!isNaN(maxNumeric)) {
                             nextNumeroPedido = maxNumeric + 1;
                         } else {
-                            console.log("DEBUG: No valid numeric numero_pedido found, starting from 1.");
+                            console.log("DEBUG: Max numero_pedido is not a valid number, starting from 1.");
                         }
                     } else {
-                        console.log("DEBUG: No previous budgets found for this company. Starting from 1.");
+                        console.log("DEBUG: No previous budgets found for this company or max is null. Starting from 1.");
                     }
                 } catch (numError) {
                     console.error("DEBUG: Error calculating next numero_pedido:", numError);
@@ -432,11 +431,11 @@ const BudgetEditorPage = () => {
                     return;
                 }
                 console.log("DEBUG: Calculated nextNumeroPedido:", nextNumeroPedido);
-                defaultBudget.numero_pedido = nextNumeroPedido.toString(); // Atribui o número gerado
+                defaultBudget.numero_pedido = nextNumeroPedido; // Atribui o número gerado (como número)
 
                 const { data: newBudgetData, error: insertError } = await supabase
                     .from('orcamento')
-                    .insert([defaultBudget]) // Usa defaultBudget com funcionario_id hardcoded
+                    .insert([defaultBudget])
                     .select(); // Seleciona os dados inseridos para obter o novo ID
 
                 if (insertError) {
@@ -567,7 +566,7 @@ const BudgetEditorPage = () => {
             const saveData = {
                 ...budget,
                 cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                funcionario_id: 1, // HARDCODED para '1' também no update, para consistência
+                funcionario_id: user?.id, // Usar o ID do usuário logado
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
@@ -678,7 +677,7 @@ const BudgetEditorPage = () => {
 
     const pageTitle = id ? `Editar ${displayTipo}` : `Novo ${displayTipo}`;
     const configTitle = `Dados do ${displayTipo}`;
-    const numeroLabel = `Número do ${displayTipo}`;
+    const numeroLabel = `Nº do ${displayTipo}`;
 
     const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
     const totalServicosBruto = 0;
