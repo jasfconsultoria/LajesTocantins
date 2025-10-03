@@ -5,6 +5,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Hand, Calendar, TrendingUp, Users, FileText, Loader2, ShoppingCart, MapPin, User } from 'lucide-react';
 import { formatCurrency, normalizeString } from '@/lib/utils';
+import ClientSalesChart from '@/components/charts/ClientSalesChart'; // Import new chart component
+import CitySalesChart from '@/components/charts/CitySalesChart';     // Import new chart component
 
 const Dashboard = () => {
     const { user, activeCompany } = useAuth();
@@ -12,10 +14,9 @@ const Dashboard = () => {
     const [monthlyRevenue, setMonthlyRevenue] = useState(0);
     const [previousMonthlyRevenue, setPreviousMonthlyRevenue] = useState(0);
     const [uniqueClients, setUniqueClients] = useState(0);
-    const [averageTicket, setAverageTicket] = useState(0);
-    const [totalOrders, setTotalOrders] = useState(0); // New state for total orders
-    const [salesByClient, setSalesByClient] = useState([]); // New state for sales by client
-    const [salesByCity, setSalesByCity] = useState([]); // New state for sales by city
+    const [totalOrders, setTotalOrders] = useState(0); 
+    const [salesByClient, setSalesByClient] = useState([]); 
+    const [salesByCity, setSalesByCity] = useState([]); 
     const [loading, setLoading] = useState(true);
 
     const fetchDashboardData = useCallback(async () => {
@@ -46,11 +47,9 @@ const Dashboard = () => {
 
             let currentRevenue = 0;
             let currentUniqueClients = new Set();
-            let currentTotalTickets = 0;
-            let currentTicketCount = 0;
             let currentTotalOrders = 0;
             const clientSalesMap = new Map();
-            const clientCpfCnpjToIdMap = new Map(); // Map cpf_cnpj to client_id (from 'pessoas' table)
+            const clientCpfCnpjToIdMap = new Map(); 
 
             if (currentMonthBudgets) {
                 currentTotalOrders = currentMonthBudgets.length;
@@ -58,11 +57,7 @@ const Dashboard = () => {
                     currentRevenue += (item.total_liquido_calculado || 0);
                     if (item.cliente_id) {
                         currentUniqueClients.add(item.cliente_id);
-                        clientCpfCnpjToIdMap.set(item.cliente_id, item.cliente_id); // Store cpf_cnpj as key
-                    }
-                    if (item.total_liquido_calculado !== null) {
-                        currentTotalTickets += item.total_liquido_calculado;
-                        currentTicketCount++;
+                        clientCpfCnpjToIdMap.set(item.cliente_id, item.cliente_id); 
                     }
 
                     // Aggregate sales by client
@@ -76,7 +71,6 @@ const Dashboard = () => {
 
             setMonthlyRevenue(currentRevenue);
             setUniqueClients(currentUniqueClients.size);
-            setAverageTicket(currentTicketCount > 0 ? currentTotalTickets / currentTicketCount : 0);
             setTotalOrders(currentTotalOrders);
 
             // Sort and set top 10 clients
@@ -108,7 +102,7 @@ const Dashboard = () => {
 
             if (uniqueClientCpfCnpjs.length > 0) {
                 const { data: peopleData, error: peopleError } = await supabase
-                    .from('pessoas_com_municipio') // Using the view that includes municipality name
+                    .from('pessoas_com_municipio') 
                     .select('cpf_cnpj, municipio_nome, uf')
                     .in('cpf_cnpj', uniqueClientCpfCnpjs);
 
@@ -149,7 +143,6 @@ const Dashboard = () => {
             setMonthlyRevenue(0);
             setPreviousMonthlyRevenue(0);
             setUniqueClients(0);
-            setAverageTicket(0);
             setTotalOrders(0);
             setSalesByClient([]);
             setSalesByCity([]);
@@ -200,7 +193,7 @@ const Dashboard = () => {
                             <div className="text-sm text-slate-500">Clientes Únicos</div>
                         </div>
                         <div className="bg-white/80 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white flex flex-col items-center text-center">
-                            <ShoppingCart className="w-10 h-10 text-orange-600 mb-3" /> {/* Changed icon */}
+                            <ShoppingCart className="w-10 h-10 text-orange-600 mb-3" /> 
                             <div className="text-3xl font-bold text-slate-800 mb-1">{totalOrders}</div>
                             <div className="text-sm text-slate-500">Total de Pedidos</div>
                         </div>
@@ -214,14 +207,7 @@ const Dashboard = () => {
                             {salesByClient.length === 0 ? (
                                 <p className="text-center text-slate-500 py-4">Nenhuma venda por cliente encontrada.</p>
                             ) : (
-                                <ul className="space-y-3">
-                                    {salesByClient.map((client, index) => (
-                                        <li key={index} className="flex justify-between items-center text-slate-700 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0">
-                                            <span className="font-medium truncate">{index + 1}. {client.name}</span>
-                                            <span className="font-semibold text-right">{formatCurrency(client.total)}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <ClientSalesChart data={salesByClient} />
                             )}
                         </div>
 
@@ -232,14 +218,7 @@ const Dashboard = () => {
                             {salesByCity.length === 0 ? (
                                 <p className="text-center text-slate-500 py-4">Nenhuma venda por cidade encontrada.</p>
                             ) : (
-                                <ul className="space-y-3">
-                                    {salesByCity.map((city, index) => (
-                                        <li key={index} className="flex justify-between items-center text-slate-700 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0">
-                                            <span className="font-medium truncate">{index + 1}. {city.city}/{city.uf}</span>
-                                            <span className="font-semibold text-right">{formatCurrency(city.total)}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <CitySalesChart data={salesByCity} />
                             )}
                         </div>
                     </div>
