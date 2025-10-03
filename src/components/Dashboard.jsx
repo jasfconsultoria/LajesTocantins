@@ -102,11 +102,13 @@ const Dashboard = () => {
 
     const calculateGrowth = () => {
         if (previousMonthlyRevenue === 0) {
-            return monthlyRevenue > 0 ? '+100%' : '0%';
+            return { value: monthlyRevenue > 0 ? '+100%' : '0%', isPositive: monthlyRevenue > 0 };
         }
         const growth = ((monthlyRevenue - previousMonthlyRevenue) / previousMonthlyRevenue) * 100;
-        return `${growth >= 0 ? '+' : ''}${growth.toFixed(2)}%`;
+        return { value: `${growth >= 0 ? '+' : ''}${growth.toFixed(2)}%`, isPositive: growth >= 0 };
     };
+
+    const growthData = calculateGrowth();
 
     return (
         <div className="space-y-8">
@@ -118,26 +120,26 @@ const Dashboard = () => {
             {loading ? (
                 <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
             ) : (
-                <div className="stats-grid">
-                    <div className="metric-card">
-                        <Calendar className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                        <div className="metric-value">{formatCurrency(monthlyRevenue)}</div>
-                        <div className="metric-label">Faturamento Mensal</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white flex flex-col items-center text-center">
+                        <Calendar className="w-10 h-10 text-blue-600 mb-3" />
+                        <div className="text-3xl font-bold text-slate-800 mb-1">{formatCurrency(monthlyRevenue)}</div>
+                        <div className="text-sm text-slate-500">Faturamento Mensal</div>
                     </div>
-                    <div className="metric-card">
-                        <TrendingUp className="w-8 h-8 text-green-600 mx-auto mb-3" />
-                        <div className="metric-value">{calculateGrowth()}</div>
-                        <div className="metric-label">Crescimento (Mês a Mês)</div>
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white flex flex-col items-center text-center">
+                        <TrendingUp className={`w-10 h-10 mb-3 ${growthData.isPositive ? 'text-green-600' : 'text-red-600'}`} />
+                        <div className={`text-3xl font-bold mb-1 ${growthData.isPositive ? 'text-green-800' : 'text-red-800'}`}>{growthData.value}</div>
+                        <div className="text-sm text-slate-500">Crescimento (Mês a Mês)</div>
                     </div>
-                    <div className="metric-card">
-                        <Users className="w-8 h-8 text-purple-600 mx-auto mb-3" />
-                        <div className="metric-value">{uniqueClients}</div>
-                        <div className="metric-label">Clientes Únicos</div>
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white flex flex-col items-center text-center">
+                        <Users className="w-10 h-10 text-purple-600 mb-3" />
+                        <div className="text-3xl font-bold text-slate-800 mb-1">{uniqueClients}</div>
+                        <div className="text-sm text-slate-500">Clientes Únicos</div>
                     </div>
-                    <div className="metric-card">
-                        <FileText className="w-8 h-8 text-orange-600 mx-auto mb-3" />
-                        <div className="metric-value">{formatCurrency(averageTicket)}</div>
-                        <div className="metric-label">Ticket Médio</div>
+                    <div className="bg-white/80 backdrop-blur-xl p-6 rounded-xl shadow-lg border border-white flex flex-col items-center text-center">
+                        <FileText className="w-10 h-10 text-orange-600 mb-3" />
+                        <div className="text-3xl font-bold text-slate-800 mb-1">{formatCurrency(averageTicket)}</div>
+                        <div className="text-sm text-slate-500">Ticket Médio</div>
                     </div>
                 </div>
             )}
