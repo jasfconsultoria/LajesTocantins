@@ -75,7 +75,7 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map());
+    const [unitsMap, setUnitsMap] = new Map(); // Inicializado como Map vazio
     const [allProducts, setAllProducts] = useState([]);
 
     const isFaturado = budget.faturado; // Determina se o orçamento está faturado e deve ser bloqueado
@@ -365,34 +365,34 @@ const BudgetEditorPage = () => {
                 // Lógica para gerar o próximo numero_pedido
                 let nextNumeroPedido = 1;
                 try {
-                    console.log("DEBUG: Fetching last numero_pedido for cnpj_empresa:", normalizeCnpj(activeCompany.cnpj));
-                    const { data: lastBudget, error: lastBudgetError } = await supabase
+                    console.log("DEBUG: Fetching all numero_pedido for numerical max for cnpj_empresa:", normalizeCnpj(activeCompany.cnpj));
+                    const { data: allBudgetNumbers, error: allBudgetNumbersError } = await supabase
                         .from('orcamento')
                         .select('numero_pedido')
-                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
-                        .order('numero_pedido', { ascending: false }) 
-                        .limit(1)
-                        .single();
+                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj));
 
-                    if (lastBudgetError && lastBudgetError.code !== 'PGRST116') { // PGRST116 means no rows found
-                        console.error("DEBUG: Supabase error fetching last numero_pedido:", lastBudgetError);
-                        throw lastBudgetError;
+                    if (allBudgetNumbersError) {
+                        console.error("DEBUG: Supabase error fetching all numero_pedido:", allBudgetNumbersError);
+                        throw allBudgetNumbersError;
                     }
-                    console.log("DEBUG: Last budget data from Supabase:", lastBudget);
+                    console.log("DEBUG: All budget numbers fetched:", allBudgetNumbers);
 
-                    if (lastBudget && lastBudget.numero_pedido) {
-                        const lastNum = parseInt(lastBudget.numero_pedido, 10);
-                        console.log("DEBUG: Parsed lastNum:", lastNum);
-                        if (!isNaN(lastNum)) {
-                            nextNumeroPedido = lastNum + 1;
+                    if (allBudgetNumbers && allBudgetNumbers.length > 0) {
+                        const numericNumbers = allBudgetNumbers
+                            .map(b => parseInt(b.numero_pedido, 10))
+                            .filter(num => !isNaN(num)); // Filter out any non-numeric parsed values
+
+                        if (numericNumbers.length > 0) {
+                            const maxNumeric = Math.max(...numericNumbers);
+                            nextNumeroPedido = maxNumeric + 1;
                         } else {
-                            console.warn("DEBUG: lastBudget.numero_pedido is not a valid number, defaulting to 1:", lastBudget.numero_pedido);
+                            console.log("DEBUG: No valid numeric numero_pedido found, starting from 1.");
                         }
                     } else {
-                        console.log("DEBUG: No previous budget found or numero_pedido is null/undefined for this company. Starting from 1.");
+                        console.log("DEBUG: No previous budgets found for this company. Starting from 1.");
                     }
                 } catch (numError) {
-                    console.error("DEBUG: Error fetching last numero_pedido during initial save:", numError.message);
+                    console.error("DEBUG: Error calculating next numero_pedido:", numError.message);
                     toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
                     setSaving(false);
                     return;
