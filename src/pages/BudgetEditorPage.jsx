@@ -235,7 +235,7 @@ const BudgetEditorPage = () => {
             setBudget(prev => ({
                 ...initialBudgetState, // Garante que todos os campos iniciem com o estado padrão
                 cnpj_empresa: activeCompany?.cnpj || '',
-                funcionario_id: user?.id || null,
+                funcionario_id: 1, // Usar 1 como default
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
                 numero_pedido: '', // Explicitamente vazio para novos orçamentos
             }));
@@ -344,7 +344,7 @@ const BudgetEditorPage = () => {
             setBudget(prev => ({
                 ...initialBudgetState,
                 cnpj_empresa: activeCompany?.cnpj || '',
-                funcionario_id: user?.id || null,
+                funcionario_id: 1, // Garante que seja 1 para novos orçamentos
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
                 numero_pedido: '', // Garante que seja vazio para novos orçamentos
             }));
@@ -386,7 +386,7 @@ const BudgetEditorPage = () => {
                 const defaultBudget = {
                     ...initialBudgetState, // Começa com o estado inicial
                     cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                    funcionario_id: user?.id, // Usar o ID do usuário logado
+                    funcionario_id: 1, // Usar 1 como default
                     data_orcamento: budget.data_orcamento, // Usa a data atual do estado
                     vendedor: user?.user_metadata?.full_name || user?.email || '',
                     cliente_id: person.cpf_cnpj,
@@ -566,7 +566,7 @@ const BudgetEditorPage = () => {
             const saveData = {
                 ...budget,
                 cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                funcionario_id: user?.id, // Usar o ID do usuário logado
+                funcionario_id: 1, // Usar 1 como default
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
