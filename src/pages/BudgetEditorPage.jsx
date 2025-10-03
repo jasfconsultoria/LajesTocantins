@@ -329,7 +329,7 @@ const BudgetEditorPage = () => {
         setBudget(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectClient = (person) => {
+    const handleSelectClient = async (person) => { // Tornando a função assíncrona
         // Se person for null, significa que o campo foi limpo
         if (!person) {
             setBudget(prev => ({
@@ -345,12 +345,99 @@ const BudgetEditorPage = () => {
             ? `${person.nome_fantasia} - ${person.razao_social}` 
             : person.razao_social || person.nome_fantasia;
         
-        setBudget(prev => ({
-            ...prev,
-            cliente_id: person.cpf_cnpj,
-            nome_cliente: clientName,
-            cliente_endereco_completo: buildClientAddressString(person),
-        }));
+        // Se for um novo orçamento (sem ID na URL), salva o orçamento no banco
+        if (!id) {
+            setSaving(true); // Indica que está salvando
+            try {
+                const defaultBudget = {
+                    ...initialBudgetState, // Começa com o estado inicial
+                    cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
+                    funcionario_id: user?.id || null,
+                    data_orcamento: budget.data_orcamento, // Usa a data atual do estado
+                    vendedor: user?.user_metadata?.full_name || user?.email || '',
+                    cliente_id: person.cpf_cnpj,
+                    nome_cliente: clientName,
+                };
+
+                // Workaround temporário: remover funcionario_id se for UUID e o DB espera INT
+                const saveDataForInsert = { ...defaultBudget };
+                if (typeof saveDataForInsert.funcionario_id === 'string' && saveDataForInsert.funcionario_id.includes('-')) {
+                    delete saveDataForInsert.funcionario_id;
+                    toast({
+                        variant: 'destructive',
+                        title: 'Aviso de Schema',
+                        description: 'O campo funcionario_id foi omitido no salvamento inicial. Por favor, ajuste o tipo da coluna `funcionario_id` na tabela `orcamento` para UUID ou TEXT no seu banco de dados, ou forneça um ID de funcionário inteiro válido.',
+                        duration: 8000
+                    });
+                }
+
+                // Lógica para gerar o próximo numero_pedido
+                let nextNumeroPedido = 1;
+                try {
+                    const { data: lastBudget, error: lastBudgetError } = await supabase
+                        .from('orcamento')
+                        .select('numero_pedido')
+                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
+                        .order('numero_pedido', { ascending: false }) 
+                        .limit(1)
+                        .single();
+
+                    if (lastBudgetError && lastBudgetError.code !== 'PGRST116') { // PGRST116 means no rows found
+                        throw lastBudgetError;
+                    }
+
+                    if (lastBudget && lastBudget.numero_pedido) {
+                        const lastNum = parseInt(lastBudget.numero_pedido, 10);
+                        if (!isNaN(lastNum)) {
+                            nextNumeroPedido = lastNum + 1;
+                        }
+                    }
+                } catch (numError) {
+                    console.error("Error fetching last numero_pedido during initial save:", numError.message);
+                    toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
+                    setSaving(false);
+                    return;
+                }
+                saveDataForInsert.numero_pedido = nextNumeroPedido.toString(); // Atribui o número gerado
+
+                const { data: newBudgetData, error: insertError } = await supabase
+                    .from('orcamento')
+                    .insert([saveDataForInsert])
+                    .select(); // Seleciona os dados inseridos para obter o novo ID
+
+                if (insertError) throw insertError;
+
+                const newBudgetId = newBudgetData[0].id;
+                
+                // Atualiza o estado local com o novo ID do orçamento e numero_pedido
+                setBudget(prev => ({
+                    ...prev,
+                    ...newBudgetData[0], // Atualiza todos os campos com a resposta do DB
+                    data_orcamento: newBudgetData[0].data_orcamento.split('T')[0], // Formata a data
+                    numero_pedido: saveDataForInsert.numero_pedido, // Garante que o número gerado seja definido
+                    cliente_endereco_completo: buildClientAddressString(person), // Define o endereço do cliente
+                }));
+
+                if (user) {
+                    await logAction(user.id, 'budget_create', `Novo orçamento "${saveDataForInsert.numero_pedido}" (ID: ${newBudgetId}) criado ao selecionar cliente.`, activeCompanyId, null);
+                }
+
+                toast({ title: 'Orçamento Criado!', description: `Orçamento ${saveDataForInsert.numero_pedido} criado com sucesso.`, duration: 3000 });
+                navigate(`/app/budgets/${newBudgetId}/edit`); // Redireciona para a página de edição do orçamento salvo
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Erro ao criar orçamento', description: error.message });
+            } finally {
+                setSaving(false);
+            }
+        } else {
+            // Orçamento existente: apenas atualiza o estado local
+            setBudget(prev => ({
+                ...prev,
+                cliente_id: person.cpf_cnpj,
+                nome_cliente: clientName,
+                cliente_endereco_completo: buildClientAddressString(person),
+            }));
+        }
     };
 
     const handleSelectProduct = (product) => {
@@ -430,12 +517,19 @@ const BudgetEditorPage = () => {
             return;
         }
 
+        // Se não há ID, significa que o orçamento ainda não foi criado (deveria ter sido em handleSelectClient)
+        // Isso é um fallback ou um aviso, pois o fluxo esperado é que o ID já exista aqui.
+        if (!id) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Orçamento ainda não foi criado. Selecione um cliente primeiro.' });
+            return;
+        }
+
         setSaving(true);
         try {
             const saveData = {
                 ...budget,
                 cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                funcionario_id: user?.id,
+                funcionario_id: user?.id, // Aqui o funcionario_id já deve estar no formato correto se o DB foi ajustado
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
@@ -449,60 +543,15 @@ const BudgetEditorPage = () => {
             let description;
             let budgetId = id;
 
-            if (id) {
-                // Atualiza um orçamento existente
-                const { error: updateError } = await supabase
-                    .from('orcamento')
-                    .update(saveData)
-                    .eq('id', parseInt(id, 10));
-                error = updateError;
-                actionType = 'budget_update';
-                description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
-            } else {
-                // Cria um novo orçamento
-                delete saveData.id; 
-
-                // Lógica para gerar o próximo numero_pedido
-                let nextNumeroPedido = 1;
-                try {
-                    const { data: lastBudget, error: lastBudgetError } = await supabase
-                        .from('orcamento')
-                        .select('numero_pedido')
-                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
-                        .order('numero_pedido', { ascending: false }) 
-                        .limit(1)
-                        .single();
-
-                    if (lastBudgetError && lastBudgetError.code !== 'PGRST116') { // PGRST116 means no rows found
-                        throw lastBudgetError;
-                    }
-
-                    if (lastBudget && lastBudget.numero_pedido) {
-                        const lastNum = parseInt(lastBudget.numero_pedido, 10);
-                        if (!isNaN(lastNum)) {
-                            nextNumeroPedido = lastNum + 1;
-                        }
-                    }
-                } catch (numError) {
-                    console.error("Error fetching last numero_pedido during save:", numError.message);
-                    toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
-                    setSaving(false);
-                    return;
-                }
-                saveData.numero_pedido = nextNumeroPedido.toString(); // Atribui o número gerado
-
-                const { data: newBudgetData, error: insertError } = await supabase
-                    .from('orcamento')
-                    .insert([saveData])
-                    .select();
-                error = insertError;
-                actionType = 'budget_create';
-                description = `Novo orçamento "${saveData.numero_pedido || newBudgetData?.[0]?.id}" (ID: ${newBudgetData?.[0]?.id}) criado.`;
-                if (newBudgetData && newBudgetData.length > 0) {
-                    budgetId = newBudgetData[0].id;
-                }
-            }
-
+            // Este bloco agora só lida com a atualização de orçamentos existentes
+            const { error: updateError } = await supabase
+                .from('orcamento')
+                .update(saveData)
+                .eq('id', parseInt(id, 10));
+            error = updateError;
+            actionType = 'budget_update';
+            description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
+            
             if (error) throw error;
 
             if (budgetId) {
@@ -531,7 +580,7 @@ const BudgetEditorPage = () => {
             }
 
             toast({ title: 'Sucesso!', description: `Orçamento ${id ? 'atualizado' : 'criado'} com sucesso.` });
-            navigate(`/app/budgets/${budgetId}/edit`); // Redireciona para a página de edição do orçamento salvo
+            navigate('/app/budgets'); // Redireciona para a lista de orçamentos após a atualização
         } catch (error) {
             toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
         } finally {
@@ -703,7 +752,7 @@ const BudgetEditorPage = () => {
                         onSelect={handleSelectProductFromSearch}
                         placeholder="Digite para buscar e adicionar produto..."
                         className="w-full"
-                        disabled={isFaturado}
+                        disabled={isFaturado || !id} {/* Desabilita se não houver ID de orçamento */}
                     />
                 </div>
 
