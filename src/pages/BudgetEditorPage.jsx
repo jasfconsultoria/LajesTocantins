@@ -15,6 +15,7 @@ import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString } from '@
 import SelectSearchClient from '@/components/SelectSearchClient';
 import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
+import SelectSearchNatureza from '@/components/SelectSearchNatureza'; // Importar o novo componente
 import { v4 as uuidv4 } from 'uuid';
 import {
   Table,
@@ -34,8 +35,8 @@ const initialBudgetState = {
     debito_credito: 'D',
     forma_pagamento: '',
     cnpj_empresa: '',
-    cfop: '',
-    natureza: '',
+    cfop: '', // Manter cfop no estado
+    natureza: '', // Manter natureza no estado
     faturado: false,
     vendedor: '',
     desconto: 0.0,
@@ -361,6 +362,22 @@ const BudgetEditorPage = () => {
 
     const handleSelectChange = (id, value) => {
         setBudget(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectNatureza = (selectedCfop) => {
+        if (selectedCfop) {
+            setBudget(prev => ({
+                ...prev,
+                cfop: selectedCfop.cfop,
+                natureza: selectedCfop.descricao,
+            }));
+        } else {
+            setBudget(prev => ({
+                ...prev,
+                cfop: '',
+                natureza: '',
+            }));
+        }
     };
 
     const handleSelectClient = async (person) => {
@@ -776,14 +793,19 @@ const BudgetEditorPage = () => {
                         <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} disabled={isFaturado} />
                     </div>
 
-                    {/* Natureza da Operação, NF-e Nº */}
+                    {/* Natureza da Operação, CFOP */}
                     <div className="form-group lg:col-span-9">
                         <Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label>
-                        <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} disabled={isFaturado} />
+                        <SelectSearchNatureza
+                            value={budget.natureza}
+                            onValueChange={handleSelectNatureza}
+                            disabled={isFaturado}
+                            required
+                        />
                     </div>
                     <div className="form-group lg:col-span-3">
-                        <Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label>
-                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} disabled={isFaturado} />
+                        <Label htmlFor="cfop" className="form-label">CFOP</Label>
+                        <Input id="cfop" type="text" className="form-input" value={budget.cfop || ''} readOnly disabled={true} />
                     </div>
                 </div>
 
