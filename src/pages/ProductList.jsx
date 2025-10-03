@@ -60,17 +60,28 @@ const ProductList = () => {
                 .eq('id_emit', activeCompanyId)
                 .order('created_at', { ascending: false });
 
-            if (productsError) throw productsError;
+            if (productsError) {
+                console.error("Error fetching products (ProductList):", productsError);
+                throw productsError;
+            }
 
-            // 2. Fetch units from 'unidade' table
+            // 2. Fetch units from 'unidade' table (make this more resilient)
+            let unitMap = new Map();
             const { data: unitsData, error: unitsError } = await supabase
                 .from('unidade')
-                .select('codigo, unidade'); // Only fetch necessary columns
+                .select('codigo, unidade');
 
-            if (unitsError) throw unitsError;
-
-            // Create a map for quick lookup of unit descriptions
-            const unitMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
+            if (unitsError) {
+                console.error("Error fetching units (ProductList):", unitsError);
+                toast({
+                    variant: "destructive",
+                    title: "Erro ao carregar unidades comerciais",
+                    description: unitsError.message || 'Verifique as configurações do banco de dados ou permissões (RLS).',
+                });
+                // Do NOT throw here. Proceed with an empty unitMap.
+            } else {
+                unitMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
+            }
 
             // 3. Combine products with their unit descriptions and create client-side busca_completa
             const combinedProducts = productsData.map(p => {
@@ -98,12 +109,14 @@ const ProductList = () => {
             setProducts(combinedProducts);
 
         } catch (error) {
+            // This catch block will now primarily catch productError
             toast({
                 variant: "destructive",
                 title: "Erro ao carregar produtos",
-                description: error.message,
+                description: error.message || 'Ocorreu um erro inesperado ao carregar os produtos.',
             });
-            console.error("ProductList: Error fetching products:", error.message);
+            console.error("ProductList: Caught error in fetchProducts:", error);
+            setProducts([]);
         } finally {
             setLoading(false);
         }
@@ -196,7 +209,10 @@ const ProductList = () => {
                 .delete()
                 .eq('id', productId);
 
-            if (error) throw error;
+            if (error) {
+                console.error("Error deleting product (ProductList):", error);
+                throw error;
+            }
 
             toast({ title: 'Produto excluído!', description: `"${productName}" foi removido(a) com sucesso.` });
             if (currentUser) {
@@ -204,7 +220,8 @@ const ProductList = () => {
             }
             fetchProducts();
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Erro ao excluir', description: error.message });
+            console.error("Caught error in handleDeleteProduct (ProductList):", error);
+            toast({ variant: 'destructive', title: 'Erro ao excluir', description: error.message || 'Ocorreu um erro inesperado ao excluir o produto.' });
         }
     };
 

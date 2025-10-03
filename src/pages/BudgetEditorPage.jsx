@@ -75,7 +75,7 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = new Map(); // Inicializado como Map vazio
+    const [unitsMap, setUnitsMap] = useState(new Map()); // Inicializado como Map vazio
     const [allProducts, setAllProducts] = useState([]);
 
     const isFaturado = budget.faturado; // Determina se o orçamento está faturado e deve ser bloqueado
@@ -96,8 +96,8 @@ const BudgetEditorPage = () => {
             if (municipalitiesError) throw municipalitiesError;
             setAllMunicipalities(municipalitiesData);
         } catch (error) {
-            console.error("Error fetching UFs or Municipalities:", error.message);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar dados de localização.' });
+            console.error("Error fetching UFs or Municipalities:", error);
+            toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar dados de localização.' });
         }
     }, [toast]);
 
@@ -157,8 +157,8 @@ const BudgetEditorPage = () => {
             });
             setPeople(enrichedPeople);
         } catch (error) {
-            console.error("Error fetching people:", error.message);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar a lista de pessoas.' });
+            console.error("Error fetching people:", error);
+            toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar a lista de pessoas.' });
         }
     }, [toast, allMunicipalities, allUfs]);
 
@@ -175,16 +175,30 @@ const BudgetEditorPage = () => {
                 .eq('id_emit', activeCompanyId)
                 .order('prod_xProd', { ascending: true });
 
-            if (error) throw error;
+            if (error) {
+                console.error("Error fetching products (BudgetEditorPage):", error);
+                throw error;
+            }
 
-            const { data: unitsData } = await supabase
+            let currentUnitsMap = new Map();
+            const { data: unitsData, error: unitsError } = await supabase
                 .from('unidade')
                 .select('codigo, unidade');
 
-            const unitsMap = new Map(unitsData?.map(unit => [unit.codigo, unit.unidade]) || []);
+            if (unitsError) {
+                console.error("Error fetching units (BudgetEditorPage - Products):", unitsError);
+                toast({
+                    variant: "destructive",
+                    title: "Erro ao carregar unidades comerciais",
+                    description: unitsError.message || 'Verifique as configurações do banco de dados ou permissões (RLS).',
+                });
+            } else {
+                currentUnitsMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
+            }
+            setUnitsMap(currentUnitsMap); // Update the unitsMap state
 
             const enrichedProducts = productsData.map(p => {
-                const unitDescription = unitsMap.get(p.prod_uCOM) || '';
+                const unitDescription = currentUnitsMap.get(p.prod_uCOM) || '';
                 const searchStringParts = [
                     p.prod_cProd,
                     p.prod_xProd,
@@ -203,12 +217,14 @@ const BudgetEditorPage = () => {
 
             setAllProducts(enrichedProducts);
         } catch (error) {
-            console.error("Error fetching products:", error.message);
+            console.error("Caught error fetching products (BudgetEditorPage):", error);
             toast({ 
                 variant: "destructive", 
                 title: "Erro ao carregar produtos", 
-                description: error.message 
+                description: error.message || 'Ocorreu um erro inesperado ao carregar os produtos.'
             });
+            setAllProducts([]);
+            setUnitsMap(new Map()); // Clear unitsMap on error
         }
     }, [activeCompanyId, toast]);
 
@@ -232,7 +248,10 @@ const BudgetEditorPage = () => {
                 .select('*')
                 .eq('id', parseInt(id, 10))
                 .single();
-            if (error) throw error;
+            if (error) {
+                console.error("Error fetching budget (BudgetEditorPage):", error);
+                throw error;
+            }
             if (data) {
                 const budgetData = {
                     ...data,
@@ -247,7 +266,10 @@ const BudgetEditorPage = () => {
                         .select('*')
                         .eq('cpf_cnpj', data.cliente_id)
                         .single();
-                    if (clientError) throw clientError;
+                    if (clientError) {
+                        console.error("Error fetching client for budget (BudgetEditorPage):", clientError);
+                        throw clientError;
+                    }
 
                     if (clientData) {
                         const clientName = clientData.nome_fantasia && clientData.razao_social 
@@ -265,11 +287,15 @@ const BudgetEditorPage = () => {
                 .from('orcamento_composicao')
                 .select('*, produtos!produto_id(prod_xProd, prod_uCOM)')
                 .eq('orcamento_id', parseInt(id, 10));
-            if (compError) throw compError;
+            if (compError) {
+                console.error("Error fetching compositions for budget (BudgetEditorPage):", compError);
+                throw compError;
+            }
             if (compData) setCompositions(compData);
 
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message });
+            console.error("Caught error fetching budget (BudgetEditorPage):", error);
+            toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message || 'Ocorreu um erro inesperado ao carregar o orçamento.' });
         } finally {
             setLoading(false);
         }
@@ -281,12 +307,20 @@ const BudgetEditorPage = () => {
                 .from('unidade')
                 .select('codigo, unidade')
                 .order('unidade', { ascending: true });
-            if (error) throw error;
+            if (error) {
+                console.error("Error fetching units (BudgetEditorPage):", error);
+                throw error;
+            }
             const map = new Map(data.map(unit => [unit.codigo, unit.unidade]));
             setUnitsMap(map);
         } catch (error) {
-            console.error("Error fetching units:", error.message);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as unidades comerciais.' });
+            console.error("Caught error fetching units (BudgetEditorPage):", error);
+            toast({ 
+                variant: 'destructive', 
+                title: 'Erro ao carregar unidades comerciais', 
+                description: error.message || 'Verifique as configurações do banco de dados ou permissões (RLS).' 
+            });
+            setUnitsMap(new Map());
         }
     }, [toast]);
 
@@ -392,7 +426,7 @@ const BudgetEditorPage = () => {
                         console.log("DEBUG: No previous budgets found for this company. Starting from 1.");
                     }
                 } catch (numError) {
-                    console.error("DEBUG: Error calculating next numero_pedido:", numError.message);
+                    console.error("DEBUG: Error calculating next numero_pedido:", numError);
                     toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
                     setSaving(false);
                     return;
@@ -405,7 +439,10 @@ const BudgetEditorPage = () => {
                     .insert([defaultBudget]) // Usa defaultBudget com funcionario_id hardcoded
                     .select(); // Seleciona os dados inseridos para obter o novo ID
 
-                if (insertError) throw insertError;
+                if (insertError) {
+                    console.error("Error inserting new budget (BudgetEditorPage):", insertError);
+                    throw insertError;
+                }
 
                 const newBudgetId = newBudgetData[0].id;
                 
@@ -425,7 +462,8 @@ const BudgetEditorPage = () => {
                 toast({ title: 'Orçamento Criado!', description: `Orçamento ${defaultBudget.numero_pedido} criado com sucesso.`, duration: 3000 });
                 navigate(`/app/budgets/${newBudgetId}/edit`); // Redireciona para a página de edição do orçamento salvo
             } catch (error) {
-                toast({ variant: 'destructive', title: 'Erro ao criar orçamento', description: error.message });
+                console.error("Caught error in handleSelectClient (new budget creation):", error);
+                toast({ variant: 'destructive', title: 'Erro ao criar orçamento', description: error.message || 'Ocorreu um erro inesperado ao criar o orçamento.' });
             } finally {
                 setSaving(false);
             }
@@ -552,7 +590,10 @@ const BudgetEditorPage = () => {
             actionType = 'budget_update';
             description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
             
-            if (error) throw error;
+            if (error) {
+                console.error("Error updating budget (BudgetEditorPage):", error);
+                throw error;
+            }
 
             if (budgetId) {
                 // Lógica para salvar as composições (itens do orçamento)
@@ -569,7 +610,10 @@ const BudgetEditorPage = () => {
                                 created_at: new Date().toISOString(),
                                 updated_at: new Date().toISOString(),
                             });
-                        if (compInsertError) throw compInsertError;
+                        if (compInsertError) {
+                            console.error("Error inserting composition item (BudgetEditorPage):", compInsertError);
+                            throw compInsertError;
+                        }
                     }
                     // TODO: Adicionar lógica para atualizar composições existentes e deletar as removidas
                 }
@@ -582,7 +626,8 @@ const BudgetEditorPage = () => {
             toast({ title: 'Sucesso!', description: `Orçamento ${id ? 'atualizado' : 'criado'} com sucesso.` });
             navigate('/app/budgets'); // Redireciona para a lista de orçamentos após a atualização
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
+            console.error("Caught error in handleSave (BudgetEditorPage):", error);
+            toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message || 'Ocorreu um erro inesperado ao salvar o orçamento.' });
         } finally {
             setSaving(false);
         }
@@ -608,7 +653,10 @@ const BudgetEditorPage = () => {
                     .delete()
                     .eq('id', compositionId);
 
-                if (error) throw error;
+                if (error) {
+                    console.error("Error deleting composition item (BudgetEditorPage):", error);
+                    throw error;
+                }
 
                 setCompositions(prev => prev.filter(c => c.id !== compositionId));
                 toast({ title: 'Item excluído!', description: `"${productName}" foi removido(a) com sucesso.` });
@@ -617,7 +665,8 @@ const BudgetEditorPage = () => {
                 }
             }
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Erro ao excluir item', description: error.message });
+            console.error("Caught error in handleDeleteComposition (BudgetEditorPage):", error);
+            toast({ variant: 'destructive', title: 'Erro ao excluir item', description: error.message || 'Ocorreu um erro inesperado ao excluir o item.' });
         } finally {
             setSaving(false);
         }

@@ -80,10 +80,14 @@ const ProductEditorPage = () => {
                 .select('*')
                 .eq('id', id)
                 .single();
-            if (error) throw error;
+            if (error) {
+                console.error("Error fetching product (ProductEditorPage):", error);
+                throw error;
+            }
             if (data) setProduct(data);
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Erro ao carregar produto', description: error.message });
+            console.error("Caught error fetching product (ProductEditorPage):", error);
+            toast({ variant: 'destructive', title: 'Erro ao carregar produto', description: error.message || 'Ocorreu um erro inesperado ao carregar o produto.' });
         } finally {
             setLoading(false);
         }
@@ -95,11 +99,19 @@ const ProductEditorPage = () => {
                 .from('unidade')
                 .select('codigo, unidade')
                 .order('unidade', { ascending: true });
-            if (error) throw error;
+            if (error) {
+                console.error("Error fetching units (ProductEditorPage):", error);
+                throw error;
+            }
             setUnits(data);
         } catch (error) {
-            console.error("Error fetching units:", error.message);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as unidades comerciais.' });
+            console.error("Caught error fetching units (ProductEditorPage):", error);
+            toast({ 
+                variant: 'destructive', 
+                title: 'Erro ao carregar unidades comerciais', 
+                description: error.message || 'Verifique as configurações do banco de dados ou permissões (RLS).' 
+            });
+            setUnits([]);
         }
     }, [toast]);
 
@@ -168,7 +180,10 @@ const ProductEditorPage = () => {
                 }
             }
 
-            if (error) throw error;
+            if (error) {
+                console.error("Error saving product (ProductEditorPage):", error);
+                throw error;
+            }
 
             if (user) {
                 await logAction(user.id, actionType, description, activeCompanyId, null);
@@ -177,7 +192,8 @@ const ProductEditorPage = () => {
             toast({ title: 'Sucesso!', description: `Produto ${id ? 'atualizado' : 'criado'} com sucesso.` });
             navigate('/app/products');
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
+            console.error("Caught error in handleSave (ProductEditorPage):", error);
+            toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message || 'Ocorreu um erro inesperado ao salvar o produto.' });
         } finally {
             setSaving(false);
         }

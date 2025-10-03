@@ -41,21 +41,33 @@ const ProductSearchDialog = ({ isOpen, setIsOpen, onSelectProduct, activeCompany
         .eq('id_emit', activeCompanyId)
         .order('prod_xProd', { ascending: true });
 
-      if (productsError) throw productsError;
+      if (productsError) {
+        console.error("Error fetching products (ProductSearchDialog):", productsError);
+        throw productsError;
+      }
 
-      // Fetch units
+      // Fetch units (make this more resilient)
+      let currentUnitsMap = new Map();
       const { data: unitsData, error: unitsError } = await supabase
         .from('unidade')
         .select('codigo, unidade');
 
-      if (unitsError) throw unitsError;
-
-      const map = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
-      setUnitsMap(map);
+      if (unitsError) {
+        console.error("Error fetching units (ProductSearchDialog):", unitsError);
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar unidades comerciais",
+          description: unitsError.message || 'Verifique as configurações do banco de dados ou permissões (RLS).',
+        });
+        // Do NOT throw here. Proceed with an empty currentUnitsMap.
+      } else {
+        currentUnitsMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
+      }
+      setUnitsMap(currentUnitsMap); // Set the map, whether empty or populated
 
       // Combine products with unit descriptions and create search string
       const combinedProducts = productsData.map(p => {
-        const unitDescription = map.get(p.prod_uCOM) || '';
+        const unitDescription = currentUnitsMap.get(p.prod_uCOM) || '';
         const searchStringParts = [
           p.prod_cProd,
           p.prod_xProd,
@@ -73,12 +85,15 @@ const ProductSearchDialog = ({ isOpen, setIsOpen, onSelectProduct, activeCompany
 
       setProducts(combinedProducts);
     } catch (error) {
+      // This catch block will now primarily catch productError
       toast({
         variant: "destructive",
         title: "Erro ao carregar produtos",
-        description: error.message,
+        description: error.message || 'Ocorreu um erro inesperado ao carregar os produtos.',
       });
-      console.error("ProductSearchDialog: Error fetching products:", error.message);
+      console.error("ProductSearchDialog: Caught error in fetchProductsAndUnits:", error);
+      setProducts([]);
+      setUnitsMap(new Map()); // Ensure unitsMap is empty on error
     } finally {
       setLoading(false);
     }
