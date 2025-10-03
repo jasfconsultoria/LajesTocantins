@@ -96,7 +96,8 @@ const SelectSearchProduct = ({
                     key={product.id}
                     type="button"
                     className="w-full text-left px-3 py-2 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none transition-colors"
-                    onMouseDown={(e) => e.preventDefault()} {/* Impede o blur imediato ao clicar */}
+                    // Impede o blur imediato ao clicar
+                    onMouseDown={(e) => e.preventDefault()} 
                     onClick={() => handleSelect(product)}
                   >
                     <div className="flex items-center text-sm font-medium text-slate-800">
