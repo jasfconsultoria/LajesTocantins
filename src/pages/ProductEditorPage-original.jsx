@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { logAction } from '@/lib/log';
-import SelectSearchUnit from '@/components/SelectSearchUnit'; // Nome atualizado
+import UnitSearchSelect from '@/components/UnitSearchSelect'; // Importar o novo componente
 
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
@@ -58,7 +58,7 @@ const ProductEditorPage = () => {
     const [product, setProduct] = useState(initialProductState);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [units, setUnits] = useState([]);
+    const [units, setUnits] = useState([]); // Novo estado para as unidades
 
     const formatCurrency = (value) => {
         if (value === null || value === undefined) return '';
@@ -92,7 +92,7 @@ const ProductEditorPage = () => {
     const fetchUnits = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('unidade')
+                .from('unidade') // Nome da tabela corrigido para 'unidade'
                 .select('codigo, unidade')
                 .order('unidade', { ascending: true });
             if (error) throw error;
@@ -105,17 +105,18 @@ const ProductEditorPage = () => {
 
     useEffect(() => {
         fetchProduct();
-        fetchUnits();
+        fetchUnits(); // Chamar a busca de unidades
     }, [fetchProduct, fetchUnits]);
 
     const handleInputChange = (e) => {
         const { id, value, type } = e.target;
         let parsedValue = value;
 
-        if (id === 'prod_vUnCOM') {
+        if (id === 'prod_vUnCOM') { // Tratamento específico para o campo de valor
+            // Substitui vírgula por ponto para permitir parseFloat, e remove outros caracteres não numéricos
             const cleanedValue = value.replace(',', '.').replace(/[^\d.]/g, '');
             parsedValue = cleanedValue === '' ? null : parseFloat(cleanedValue);
-            if (isNaN(parsedValue)) parsedValue = null;
+            if (isNaN(parsedValue)) parsedValue = null; // Garante que seja null se não for um número válido
         } else if (type === 'number') {
             parsedValue = parseFloat(value);
         }
@@ -129,7 +130,7 @@ const ProductEditorPage = () => {
     const handleSelectChange = (id, value) => {
         setProduct(prev => ({
             ...prev,
-            [id]: id === 'prod_uCOM' ? parseInt(value, 10) : value
+            [id]: id === 'prod_uCOM' ? parseInt(value, 10) : value // Converte para inteiro para prod_uCOM
         }));
     };
 
@@ -231,20 +232,20 @@ const ProductEditorPage = () => {
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial *</Label>
-                        <SelectSearchUnit
-                            value={product.prod_uCOM?.toString()}
+                        <UnitSearchSelect
+                            value={product.prod_uCOM?.toString()} // Garante que o valor seja uma string para o componente
                             onValueChange={(value) => handleSelectChange('prod_uCOM', value)}
                             units={units}
                             disabled={saving}
                             placeholder="Selecione a Unidade"
-                            required
+                            required // Tornando o campo obrigatório
                         />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_vUnCOM" className="form-label">Valor Unitário Comercial</Label>
                         <Input
                             id="prod_vUnCOM"
-                            type="text"
+                            type="text" // Alterado para 'text' para permitir formatação personalizada
                             className="form-input"
                             value={product.prod_vUnCOM !== null ? formatCurrency(product.prod_vUnCOM) : ''}
                             onChange={handleInputChange}
@@ -259,46 +260,52 @@ const ProductEditorPage = () => {
                     </div>
 
                     {/* Combined Row for NCM, CFOP, CEST, Rastreável, Alerta, Nível Máximo, Ativo */}
-                    <div className="form-group lg:col-span-2">
+                    <div className="form-group lg:col-span-2"> {/* NCM agora ocupa 2 colunas */}
                         <Label htmlFor="prod_NCM" className="form-label">NCM</Label>
                         <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} placeholder="Ex: 68101100" />
                     </div>
-                    <div className="form-group lg:col-span-2">
+                    <div className="form-group lg:col-span-2"> {/* CFOP agora ocupa 2 colunas */}
                         <Label htmlFor="prod_CFOP" className="form-label">CFOP</Label>
                         <Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} placeholder="Ex: 5102" />
+                        {/* TODO: Adicionar funcionalidade de 'buscar na tabela "cfop" mostrar as duas colunas' */}
                     </div>
-                    <div className="form-group lg:col-span-2">
+                    <div className="form-group lg:col-span-2"> {/* CEST (Opcional) continua com 2 colunas */}
                         <Label htmlFor="prod_CEST_Opc" className="form-label">CEST (Opcional)</Label>
                         <Input id="prod_CEST_Opc" type="text" className="form-input" value={product.prod_CEST_Opc} onChange={handleInputChange} placeholder="Ex: 2400100" />
                     </div>
-                    <div className="form-group lg:col-span-1">
+                    <div className="form-group lg:col-span-1"> {/* Rastreável agora ocupa 1 coluna */}
                         <Label htmlFor="prod_rastro" className="form-label">Rastreável</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_rastro', value)} value={product.prod_rastro}>
                             <SelectTrigger id="prod_rastro" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group lg:col-span-1">
+                    <div className="form-group lg:col-span-1"> {/* Alerta agora ocupa 1 coluna */}
                         <Label htmlFor="prod_alert" className="form-label">Alerta</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_alert', value)} value={product.prod_alert}>
                             <SelectTrigger id="prod_alert" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
-                    <div className="form-group lg:col-span-2">
+                    <div className="form-group lg:col-span-2"> {/* Nível Máximo agora ocupa 2 colunas */}
                         <Label htmlFor="prod_nivelm" className="form-label">Nível Máximo</Label>
                         <Input id="prod_nivelm" type="number" className="form-input" value={product.prod_nivelm} onChange={handleInputChange} placeholder="Ex: 100" />
                     </div>
-                    <div className="form-group lg:col-span-2">
+                    <div className="form-group lg:col-span-2"> {/* Ativo agora ocupa 2 colunas */}
                         <Label htmlFor="prod_ativo" className="form-label">Ativo</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_ativo', value)} value={product.prod_ativo}>
                             <SelectTrigger id="prod_ativo" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
                     </div>
+
+                    {/* Row 5: Descrição do Produto (prod_descricao_detalhada) - REMOVIDO */}
+                    {/* <div className="form-group lg:col-span-12">
+                        <Label htmlFor="prod_descricao_detalhada" className="form-label">Descrição do Produto</Label>
+                        <Textarea id="prod_descricao_detalhada" className="form-textarea" value={product.prod_descricao_detalhada} onChange={handleInputChange} rows={3} />
+                    </div> */}
                 </div>
 
-                {/* Resto do código permanece igual... */}
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">ICMS</h3>
                 <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                     {/* Primeira linha */}

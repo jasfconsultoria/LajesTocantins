@@ -11,11 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString } from '@/lib/utils';
-import SelectSearchClient from '@/components/SelectSearchClient';
-import SelectSearchProduct from '@/components/SelectSearchProduct';
-import ProductSearchDialog from '@/components/ProductSearchDialog';
-import { v4 as uuidv4 } from 'uuid';
+import { normalizeCnpj, formatCpfCnpj, formatCurrency } from '@/lib/utils'; // Importar formatCpfCnpj e formatCurrency
+import ClientSearchDialog from '@/components/ClientSearchDialog';
+import ProductSearchDialog from '@/components/ProductSearchDialog'; // Importar o novo diálogo
+import { v4 as uuidv4 } from 'uuid'; // Importar uuid para IDs temporários
 import {
   Table,
   TableBody,
@@ -26,19 +25,19 @@ import {
 } from "@/components/ui/table";
 
 const initialBudgetState = {
-    data_orcamento: new Date().toISOString().split('T')[0],
-    cliente_id: null,
+    data_orcamento: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+    cliente_id: null, // Agora armazenará o CPF/CNPJ do cliente
     funcionario_id: null,
     endereco_entrega: '',
     historico: '',
-    debito_credito: 'D',
+    debito_credito: 'D', // Default to Débito
     forma_pagamento: '',
     cnpj_empresa: '',
     cfop: '',
     natureza: '',
     faturado: false,
     vendedor: '',
-    desconto: 0.0,
+    desconto: 0.0, // Desconto global do orçamento (mantido no estado, mas não usado nos cálculos do resumo)
     condicao_pagamento: '',
     endereco_entrega_completo: '',
     obra: '',
@@ -46,17 +45,19 @@ const initialBudgetState = {
     prazo_entrega: 0,
     numero_nfe: '',
     numero_parcelas: 1,
-    data_venda: null,
+    data_venda: null, // Can be null initially
     total_venda: 0.0,
     total_fatura: 0.0,
-    nome_cliente: '',
+    nome_cliente: '', // Nome do cliente para exibição
     numero_pedido: '',
     acrescimo: 0.0,
     validade: 0,
     solicitante: '',
     telefone: '',
     codigo_antigo: null,
-    previsao_entrega: null,
+    previsao_entrega: null, // Novo campo
+
+    // Campo de endereço do cliente concatenado (somente leitura)
     cliente_endereco_completo: '',
 };
 
@@ -69,14 +70,14 @@ const BudgetEditorPage = () => {
 
     const [budget, setBudget] = useState(initialBudgetState);
     const [compositions, setCompositions] = useState([]);
-    const [people, setPeople] = useState([]);
-    const [allUfs, setAllUfs] = useState([]);
-    const [allMunicipalities, setAllMunicipalities] = useState([]);
+    const [people, setPeople] = useState([]); // All people for search dialog
+    const [allUfs, setAllUfs] = useState([]); // All UFs for mapping
+    const [allMunicipalities, setAllMunicipalities] = useState([]); // All municipalities for mapping
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map());
-    const [allProducts, setAllProducts] = useState([]);
+    const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
+    const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false); // Novo estado para o diálogo de produtos
+    const [unitsMap, setUnitsMap] = useState(new Map()); // Novo estado para o mapa de unidades
 
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
@@ -107,14 +108,17 @@ const BudgetEditorPage = () => {
         if (clientData.complemento) parts.push(clientData.complemento);
         if (clientData.bairro) parts.push(clientData.bairro);
         
+        // Priorize municipio_nome se já disponível em clientData (do enrichedPeople)
+        // Caso contrário, busque pelo código na lista allMunicipalities
         const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(clientData.municipio))?.municipio || '';
         const ufSigla = clientData.uf || '';
 
+        // Combine municipality and UF into one part if both exist
         if (municipioNome && ufSigla) {
             parts.push(`${municipioNome}/${ufSigla}`);
-        } else if (municipioNome) {
+        } else if (municipioNome) { // Add only municipality if UF is missing
             parts.push(municipioNome);
-        } else if (ufSigla) {
+        } else if (ufSigla) { // Add only UF if municipality is missing
             parts.push(ufSigla);
         }
 
@@ -131,7 +135,7 @@ const BudgetEditorPage = () => {
             while (true) {
                 const { data, error } = await supabase
                     .from('pessoas')
-                    .select('id, razao_social, nome_fantasia, pessoa_tipo, logradouro, numero, complemento, bairro, municipio, uf, cep, cpf_cnpj')
+                    .select('id, razao_social, nome_fantasia, pessoa_tipo, logradouro, numero, complemento, bairro, municipio, uf, cep, cpf_cnpj') // Adicionado cpf_cnpj
                     .order('razao_social', { ascending: true })
                     .range(offset, offset + limit - 1);
                 if (error) throw error;
@@ -144,7 +148,9 @@ const BudgetEditorPage = () => {
                 }
             }
 
+            // Enriquecer dados de pessoas com nome do município e nome completo do estado para exibição
             const enrichedPeople = allPeople.map(p => {
+                // Convert both sides to string for consistent comparison
                 const municipioObj = allMunicipalities.find(m => String(m.codigo) === String(p.municipio));
                 const ufObj = allUfs.find(u => u.sigla === p.uf);
                 return {
@@ -158,57 +164,7 @@ const BudgetEditorPage = () => {
             console.error("Error fetching people:", error.message);
             toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar a lista de pessoas.' });
         }
-    }, [toast, allMunicipalities, allUfs]);
-
-    const fetchProducts = useCallback(async () => {
-        if (!activeCompanyId) {
-            setAllProducts([]);
-            return;
-        }
-        
-        try {
-            const { data: productsData, error } = await supabase
-                .from('produtos')
-                .select('*')
-                .eq('id_emit', activeCompanyId)
-                .order('prod_xProd', { ascending: true });
-
-            if (error) throw error;
-
-            const { data: unitsData } = await supabase
-                .from('unidade')
-                .select('codigo, unidade');
-
-            const unitsMap = new Map(unitsData?.map(unit => [unit.codigo, unit.unidade]) || []);
-
-            const enrichedProducts = productsData.map(p => {
-                const unitDescription = unitsMap.get(p.prod_uCOM) || '';
-                const searchStringParts = [
-                    p.prod_cProd,
-                    p.prod_xProd,
-                    p.prod_cEAN,
-                    p.prod_NCM,
-                    unitDescription
-                ].filter(Boolean);
-                const buscaCompleta = normalizeString(searchStringParts.join(' '));
-                
-                return {
-                    ...p,
-                    prod_uCOM_descricao: unitDescription,
-                    busca_completa: buscaCompleta
-                };
-            });
-
-            setAllProducts(enrichedProducts);
-        } catch (error) {
-            console.error("Error fetching products:", error.message);
-            toast({ 
-                variant: "destructive", 
-                title: "Erro ao carregar produtos", 
-                description: error.message 
-            });
-        }
-    }, [activeCompanyId, toast]);
+    }, [toast, allMunicipalities, allUfs]); // Adicionado allMunicipalities e allUfs às dependências
 
     const fetchBudget = useCallback(async () => {
         if (!id) {
@@ -226,7 +182,7 @@ const BudgetEditorPage = () => {
             const { data, error } = await supabase
                 .from('orcamento')
                 .select('*')
-                .eq('id', parseInt(id, 10))
+                .eq('id', parseInt(id, 10)) // Convertendo o ID do orçamento para inteiro
                 .single();
             if (error) throw error;
             if (data) {
@@ -237,11 +193,12 @@ const BudgetEditorPage = () => {
                     previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null,
                 };
 
+                // Fetch client details if cliente_id (CPF/CNPJ) exists
                 if (data.cliente_id) {
                     const { data: clientData, error: clientError } = await supabase
                         .from('pessoas')
                         .select('*')
-                        .eq('cpf_cnpj', data.cliente_id)
+                        .eq('cpf_cnpj', data.cliente_id) // Agora busca por cpf_cnpj
                         .single();
                     if (clientError) throw clientError;
 
@@ -250,6 +207,7 @@ const BudgetEditorPage = () => {
                             ? `${clientData.nome_fantasia} - ${clientData.razao_social}` 
                             : clientData.razao_social || clientData.nome_fantasia;
                         
+                        // Removido o CPF/CNPJ da exibição do nome do cliente
                         budgetData.nome_cliente = clientName;
                         budgetData.cliente_endereco_completo = buildClientAddressString(clientData);
                     }
@@ -260,7 +218,7 @@ const BudgetEditorPage = () => {
             const { data: compData, error: compError } = await supabase
                 .from('orcamento_composicao')
                 .select('*, produtos!produto_id(prod_xProd, prod_uCOM)')
-                .eq('orcamento_id', parseInt(id, 10));
+                .eq('orcamento_id', parseInt(id, 10)); // Convertendo o ID do orçamento para inteiro
             if (compError) throw compError;
             if (compData) setCompositions(compData);
 
@@ -269,12 +227,12 @@ const BudgetEditorPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, user, activeCompany, toast, buildClientAddressString, allMunicipalities]);
+    }, [id, user, activeCompany, toast, buildClientAddressString, allMunicipalities]); // Adicionado allMunicipalities
 
     const fetchUnits = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('unidade')
+                .from('unidade') // Nome da tabela corrigido para 'unidade'
                 .select('codigo, unidade')
                 .order('unidade', { ascending: true });
             if (error) throw error;
@@ -292,16 +250,11 @@ const BudgetEditorPage = () => {
     }, [fetchUfsAndMunicipalities, fetchUnits]);
 
     useEffect(() => {
-        if (activeCompanyId) {
-            fetchProducts();
-        }
-    }, [activeCompanyId, fetchProducts]);
-
-    useEffect(() => {
+        // Somente busca orçamento e pessoas depois que UFs e Municípios são carregados
         if (allUfs.length > 0 && allMunicipalities.length > 0) {
             fetchBudget();
-            fetchPeople();
-        } else if (!id) {
+            fetchPeople(); // Chamar fetchPeople aqui
+        } else if (!id) { // Se for um novo orçamento, e sem ID, podemos prosseguir sem esperar pelos dados de localização
             setLoading(false);
             setBudget(prev => ({
                 ...prev,
@@ -311,6 +264,7 @@ const BudgetEditorPage = () => {
             }));
         }
     }, [allUfs, allMunicipalities, fetchBudget, fetchPeople, id, activeCompany, user]);
+
 
     const handleInputChange = (e) => {
         const { id, value, type, checked } = e.target;
@@ -324,88 +278,37 @@ const BudgetEditorPage = () => {
         setBudget(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectClient = (person) => {
+    const handleSelectClient = (person) => { // Agora recebe o objeto completo da pessoa
         const clientName = person.nome_fantasia && person.razao_social 
             ? `${person.nome_fantasia} - ${person.razao_social}` 
             : person.razao_social || person.nome_fantasia;
         
+        // Removido o CPF/CNPJ da exibição do nome do cliente
         setBudget(prev => ({
             ...prev,
-            cliente_id: person.cpf_cnpj,
-            nome_cliente: clientName,
+            cliente_id: person.cpf_cnpj, // Armazena o CPF/CNPJ
+            nome_cliente: clientName, // Apenas o nome do cliente
             cliente_endereco_completo: buildClientAddressString(person),
         }));
     };
 
     const handleSelectProduct = (product) => {
         const newCompositionItem = {
-            id: uuidv4(),
-            orcamento_id: id ? parseInt(id, 10) : null,
+            id: uuidv4(), // Temporary ID for new items
+            orcamento_id: id ? parseInt(id, 10) : null, // If editing, link to existing budget
             produto_id: product.id,
             quantidade: 1,
             valor_venda: product.prod_vUnCOM || 0,
             desconto_total: 0,
+            // Include product details for display immediately
             produtos: {
                 prod_xProd: product.prod_xProd,
                 prod_uCOM: product.prod_uCOM,
             },
-            isNew: true,
+            isNew: true, // Mark as new for saving logic
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
-    };
-
-    const handleSelectProductFromSearch = (product) => {
-        const newCompositionItem = {
-            id: uuidv4(),
-            orcamento_id: id ? parseInt(id, 10) : null,
-            produto_id: product.id,
-            quantidade: 1,
-            valor_venda: product.prod_vUnCOM || 0,
-            desconto_total: 0,
-            produtos: {
-                prod_xProd: product.prod_xProd,
-                prod_uCOM: product.prod_uCOM,
-            },
-            isNew: true,
-        };
-        setCompositions(prev => [...prev, newCompositionItem]);
-        toast({ 
-            title: "Produto adicionado!", 
-            description: `${product.prod_xProd} foi adicionado ao orçamento.`,
-            duration: 2000 
-        });
-    };
-
-    // Funções para editar os campos da composição
-    const handleQuantityChange = (compositionId, newQuantity) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, quantidade: parseFloat(newQuantity) || 0 }
-                    : comp
-            )
-        );
-    };
-
-    const handleValueChange = (compositionId, newValue) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, valor_venda: parseFloat(newValue) || 0 }
-                    : comp
-            )
-        );
-    };
-
-    const handleDiscountChange = (compositionId, newDiscount) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, desconto_total: parseFloat(newDiscount) || 0 }
-                    : comp
-            )
-        );
     };
 
     const handleSave = async () => {
@@ -426,6 +329,7 @@ const BudgetEditorPage = () => {
                 updated_at: new Date().toISOString(),
             };
 
+            // Remove client address fields before saving to 'orcamento' table
             delete saveData.cliente_endereco_completo;
 
             let error;
@@ -437,7 +341,7 @@ const BudgetEditorPage = () => {
                 const { error: updateError } = await supabase
                     .from('orcamento')
                     .update(saveData)
-                    .eq('id', parseInt(id, 10));
+                    .eq('id', parseInt(id, 10)); // Convertendo o ID do orçamento para inteiro
                 error = updateError;
                 actionType = 'budget_update';
                 description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
@@ -457,6 +361,7 @@ const BudgetEditorPage = () => {
 
             if (error) throw error;
 
+            // Handle new compositions
             if (budgetId) {
                 for (const comp of compositions) {
                     if (comp.isNew) {
@@ -473,6 +378,7 @@ const BudgetEditorPage = () => {
                             });
                         if (compInsertError) throw compInsertError;
                     }
+                    // TODO: Add logic for updating existing compositions and deleting removed ones
                 }
             }
 
@@ -490,6 +396,7 @@ const BudgetEditorPage = () => {
     };
 
     const handleEditComposition = (compositionId) => {
+        // For now, just a toast. Full editing would involve another dialog/form.
         toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" });
     };
 
@@ -499,11 +406,13 @@ const BudgetEditorPage = () => {
         }
         setSaving(true);
         try {
+            // If it's a new item not yet saved to DB, just remove from state
             const itemToDelete = compositions.find(c => c.id === compositionId);
             if (itemToDelete && itemToDelete.isNew) {
                 setCompositions(prev => prev.filter(c => c.id !== compositionId));
                 toast({ title: "Item removido!", description: `"${productName}" foi removido da lista.` });
             } else {
+                // If it's an existing item, delete from DB
                 const { error } = await supabase
                     .from('orcamento_composicao')
                     .delete()
@@ -524,6 +433,7 @@ const BudgetEditorPage = () => {
         }
     };
 
+    // Derivar o tipo e os títulos/rótulos dinamicamente
     const displayTipo = useMemo(() => {
         return budget.faturado ? 'Pedido' : 'Orçamento';
     }, [budget.faturado]);
@@ -532,11 +442,20 @@ const BudgetEditorPage = () => {
     const configTitle = `Dados do ${displayTipo}`;
     const numeroLabel = `Número do ${displayTipo}`;
 
+    // Cálculos de totais conforme a lógica do usuário
     const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
-    const totalServicosBruto = 0;
+    const totalServicosBruto = 0; // Placeholder para serviços
+
+    // Soma dos descontos de cada item
     const sumOfItemDiscounts = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
+    
+    // Total do Pedido R$ (total dos produtos + total servicos)
     const totalDoPedido = totalProdutosBruto + totalServicosBruto;
+
+    // Total Desconto R$ (apenas a soma dos descontos dos itens, para exibição)
     const totalDescontoDisplay = sumOfItemDiscounts;
+    
+    // Total Líq. do Pedido R$ (Total do Pedido - Total Desconto)
     const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
     if (loading) {
@@ -587,12 +506,19 @@ const BudgetEditorPage = () => {
                     </div>
                     <div className="form-group lg:col-span-8">
                         <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
-                        <SelectSearchClient
-                            value={people.find(p => p.cpf_cnpj === budget.cliente_id) || null}
-                            onValueChange={handleSelectClient}
-                            people={people}
-                            placeholder="Selecione um cliente..."
-                        />
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                id="nome_cliente_display"
+                                type="text"
+                                className="form-input flex-1"
+                                value={budget.nome_cliente || ''}
+                                readOnly
+                                placeholder="Selecione um cliente"
+                            />
+                            <Button variant="outline" size="icon" onClick={() => setIsClientSearchDialogOpen(true)}>
+                                <Search className="w-4 h-4" />
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
@@ -609,7 +535,7 @@ const BudgetEditorPage = () => {
                         <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Endereço do Cliente */}
+                    {/* Endereço do Cliente (Input de uma linha, desabilitado e somente leitura) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
                         <Input 
@@ -622,7 +548,7 @@ const BudgetEditorPage = () => {
                         />
                     </div>
 
-                    {/* Endereço de Entrega */}
+                    {/* Endereço de Entrega (Textarea de 2 linhas) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
                         <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
@@ -643,18 +569,6 @@ const BudgetEditorPage = () => {
                     <Package className="w-5 h-5 text-blue-600" />
                     Itens de Composição do Orçamento
                 </h3>
-
-                
-                {/* Mover o SelectSearchProduct para fora da tabela */}
-                <div className="mt-4 mb-4">
-                    <SelectSearchProduct
-                        products={allProducts}
-                        onSelect={handleSelectProductFromSearch}
-                        placeholder="Digite para buscar e adicionar produto..."
-                        className="w-full"
-                    />
-                </div>
-
                 <div className="mt-4 data-table-container">
                     <Table>
                         <TableHeader>
@@ -670,65 +584,28 @@ const BudgetEditorPage = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {/* Remover a linha de busca que estava aqui */}
-                            
-                            {/* Itens existentes */}
                             {compositions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-slate-500 py-8">
-                                        Nenhum item adicionado. Use a busca acima para adicionar produtos.
+                                    <TableCell colSpan={8} className="text-center text-slate-500 py-4">
+                                        Nenhum item de composição adicionado.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 compositions.map(comp => (
-                                    <TableRow key={comp.id} className="hover:bg-slate-50">
-                                        <TableCell className="font-medium">
-                                            {comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}
-                                        </TableCell>
+                                    <TableRow key={comp.id}>
+                                        <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
                                         <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.quantidade}
-                                                onChange={(e) => handleQuantityChange(comp.id, e.target.value)}
-                                                className="w-20 text-right"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.valor_venda}
-                                                onChange={(e) => handleValueChange(comp.id, e.target.value)}
-                                                className="w-28 text-right"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right font-medium">
-                                            {formatCurrency(comp.quantidade * comp.valor_venda)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.desconto_total || 0}
-                                                onChange={(e) => handleDiscountChange(comp.id, e.target.value)}
-                                                className="w-24 text-right"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold">
-                                            {formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}
-                                        </TableCell>
+                                        <TableCell className="text-right">{comp.quantidade}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.quantidade * comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.desconto_total || 0)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)}>
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" 
-                                                    onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -738,10 +615,12 @@ const BudgetEditorPage = () => {
                             )}
                         </TableBody>
                     </Table>
+                    <div className="flex justify-center mt-4">
+                        <Button variant="outline" onClick={() => setIsProductSearchDialogOpen(true)}>
+                            <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Item
+                        </Button>
+                    </div>
                 </div>
-
-                {/*// ... resto do código mantido igual ...*/}
-
 
                 <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
@@ -827,6 +706,13 @@ const BudgetEditorPage = () => {
                     </div>
                 </div>
             </div>
+
+            <ClientSearchDialog
+                isOpen={isClientSearchDialogOpen}
+                setIsOpen={setIsClientSearchDialogOpen}
+                people={people}
+                onSelectClient={handleSelectClient}
+            />
 
             <ProductSearchDialog
                 isOpen={isProductSearchDialogOpen}

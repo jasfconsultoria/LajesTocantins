@@ -11,9 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString } from '@/lib/utils';
-import SelectSearchClient from '@/components/SelectSearchClient';
-import SelectSearchProduct from '@/components/SelectSearchProduct';
+import { normalizeCnpj, formatCpfCnpj, formatCurrency } from '@/lib/utils';
+import SelectSearchClient from '@/components/SelectSearchClient'; // Novo componente
 import ProductSearchDialog from '@/components/ProductSearchDialog';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -76,7 +75,6 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [unitsMap, setUnitsMap] = useState(new Map());
-    const [allProducts, setAllProducts] = useState([]);
 
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
@@ -160,56 +158,6 @@ const BudgetEditorPage = () => {
         }
     }, [toast, allMunicipalities, allUfs]);
 
-    const fetchProducts = useCallback(async () => {
-        if (!activeCompanyId) {
-            setAllProducts([]);
-            return;
-        }
-        
-        try {
-            const { data: productsData, error } = await supabase
-                .from('produtos')
-                .select('*')
-                .eq('id_emit', activeCompanyId)
-                .order('prod_xProd', { ascending: true });
-
-            if (error) throw error;
-
-            const { data: unitsData } = await supabase
-                .from('unidade')
-                .select('codigo, unidade');
-
-            const unitsMap = new Map(unitsData?.map(unit => [unit.codigo, unit.unidade]) || []);
-
-            const enrichedProducts = productsData.map(p => {
-                const unitDescription = unitsMap.get(p.prod_uCOM) || '';
-                const searchStringParts = [
-                    p.prod_cProd,
-                    p.prod_xProd,
-                    p.prod_cEAN,
-                    p.prod_NCM,
-                    unitDescription
-                ].filter(Boolean);
-                const buscaCompleta = normalizeString(searchStringParts.join(' '));
-                
-                return {
-                    ...p,
-                    prod_uCOM_descricao: unitDescription,
-                    busca_completa: buscaCompleta
-                };
-            });
-
-            setAllProducts(enrichedProducts);
-        } catch (error) {
-            console.error("Error fetching products:", error.message);
-            toast({ 
-                variant: "destructive", 
-                title: "Erro ao carregar produtos", 
-                description: error.message 
-            });
-        }
-    }, [activeCompanyId, toast]);
-
     const fetchBudget = useCallback(async () => {
         if (!id) {
             setLoading(false);
@@ -292,12 +240,6 @@ const BudgetEditorPage = () => {
     }, [fetchUfsAndMunicipalities, fetchUnits]);
 
     useEffect(() => {
-        if (activeCompanyId) {
-            fetchProducts();
-        }
-    }, [activeCompanyId, fetchProducts]);
-
-    useEffect(() => {
         if (allUfs.length > 0 && allMunicipalities.length > 0) {
             fetchBudget();
             fetchPeople();
@@ -353,59 +295,6 @@ const BudgetEditorPage = () => {
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
-    };
-
-    const handleSelectProductFromSearch = (product) => {
-        const newCompositionItem = {
-            id: uuidv4(),
-            orcamento_id: id ? parseInt(id, 10) : null,
-            produto_id: product.id,
-            quantidade: 1,
-            valor_venda: product.prod_vUnCOM || 0,
-            desconto_total: 0,
-            produtos: {
-                prod_xProd: product.prod_xProd,
-                prod_uCOM: product.prod_uCOM,
-            },
-            isNew: true,
-        };
-        setCompositions(prev => [...prev, newCompositionItem]);
-        toast({ 
-            title: "Produto adicionado!", 
-            description: `${product.prod_xProd} foi adicionado ao orçamento.`,
-            duration: 2000 
-        });
-    };
-
-    // Funções para editar os campos da composição
-    const handleQuantityChange = (compositionId, newQuantity) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, quantidade: parseFloat(newQuantity) || 0 }
-                    : comp
-            )
-        );
-    };
-
-    const handleValueChange = (compositionId, newValue) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, valor_venda: parseFloat(newValue) || 0 }
-                    : comp
-            )
-        );
-    };
-
-    const handleDiscountChange = (compositionId, newDiscount) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, desconto_total: parseFloat(newDiscount) || 0 }
-                    : comp
-            )
-        );
     };
 
     const handleSave = async () => {
@@ -643,18 +532,6 @@ const BudgetEditorPage = () => {
                     <Package className="w-5 h-5 text-blue-600" />
                     Itens de Composição do Orçamento
                 </h3>
-
-                
-                {/* Mover o SelectSearchProduct para fora da tabela */}
-                <div className="mt-4 mb-4">
-                    <SelectSearchProduct
-                        products={allProducts}
-                        onSelect={handleSelectProductFromSearch}
-                        placeholder="Digite para buscar e adicionar produto..."
-                        className="w-full"
-                    />
-                </div>
-
                 <div className="mt-4 data-table-container">
                     <Table>
                         <TableHeader>
@@ -670,65 +547,28 @@ const BudgetEditorPage = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {/* Remover a linha de busca que estava aqui */}
-                            
-                            {/* Itens existentes */}
                             {compositions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-slate-500 py-8">
-                                        Nenhum item adicionado. Use a busca acima para adicionar produtos.
+                                    <TableCell colSpan={8} className="text-center text-slate-500 py-4">
+                                        Nenhum item de composição adicionado.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 compositions.map(comp => (
-                                    <TableRow key={comp.id} className="hover:bg-slate-50">
-                                        <TableCell className="font-medium">
-                                            {comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}
-                                        </TableCell>
+                                    <TableRow key={comp.id}>
+                                        <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
                                         <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.quantidade}
-                                                onChange={(e) => handleQuantityChange(comp.id, e.target.value)}
-                                                className="w-20 text-right"
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.valor_venda}
-                                                onChange={(e) => handleValueChange(comp.id, e.target.value)}
-                                                className="w-28 text-right"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right font-medium">
-                                            {formatCurrency(comp.quantidade * comp.valor_venda)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.desconto_total || 0}
-                                                onChange={(e) => handleDiscountChange(comp.id, e.target.value)}
-                                                className="w-24 text-right"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold">
-                                            {formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}
-                                        </TableCell>
+                                        <TableCell className="text-right">{comp.quantidade}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.quantidade * comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.desconto_total || 0)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)}>
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" 
-                                                    onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -738,10 +578,12 @@ const BudgetEditorPage = () => {
                             )}
                         </TableBody>
                     </Table>
+                    <div className="flex justify-center mt-4">
+                        <Button variant="outline" onClick={() => setIsProductSearchDialogOpen(true)}>
+                            <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Item
+                        </Button>
+                    </div>
                 </div>
-
-                {/*// ... resto do código mantido igual ...*/}
-
 
                 <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
