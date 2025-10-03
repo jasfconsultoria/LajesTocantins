@@ -215,12 +215,42 @@ const BudgetEditorPage = () => {
     const fetchBudget = useCallback(async () => {
         if (!id) {
             setLoading(false);
-            setBudget(prev => ({
-                ...prev,
+            const defaultBudget = {
+                ...initialBudgetState,
                 cnpj_empresa: activeCompany?.cnpj || '',
                 funcionario_id: user?.id || null,
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
-            }));
+            };
+
+            if (activeCompany?.cnpj) {
+                try {
+                    const { data: lastBudget, error: lastBudgetError } = await supabase
+                        .from('orcamento')
+                        .select('numero_pedido')
+                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
+                        .order('numero_pedido', { ascending: false }) 
+                        .limit(1)
+                        .single();
+
+                    if (lastBudgetError && lastBudgetError.code !== 'PGRST116') { // PGRST116 means no rows found
+                        throw lastBudgetError;
+                    }
+
+                    let nextNumeroPedido = 1;
+                    if (lastBudget && lastBudget.numero_pedido) {
+                        const lastNum = parseInt(lastBudget.numero_pedido, 10);
+                        if (!isNaN(lastNum)) {
+                            nextNumeroPedido = lastNum + 1;
+                        }
+                    }
+                    defaultBudget.numero_pedido = nextNumeroPedido.toString();
+
+                } catch (error) {
+                    console.error("Error fetching last numero_pedido:", error.message);
+                    toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
+                }
+            }
+            setBudget(defaultBudget);
             return;
         }
         setLoading(true);
@@ -592,7 +622,7 @@ const BudgetEditorPage = () => {
                     {/* Row 1: Número do Pedido, Data do Orçamento, Cliente */}
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="numero_pedido" className="form-label">{numeroLabel}</Label>
-                        <Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} onChange={handleInputChange} disabled={isFaturado} />
+                        <Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} disabled={true} />
                     </div>
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="data_orcamento" className="form-label">Data do Orçamento *</Label>
