@@ -352,24 +352,12 @@ const BudgetEditorPage = () => {
                 const defaultBudget = {
                     ...initialBudgetState, // Começa com o estado inicial
                     cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                    funcionario_id: user?.id || null,
+                    funcionario_id: 1, // HARDCODED para '1' conforme solicitado
                     data_orcamento: budget.data_orcamento, // Usa a data atual do estado
                     vendedor: user?.user_metadata?.full_name || user?.email || '',
                     cliente_id: person.cpf_cnpj,
                     nome_cliente: clientName,
                 };
-
-                // Workaround temporário: remover funcionario_id se for UUID e o DB espera INT
-                const saveDataForInsert = { ...defaultBudget };
-                if (typeof saveDataForInsert.funcionario_id === 'string' && saveDataForInsert.funcionario_id.includes('-')) {
-                    delete saveDataForInsert.funcionario_id;
-                    toast({
-                        variant: 'destructive',
-                        title: 'Aviso de Schema',
-                        description: 'O campo funcionario_id foi omitido no salvamento inicial. Por favor, ajuste o tipo da coluna `funcionario_id` na tabela `orcamento` para UUID ou TEXT no seu banco de dados, ou forneça um ID de funcionário inteiro válido.',
-                        duration: 8000
-                    });
-                }
 
                 // Lógica para gerar o próximo numero_pedido
                 let nextNumeroPedido = 1;
@@ -398,11 +386,11 @@ const BudgetEditorPage = () => {
                     setSaving(false);
                     return;
                 }
-                saveDataForInsert.numero_pedido = nextNumeroPedido.toString(); // Atribui o número gerado
+                defaultBudget.numero_pedido = nextNumeroPedido.toString(); // Atribui o número gerado
 
                 const { data: newBudgetData, error: insertError } = await supabase
                     .from('orcamento')
-                    .insert([saveDataForInsert])
+                    .insert([defaultBudget]) // Usa defaultBudget com funcionario_id hardcoded
                     .select(); // Seleciona os dados inseridos para obter o novo ID
 
                 if (insertError) throw insertError;
@@ -414,15 +402,15 @@ const BudgetEditorPage = () => {
                     ...prev,
                     ...newBudgetData[0], // Atualiza todos os campos com a resposta do DB
                     data_orcamento: newBudgetData[0].data_orcamento.split('T')[0], // Formata a data
-                    numero_pedido: saveDataForInsert.numero_pedido, // Garante que o número gerado seja definido
+                    numero_pedido: defaultBudget.numero_pedido, // Garante que o número gerado seja definido
                     cliente_endereco_completo: buildClientAddressString(person), // Define o endereço do cliente
                 }));
 
                 if (user) {
-                    await logAction(user.id, 'budget_create', `Novo orçamento "${saveDataForInsert.numero_pedido}" (ID: ${newBudgetId}) criado ao selecionar cliente.`, activeCompanyId, null);
+                    await logAction(user.id, 'budget_create', `Novo orçamento "${defaultBudget.numero_pedido}" (ID: ${newBudgetId}) criado ao selecionar cliente.`, activeCompanyId, null);
                 }
 
-                toast({ title: 'Orçamento Criado!', description: `Orçamento ${saveDataForInsert.numero_pedido} criado com sucesso.`, duration: 3000 });
+                toast({ title: 'Orçamento Criado!', description: `Orçamento ${defaultBudget.numero_pedido} criado com sucesso.`, duration: 3000 });
                 navigate(`/app/budgets/${newBudgetId}/edit`); // Redireciona para a página de edição do orçamento salvo
             } catch (error) {
                 toast({ variant: 'destructive', title: 'Erro ao criar orçamento', description: error.message });
@@ -529,7 +517,7 @@ const BudgetEditorPage = () => {
             const saveData = {
                 ...budget,
                 cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                funcionario_id: user?.id, // Aqui o funcionario_id já deve estar no formato correto se o DB foi ajustado
+                funcionario_id: 1, // HARDCODED para '1' também no update, para consistência
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
