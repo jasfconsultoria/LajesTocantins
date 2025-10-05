@@ -83,7 +83,7 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = new Map();
+    const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Adicionado useState
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null); // New state for selected client's full data
 
