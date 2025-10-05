@@ -18,7 +18,7 @@ const initialProductState = {
     icms_pICMS: 0.0, icms_pRedBC: 0.0, icms_modBC: 0, icms_CST: '',
     pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
     IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
-    // Campos removidos do DB: prod_rastro, prod_indEscala, prod_CNPJFab, prod_cBenef, icms_pMVAST, prod_nivelm, prod_alert
+    // Campos removidos do DB: prod_rastro, prod_indEscala, prod_CNPJFab, prod_cBenef, icms_pMVAST, prod_nivelm, prod_alert, prod_CEST_Opc, prod_CFOP
 };
 
 const icmsModbcOptions = [
@@ -129,21 +129,24 @@ const ProductEditorPage = () => {
 
         setSaving(true);
         try {
+            // Destructure the product object to exclude the removed fields
+            const {
+                prod_rastro,
+                prod_indEscala,
+                prod_CNPJFab,
+                prod_cBenef,
+                icms_pMVAST,
+                prod_nivelm,
+                prod_alert,
+                prod_CEST_Opc,
+                prod_CFOP,
+                ...restOfProduct // This will contain all remaining fields
+            } = product;
+
             const saveData = { 
-                ...product, 
+                ...restOfProduct, // Use only the remaining fields
                 id_emit: activeCompanyId, 
                 updated_at: new Date().toISOString(),
-                // Explicitly set removed fields to null or default if they exist in the DB schema
-                // These fields were removed from the DB, so we ensure they are not sent.
-                prod_rastro: null,
-                prod_indEscala: null,
-                prod_CNPJFab: null,
-                prod_cBenef: null,
-                icms_pMVAST: null,
-                prod_nivelm: null,
-                prod_alert: null,
-                prod_CEST_Opc: null, // Already removed from UI, ensuring it's null
-                prod_CFOP: null,     // Already removed from UI, ensuring it's null
             };
             let error;
             let actionType;
@@ -358,7 +361,8 @@ const ProductEditorPage = () => {
                                 <Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} placeholder="Ex: 50" />
                             </div>
                             <div className="form-group">
-                                <Label htmlFor="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} placeholder="Ex: 0.00" />
+                                <Label htmlFor="IPI_pIPI" className="form-label">% Alíquota IPI</Label>
+                                <Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} placeholder="Ex: 0.00" />
                             </div>
                         </div>
                     </div>
