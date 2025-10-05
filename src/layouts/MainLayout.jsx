@@ -71,6 +71,7 @@ function MainLayout() {
       subItems: [
         { to: '/app/notas/nfe', label: 'NF-e', icon: FileText },
         { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt },
+        { to: '/app/notas/cfop', label: 'CFOP', icon: FileText }, // New CFOP submenu item
       ]
     },
 

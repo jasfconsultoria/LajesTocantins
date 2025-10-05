@@ -25,7 +25,9 @@ import ProductList from '@/pages/ProductList';
 import ProductEditorPage from '@/pages/ProductEditorPage';
 import BudgetList from '@/pages/BudgetList';
 import BudgetEditorPage from '@/pages/BudgetEditorPage';
-import NotImplementedPage from '@/pages/NotImplementedPage'; // New import
+import NotImplementedPage from '@/pages/NotImplementedPage';
+import CFOPList from '@/pages/CFOPList'; // New import
+import CFOPEditorPage from '@/pages/CFOPEditorPage'; // New import
 
 const ProtectedRoute = () => {
   const { session, loading } = useAuth();
@@ -83,6 +85,9 @@ const router = createBrowserRouter([
           // New Notas Routes
           { path: "notas/nfe", element: <NotImplementedPage title="NF-e" /> },
           { path: "notas/nfce", element: <NotImplementedPage title="NFC-e" /> },
+          { path: "notas/cfop", element: <CFOPList /> }, // New CFOP list route
+          { path: "notas/cfop/new", element: <CFOPEditorPage /> }, // New CFOP create route
+          { path: "notas/cfop/:cfop/edit", element: <CFOPEditorPage /> }, // New CFOP edit route
 
           { path: "users", element: <UserManagement /> },
           { path: "sefaz", element: <SefazSettings /> },
