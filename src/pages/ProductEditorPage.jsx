@@ -14,12 +14,11 @@ import SelectSearchUnit from '@/components/SelectSearchUnit';
 
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
-    // prod_CEST_Opc: '', prod_CFOP: '', // Removidos
     prod_uCOM: '', prod_vUnCOM: 0.0,
     icms_pICMS: 0.0, icms_pRedBC: 0.0, icms_modBC: 0, icms_CST: '',
     pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
     IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
-    // prod_rastro: 'N', prod_nivelm: 0, prod_alert: 'N', // Removidos
+    // Campos removidos do DB: prod_rastro, prod_indEscala, prod_CNPJFab, prod_cBenef, icms_pMVAST, prod_nivelm, prod_alert
 };
 
 const icmsModbcOptions = [
@@ -135,11 +134,16 @@ const ProductEditorPage = () => {
                 id_emit: activeCompanyId, 
                 updated_at: new Date().toISOString(),
                 // Explicitly set removed fields to null or default if they exist in the DB schema
-                prod_CEST_Opc: null, 
-                prod_CFOP: null,
-                prod_rastro: 'N', // Default to 'N'
-                prod_alert: 'N',  // Default to 'N'
-                prod_nivelm: 0,   // Default to 0
+                // These fields were removed from the DB, so we ensure they are not sent.
+                prod_rastro: null,
+                prod_indEscala: null,
+                prod_CNPJFab: null,
+                prod_cBenef: null,
+                icms_pMVAST: null,
+                prod_nivelm: null,
+                prod_alert: null,
+                prod_CEST_Opc: null, // Already removed from UI, ensuring it's null
+                prod_CFOP: null,     // Already removed from UI, ensuring it's null
             };
             let error;
             let actionType;
@@ -354,8 +358,7 @@ const ProductEditorPage = () => {
                                 <Input id="IPI_CST" type="text" className="form-input" value={product.IPI_CST} onChange={handleInputChange} placeholder="Ex: 50" />
                             </div>
                             <div className="form-group">
-                                <Label htmlFor="IPI_pIPI" className="form-label">% Alíquota IPI</Label>
-                                <Input id="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} placeholder="Ex: 0.00" />
+                                <Label htmlFor="IPI_pIPI" type="number" step="0.01" className="form-input" value={product.IPI_pIPI} onChange={handleInputChange} placeholder="Ex: 0.00" />
                             </div>
                         </div>
                     </div>
