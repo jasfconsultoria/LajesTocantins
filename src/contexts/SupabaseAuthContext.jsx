@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
           // Try to fetch the default company
           const { data: defaultCompanyData, error: defaultCompanyError } = await supabase
             .from('emitente')
-            .select('id, razao_social, logo_sistema_url, cnpj')
+            .select('id, razao_social, logo_sistema_url, cnpj, uf') // Adicionado 'uf' aqui
             .eq('id', profile.default_emitente_id)
             .limit(1); 
           
@@ -169,7 +169,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data: companyData, error: companyError } = await supabase
         .from('emitente')
-        .select('id, razao_social, logo_sistema_url, cnpj')
+        .select('id, razao_social, logo_sistema_url, cnpj, uf') // Adicionado 'uf' aqui
         .eq('id', companyId)
         .limit(1); 
       
