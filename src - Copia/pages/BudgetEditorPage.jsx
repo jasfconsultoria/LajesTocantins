@@ -36,7 +36,7 @@ const getDatePlusDays = (days) => {
 const initialBudgetState = {
     data_orcamento: new Date().toISOString().split('T')[0],
     cliente_id: null,
-    usuario_id: null, // Changed from funcionario_id to usuario_id
+    usuario_id: null,
     endereco_entrega: '',
     historico: '',
     debito_credito: 'D',
@@ -85,7 +85,6 @@ const BudgetEditorPage = () => {
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
-    const [selectedClientData, setSelectedClientData] = useState(null); // New state for selected client's full data
 
     const isFaturado = budget.faturado;
 
@@ -286,7 +285,6 @@ const BudgetEditorPage = () => {
                         
                         budgetData.nome_cliente = clientName;
                         budgetData.cliente_endereco_completo = buildClientAddressString(clientData);
-                        setSelectedClientData(clientData); // Set selected client data
                     }
                 }
                 setBudget(budgetData);
@@ -389,16 +387,12 @@ const BudgetEditorPage = () => {
     };
 
     const handleSelectClient = async (person) => {
-        setSelectedClientData(person); // Store the full client object
-
         if (!person) {
             setBudget(prev => ({
                 ...prev,
                 cliente_id: null,
                 nome_cliente: '',
                 cliente_endereco_completo: '',
-                cfop: '', // Clear CFOP and Natureza when client is deselected
-                natureza: '',
             }));
             return;
         }
@@ -496,8 +490,6 @@ const BudgetEditorPage = () => {
                 cliente_id: person.cpf_cnpj,
                 nome_cliente: clientName,
                 cliente_endereco_completo: buildClientAddressString(person),
-                cfop: '', // Clear CFOP and Natureza when client changes
-                natureza: '',
             }));
         }
     };
@@ -754,7 +746,7 @@ const BudgetEditorPage = () => {
                     <div className="form-group lg:col-span-8">
                         <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
                         <SelectSearchClient
-                            value={selectedClientData} // Pass the selected client data
+                            value={people.find(p => p.cpf_cnpj === budget.cliente_id) || null}
                             onValueChange={handleSelectClient}
                             people={people}
                             placeholder="Selecione um cliente..."
@@ -803,8 +795,6 @@ const BudgetEditorPage = () => {
                             onValueChange={handleSelectNatureza}
                             disabled={isFaturado}
                             required
-                            companyUf={activeCompany?.uf} // Pass active company UF
-                            clientUf={selectedClientData?.uf} // Pass selected client UF
                         />
                     </div>
                     <div className="form-group lg:col-span-3">

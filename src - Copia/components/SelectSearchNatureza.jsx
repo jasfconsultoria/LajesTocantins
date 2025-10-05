@@ -3,11 +3,13 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, FileText, X, Loader2 } from 'lucide-react';
+import { Search, FileText, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { normalizeString } from '@/lib/utils';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+
+const ITEMS_PER_PAGE = 10;
 
 const SelectSearchNatureza = ({
   value, // current selected nature description (string)
@@ -16,11 +18,10 @@ const SelectSearchNatureza = ({
   placeholder = "Selecione a Natureza da Operação",
   required = false,
   className = "",
-  companyUf, // New prop: UF of the active company
-  clientUf,  // New prop: UF of the selected client
 }) => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [isOpen, setIsOpen] = useState(false);
   const [allCfops, setAllCfops] = useState([]);
   const [loadingCfops, setLoadingCfops] = useState(true);
@@ -61,42 +62,36 @@ const SelectSearchNatureza = ({
 
   const filteredCfops = useMemo(() => {
     const normalizedSearchTerm = normalizeString(searchTerm);
-    let currentCfops = allCfops;
-
-    // 1. Filter for "Venda" operations (CFOPs starting with 5, 6, or 7)
-    currentCfops = currentCfops.filter(c => 
-        c.cfop.startsWith('5') || c.cfop.startsWith('6') || c.cfop.startsWith('7')
-    );
-
-    // 2. Apply location-based filtering if clientUf and companyUf are available
-    if (clientUf && companyUf) {
-        if (clientUf === companyUf) {
-            // Sales within the state (CFOPs starting with 5)
-            currentCfops = currentCfops.filter(c => c.cfop.startsWith('5'));
-        } else {
-            // Sales outside the state (CFOPs starting with 6)
-            currentCfops = currentCfops.filter(c => c.cfop.startsWith('6'));
-        }
+    if (!normalizedSearchTerm) {
+      return allCfops;
     }
-    // If clientUf or companyUf is not available, no specific geographic filter is applied,
-    // so all sales CFOPs (5xxx, 6xxx, 7xxx) remain.
+    return allCfops.filter(c => {
+      const normalizedCfop = normalizeString(c.cfop);
+      const normalizedDescricao = normalizeString(c.descricao);
+      return normalizedCfop.includes(normalizedSearchTerm) || normalizedDescricao.includes(normalizedSearchTerm);
+    });
+  }, [allCfops, searchTerm]);
 
-    // 3. Apply search term filter
-    if (normalizedSearchTerm) {
-      currentCfops = currentCfops.filter(c => {
-        const normalizedCfop = normalizeString(c.cfop);
-        const normalizedDescricao = normalizeString(c.descricao);
-        return normalizedCfop.includes(normalizedSearchTerm) || normalizedDescricao.includes(normalizedSearchTerm);
-      });
-    }
+  const paginatedCfops = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCfops.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredCfops, currentPage]);
 
-    return currentCfops;
-  }, [allCfops, searchTerm, companyUf, clientUf]);
+  const totalPages = Math.ceil(filteredCfops.length / ITEMS_PER_PAGE);
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
 
   const handleSelect = (cfopObject) => {
     onValueChange(cfopObject); // Pass the full object
     setSearchTerm(cfopObject.descricao); // Set input to description
     setIsOpen(false);
+    setCurrentPage(1);
   };
 
   const handleClear = (e) => {
@@ -104,6 +99,7 @@ const SelectSearchNatureza = ({
     onValueChange(null); // Clear the selection
     setSearchTerm('');
     setIsOpen(false);
+    setCurrentPage(1);
     inputRef.current?.focus();
   };
 
@@ -204,6 +200,24 @@ const SelectSearchNatureza = ({
               )}
             </div>
           </ScrollArea>
+
+          {filteredCfops.length > ITEMS_PER_PAGE && (
+            <div className="flex justify-between items-center text-sm text-slate-600 px-3 py-2 border-t">
+              <div>
+                Exibindo {paginatedCfops.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredCfops.length)} de {filteredCfops.length}
+              </div>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-xs">Página {currentPage}</span>
+                <Button variant="ghost" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

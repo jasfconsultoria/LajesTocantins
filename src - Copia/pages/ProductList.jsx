@@ -1,0 +1,348 @@
+"use client";
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import { supabase } from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2, Search, PlusCircle, Edit, Trash2, Package, ChevronLeft, ChevronRight, ArrowUp, ArrowDown } from 'lucide-react'; // Importar ArrowUp e ArrowDown
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { logAction } from '@/lib/log';
+import { normalizeString } from '@/lib/utils'; // Importar normalizeString
+
+const ProductList = () => {
+    const { handleNotImplemented, activeCompanyId } = useOutletContext();
+    const { user: currentUser } = useAuth();
+    const { toast } = useToast();
+    const navigate = useNavigate();
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [sortColumn, setSortColumn] = useState('id'); // Estado para a coluna de ordenação
+    const [sortDirection, setSortDirection] = useState('asc'); // Estado para a direção da ordenação ('asc' ou 'desc')
+
+    const ITEMS_PER_PAGE = 10;
+
+    const formatCurrency = (value) => {
+        if (value === null || value === undefined) return '';
+        return new Intl.NumberFormat('pt-BR', { 
+            style: 'decimal', // Usar 'decimal' para não incluir o símbolo da moeda
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value);
+    };
+
+    const fetchProducts = useCallback(async () => {
+        if (!activeCompanyId) {
+            setProducts([]);
+            setLoading(false);
+            console.log("ProductList: No active company ID, skipping product fetch.");
+            return;
+        }
+        setLoading(true);
+        try {
+            console.log(`ProductList: Fetching products for activeCompanyId: ${activeCompanyId}`);
+            
+            // 1. Fetch products directly from 'produtos' table
+            const { data: productsData, error: productsError } = await supabase
+                .from('produtos')
+                .select('*')
+                .eq('id_emit', activeCompanyId)
+                .order('created_at', { ascending: false });
+
+            if (productsError) {
+                console.error("Error fetching products (ProductList):", productsError);
+                throw productsError;
+            }
+
+            // 2. Fetch units from 'unidade' table (make this more resilient)
+            let unitMap = new Map();
+            const { data: unitsData, error: unitsError } = await supabase
+                .from('unidade')
+                .select('codigo, unidade');
+
+            if (unitsError) {
+                console.error("Error fetching units (ProductList):", unitsError);
+                toast({
+                    variant: "destructive",
+                    title: "Erro ao carregar unidades comerciais",
+                    description: unitsError.message || 'Verifique as configurações do banco de dados ou permissões (RLS).',
+                });
+                // Do NOT throw here. Proceed with an empty unitMap.
+            } else {
+                unitMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
+            }
+
+            // 3. Combine products with their unit descriptions and create client-side busca_completa
+            const combinedProducts = productsData.map(p => {
+                const unitDescription = unitMap.get(p.prod_uCOM) || ''; // Get unit description, default to empty string
+                
+                // Create a string for client-side search, filtering out null/undefined values
+                const searchStringParts = [
+                    p.prod_cProd,
+                    p.prod_xProd,
+                    p.prod_cEAN,
+                    p.prod_NCM,
+                    unitDescription
+                ].filter(Boolean); // Filter out falsy values (null, undefined, empty string)
+
+                const buscaCompleta = normalizeString(searchStringParts.join(' '));
+
+                return {
+                    ...p,
+                    prod_uCOM_descricao: unitDescription || 'N/A', // Still display 'N/A' if unitDescription is empty
+                    busca_completa: buscaCompleta
+                };
+            });
+
+            console.log(`ProductList: Fetched ${combinedProducts.length} products. Combined data:`, combinedProducts);
+            setProducts(combinedProducts);
+
+        } catch (error) {
+            // This catch block will now primarily catch productError
+            toast({
+                variant: "destructive",
+                title: "Erro ao carregar produtos",
+                description: error.message || 'Ocorreu um erro inesperado ao carregar os produtos.',
+            });
+            console.error("ProductList: Caught error in fetchProducts:", error);
+            setProducts([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [activeCompanyId, toast]);
+
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
+
+    const handleSort = (column) => {
+        if (sortColumn === column) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(column);
+            setSortDirection('asc'); // Default to asc when changing column
+        }
+        setCurrentPage(1); // Reset to first page on sort change
+    };
+
+    const renderSortIcon = (column) => {
+        if (sortColumn === column) {
+            return sortDirection === 'asc' ? <ArrowUp className="ml-2 h-4 w-4" /> : <ArrowDown className="ml-2 h-4 w-4" />;
+        }
+        return null;
+    };
+
+    const sortedAndFilteredProducts = useMemo(() => {
+        const normalizedSearchTerm = normalizeString(searchTerm);
+
+        let currentFiltered = products;
+
+        // Apply filtering
+        if (normalizedSearchTerm) {
+            currentFiltered = products.filter(p => {
+                // Use the client-side generated busca_completa for search
+                return normalizeString(p.busca_completa || '').includes(normalizedSearchTerm);
+            });
+        }
+
+        // Apply sorting
+        return [...currentFiltered].sort((a, b) => {
+            let aValue, bValue;
+
+            switch (sortColumn) {
+                case 'id':
+                case 'prod_cProd':
+                case 'prod_NCM':
+                case 'prod_vUnCOM':
+                    aValue = a[sortColumn];
+                    bValue = b[sortColumn];
+                    break;
+                case 'prod_xProd':
+                case 'prod_uCOM_descricao':
+                    aValue = normalizeString(a[sortColumn] || '');
+                    bValue = normalizeString(b[sortColumn] || '');
+                    break;
+                default:
+                    aValue = normalizeString(a[sortColumn] || '');
+                    bValue = normalizeString(b[sortColumn] || '');
+            }
+
+            if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [products, searchTerm, sortColumn, sortDirection]);
+
+    const paginatedProducts = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return sortedAndFilteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE); // Corrigido
+    }, [sortedAndFilteredProducts, currentPage]); // Corrigido
+
+    const totalPages = Math.ceil(sortedAndFilteredProducts.length / ITEMS_PER_PAGE); // Corrigido
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) setCurrentPage(currentPage - 1);
+    };
+
+    const handleDeleteProduct = async (productId, productName) => {
+        if (!window.confirm(`Tem certeza que deseja excluir o produto "${productName}"?`)) {
+            return;
+        }
+        try {
+            const { error } = await supabase
+                .from('produtos')
+                .delete()
+                .eq('id', productId);
+
+            if (error) {
+                console.error("Error deleting product (ProductList):", error);
+                throw error;
+            }
+
+            toast({ title: 'Produto excluído!', description: `"${productName}" foi removido(a) com sucesso.` });
+            if (currentUser) {
+                await logAction(currentUser.id, 'product_delete', `Produto "${productName}" (ID: ${productId}) excluído.`, activeCompanyId, null);
+            }
+            fetchProducts();
+        } catch (error) {
+            console.error("Caught error in handleDeleteProduct (ProductList):", error);
+            toast({ variant: 'destructive', title: 'Erro ao excluir', description: error.message || 'Ocorreu um erro inesperado ao excluir o produto.' });
+        }
+    };
+
+    if (!activeCompanyId) {
+        return (
+            <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
+                <Package className="w-16 h-16 text-blue-500 mb-4" />
+                <h2 className="text-2xl font-bold text-slate-800">Nenhuma Empresa Ativa</h2>
+                <p className="text-slate-600">Selecione uma empresa para visualizar e gerenciar seus produtos.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-3xl font-bold gradient-text flex items-center gap-2">
+                        <Package className="w-8 h-8" />
+                        Cadastro de Produtos
+                    </h1>
+                    <p className="text-slate-600 mt-2">Gerencie os produtos e serviços da sua empresa.</p>
+                </div>
+                <Button 
+                    onClick={() => navigate('/app/products/new')} 
+                    className="save-button"
+                >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Novo Produto
+                </Button>
+            </div>
+
+            <div className="bg-white/80 p-4 rounded-xl shadow-sm border border-white">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <Input
+                        type="text"
+                        placeholder="Buscar por código, descrição ou EAN..."
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                    />
+                </div>
+            </div>
+            
+            {loading ? (
+                 <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
+            ) : (
+                <div className="data-table-container">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('id')}>
+                                    <div className="flex items-center">ID {renderSortIcon('id')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_cProd')}>
+                                    <div className="flex items-center">Código {renderSortIcon('prod_cProd')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_xProd')}>
+                                    <div className="flex items-center">Descrição {renderSortIcon('prod_xProd')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_NCM')}>
+                                    <div className="flex items-center">NCM {renderSortIcon('prod_NCM')}</div>
+                                </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('prod_uCOM_descricao')}>
+                                    <div className="flex items-center">Unidade Comercial {renderSortIcon('prod_uCOM_descricao')}</div>
+                                </TableHead>
+                                <TableHead className="text-right cursor-pointer" onClick={() => handleSort('prod_vUnCOM')}>
+                                    <div className="flex items-center justify-end">Valor Unitário Comercial {renderSortIcon('prod_vUnCOM')}</div>
+                                </TableHead>
+                                <TableHead className="text-right">Ações</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {paginatedProducts.map((p) => (
+                                <TableRow key={p.id}>
+                                    <TableCell className="font-medium">{p.id}</TableCell>
+                                    <TableCell>{p.prod_cProd}</TableCell>
+                                    <TableCell>{p.prod_xProd}</TableCell>
+                                    <TableCell>{p.prod_NCM}</TableCell>
+                                    <TableCell>{p.prod_uCOM_descricao || 'N/A'}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(p.prod_vUnCOM)}</TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button variant="ghost" size="icon" onClick={() => navigate(`/app/products/${p.id}/edit`)}>
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteProduct(p.id, p.prod_xProd)}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+
+            <div className="flex justify-between items-center text-sm text-slate-600 mt-4">
+                <div>
+                    Exibindo {paginatedProducts.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
+                    {Math.min(currentPage * ITEMS_PER_PAGE, sortedAndFilteredProducts.length)} de {sortedAndFilteredProducts.length} registros
+                </div>
+                <div className="flex items-center gap-2">
+                    <span>Página {currentPage} de {totalPages}</span>
+                    <Button variant="outline" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+                        <ChevronLeft className="w-4 h-4 mr-1" />
+                        Anterior
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                        Próximo
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ProductList;

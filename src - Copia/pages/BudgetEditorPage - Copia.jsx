@@ -11,12 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString } from '@/lib/utils';
-import SelectSearchClient from '@/components/SelectSearchClient';
-import SelectSearchProduct from '@/components/SelectSearchProduct';
-import ProductSearchDialog from '@/components/ProductSearchDialog';
-import SelectSearchNatureza from '@/components/SelectSearchNatureza';
-import { v4 as uuidv4 } from 'uuid';
+import { normalizeCnpj, formatCpfCnpj, formatCurrency } from '@/lib/utils'; // Importar formatCpfCnpj e formatCurrency
+import ClientSearchDialog from '@/components/ClientSearchDialog';
+import ProductSearchDialog from '@/components/ProductSearchDialog'; // Importar o novo diálogo
+import { v4 as uuidv4 } from 'uuid'; // Importar uuid para IDs temporários
 import {
   Table,
   TableBody,
@@ -26,27 +24,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Helper function to get date + N days in YYYY-MM-DD format
-const getDatePlusDays = (days) => {
-    const date = new Date();
-    date.setDate(date.getDate() + days);
-    return date.toISOString().split('T')[0];
-};
-
 const initialBudgetState = {
-    data_orcamento: new Date().toISOString().split('T')[0],
-    cliente_id: null,
-    usuario_id: null, // Changed from funcionario_id to usuario_id
+    data_orcamento: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+    cliente_id: null, // Agora armazenará o CPF/CNPJ do cliente
+    funcionario_id: null,
     endereco_entrega: '',
     historico: '',
-    debito_credito: 'D',
+    debito_credito: 'D', // Default to Débito
     forma_pagamento: '',
     cnpj_empresa: '',
     cfop: '',
     natureza: '',
     faturado: false,
     vendedor: '',
-    desconto: 0.0,
+    desconto: 0.0, // Desconto global do orçamento (mantido no estado, mas não usado nos cálculos do resumo)
     condicao_pagamento: '',
     endereco_entrega_completo: '',
     obra: '',
@@ -54,17 +45,19 @@ const initialBudgetState = {
     prazo_entrega: 0,
     numero_nfe: '',
     numero_parcelas: 1,
-    data_venda: null,
+    data_venda: null, // Can be null initially
     total_venda: 0.0,
     total_fatura: 0.0,
-    nome_cliente: '',
+    nome_cliente: '', // Nome do cliente para exibição
     numero_pedido: '',
     acrescimo: 0.0,
     validade: 0,
     solicitante: '',
     telefone: '',
     codigo_antigo: null,
-    previsao_entrega: getDatePlusDays(10), // Default to today + 10 days
+    previsao_entrega: null, // Novo campo
+
+    // Campo de endereço do cliente concatenado (somente leitura)
     cliente_endereco_completo: '',
 };
 
@@ -77,17 +70,14 @@ const BudgetEditorPage = () => {
 
     const [budget, setBudget] = useState(initialBudgetState);
     const [compositions, setCompositions] = useState([]);
-    const [people, setPeople] = useState([]);
-    const [allUfs, setAllUfs] = useState([]);
-    const [allMunicipalities, setAllMunicipalities] = useState([]);
+    const [people, setPeople] = useState([]); // All people for search dialog
+    const [allUfs, setAllUfs] = useState([]); // All UFs for mapping
+    const [allMunicipalities, setAllMunicipalities] = useState([]); // All municipalities for mapping
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map());
-    const [allProducts, setAllProducts] = useState([]);
-    const [selectedClientData, setSelectedClientData] = useState(null); // New state for selected client's full data
-
-    const isFaturado = budget.faturado;
+    const [isClientSearchDialogOpen, setIsClientSearchDialogOpen] = useState(false);
+    const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false); // Novo estado para o diálogo de produtos
+    const [unitsMap, setUnitsMap] = useState(new Map()); // Novo estado para o mapa de unidades
 
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
@@ -105,8 +95,8 @@ const BudgetEditorPage = () => {
             if (municipalitiesError) throw municipalitiesError;
             setAllMunicipalities(municipalitiesData);
         } catch (error) {
-            console.error("Error fetching UFs or Municipalities:", error);
-            toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar dados de localização.' });
+            console.error("Error fetching UFs or Municipalities:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar dados de localização.' });
         }
     }, [toast]);
 
@@ -118,14 +108,17 @@ const BudgetEditorPage = () => {
         if (clientData.complemento) parts.push(clientData.complemento);
         if (clientData.bairro) parts.push(clientData.bairro);
         
+        // Priorize municipio_nome se já disponível em clientData (do enrichedPeople)
+        // Caso contrário, busque pelo código na lista allMunicipalities
         const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(clientData.municipio))?.municipio || '';
         const ufSigla = clientData.uf || '';
 
+        // Combine municipality and UF into one part if both exist
         if (municipioNome && ufSigla) {
             parts.push(`${municipioNome}/${ufSigla}`);
-        } else if (municipioNome) {
+        } else if (municipioNome) { // Add only municipality if UF is missing
             parts.push(municipioNome);
-        } else if (ufSigla) {
+        } else if (ufSigla) { // Add only UF if municipality is missing
             parts.push(ufSigla);
         }
 
@@ -142,7 +135,7 @@ const BudgetEditorPage = () => {
             while (true) {
                 const { data, error } = await supabase
                     .from('pessoas')
-                    .select('id, razao_social, nome_fantasia, pessoa_tipo, logradouro, numero, complemento, bairro, municipio, uf, cep, cpf_cnpj')
+                    .select('id, razao_social, nome_fantasia, pessoa_tipo, logradouro, numero, complemento, bairro, municipio, uf, cep, cpf_cnpj') // Adicionado cpf_cnpj
                     .order('razao_social', { ascending: true })
                     .range(offset, offset + limit - 1);
                 if (error) throw error;
@@ -155,7 +148,9 @@ const BudgetEditorPage = () => {
                 }
             }
 
+            // Enriquecer dados de pessoas com nome do município e nome completo do estado para exibição
             const enrichedPeople = allPeople.map(p => {
+                // Convert both sides to string for consistent comparison
                 const municipioObj = allMunicipalities.find(m => String(m.codigo) === String(p.municipio));
                 const ufObj = allUfs.find(u => u.sigla === p.uf);
                 return {
@@ -166,86 +161,19 @@ const BudgetEditorPage = () => {
             });
             setPeople(enrichedPeople);
         } catch (error) {
-            console.error("Error fetching people:", error);
-            toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar a lista de pessoas.' });
+            console.error("Error fetching people:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar a lista de pessoas.' });
         }
-    }, [toast, allMunicipalities, allUfs]);
-
-    const fetchProducts = useCallback(async () => {
-        if (!activeCompanyId) {
-            setAllProducts([]);
-            return;
-        }
-        
-        try {
-            const { data: productsData, error } = await supabase
-                .from('produtos')
-                .select('*')
-                .eq('id_emit', activeCompanyId)
-                .order('prod_xProd', { ascending: true });
-
-            if (error) {
-                console.error("Error fetching products (BudgetEditorPage):", error);
-                throw error;
-            }
-
-            let currentUnitsMap = new Map();
-            const { data: unitsData, error: unitsError } = await supabase
-                .from('unidade')
-                .select('codigo, unidade');
-
-            if (unitsError) {
-                console.error("Error fetching units (BudgetEditorPage - Products):", unitsError);
-                toast({
-                    variant: "destructive",
-                    title: "Erro ao carregar unidades comerciais",
-                    description: unitsError.message || 'Verifique as configurações do banco de dados ou permissões (RLS).',
-                });
-            } else {
-                currentUnitsMap = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
-            }
-            setUnitsMap(currentUnitsMap);
-
-            const enrichedProducts = productsData.map(p => {
-                const unitDescription = currentUnitsMap.get(p.prod_uCOM) || '';
-                const searchStringParts = [
-                    p.prod_cProd,
-                    p.prod_xProd,
-                    p.prod_cEAN,
-                    p.prod_NCM,
-                    unitDescription
-                ].filter(Boolean);
-                const buscaCompleta = normalizeString(searchStringParts.join(' '));
-                
-                return {
-                    ...p,
-                    prod_uCOM_descricao: unitDescription,
-                    busca_completa: buscaCompleta
-                };
-            });
-
-            setAllProducts(enrichedProducts);
-        } catch (error) {
-            console.error("Caught error fetching products (BudgetEditorPage):", error);
-            toast({ 
-                variant: "destructive", 
-                title: "Erro ao carregar produtos", 
-                description: error.message || 'Ocorreu um erro inesperado ao carregar os produtos.'
-            });
-            setAllProducts([]);
-            setUnitsMap(new Map());
-        }
-    }, [activeCompanyId, toast]);
+    }, [toast, allMunicipalities, allUfs]); // Adicionado allMunicipalities e allUfs às dependências
 
     const fetchBudget = useCallback(async () => {
         if (!id) {
             setLoading(false);
             setBudget(prev => ({
-                ...initialBudgetState,
+                ...prev,
                 cnpj_empresa: activeCompany?.cnpj || '',
-                usuario_id: user?.id || null,
+                funcionario_id: user?.id || null,
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
-                numero_pedido: '',
             }));
             return;
         }
@@ -254,12 +182,9 @@ const BudgetEditorPage = () => {
             const { data, error } = await supabase
                 .from('orcamento')
                 .select('*')
-                .eq('id', parseInt(id, 10))
+                .eq('id', parseInt(id, 10)) // Convertendo o ID do orçamento para inteiro
                 .single();
-            if (error) {
-                console.error("Error fetching budget (BudgetEditorPage):", error);
-                throw error;
-            }
+            if (error) throw error;
             if (data) {
                 const budgetData = {
                     ...data,
@@ -268,25 +193,23 @@ const BudgetEditorPage = () => {
                     previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null,
                 };
 
+                // Fetch client details if cliente_id (CPF/CNPJ) exists
                 if (data.cliente_id) {
                     const { data: clientData, error: clientError } = await supabase
                         .from('pessoas')
                         .select('*')
-                        .eq('cpf_cnpj', data.cliente_id)
+                        .eq('cpf_cnpj', data.cliente_id) // Agora busca por cpf_cnpj
                         .single();
-                    if (clientError) {
-                        console.error("Error fetching client for budget (BudgetEditorPage):", clientError);
-                        throw clientError;
-                    }
+                    if (clientError) throw clientError;
 
                     if (clientData) {
                         const clientName = clientData.nome_fantasia && clientData.razao_social 
                             ? `${clientData.nome_fantasia} - ${clientData.razao_social}` 
                             : clientData.razao_social || clientData.nome_fantasia;
                         
+                        // Removido o CPF/CNPJ da exibição do nome do cliente
                         budgetData.nome_cliente = clientName;
                         budgetData.cliente_endereco_completo = buildClientAddressString(clientData);
-                        setSelectedClientData(clientData); // Set selected client data
                     }
                 }
                 setBudget(budgetData);
@@ -295,41 +218,29 @@ const BudgetEditorPage = () => {
             const { data: compData, error: compError } = await supabase
                 .from('orcamento_composicao')
                 .select('*, produtos!produto_id(prod_xProd, prod_uCOM)')
-                .eq('orcamento_id', parseInt(id, 10));
-            if (compError) {
-                console.error("Error fetching compositions for budget (BudgetEditorPage):", compError);
-                throw compError;
-            }
+                .eq('orcamento_id', parseInt(id, 10)); // Convertendo o ID do orçamento para inteiro
+            if (compError) throw compError;
             if (compData) setCompositions(compData);
 
         } catch (error) {
-            console.error("Caught error fetching budget (BudgetEditorPage):", error);
-            toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message || 'Ocorreu um erro inesperado ao carregar o orçamento.' });
+            toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message });
         } finally {
             setLoading(false);
         }
-    }, [id, user, activeCompany, toast, buildClientAddressString, allMunicipalities]);
+    }, [id, user, activeCompany, toast, buildClientAddressString, allMunicipalities]); // Adicionado allMunicipalities
 
     const fetchUnits = useCallback(async () => {
         try {
             const { data, error } = await supabase
-                .from('unidade')
+                .from('unidade') // Nome da tabela corrigido para 'unidade'
                 .select('codigo, unidade')
                 .order('unidade', { ascending: true });
-            if (error) {
-                console.error("Error fetching units (BudgetEditorPage):", error);
-                throw error;
-            }
+            if (error) throw error;
             const map = new Map(data.map(unit => [unit.codigo, unit.unidade]));
             setUnitsMap(map);
         } catch (error) {
-            console.error("Caught error fetching units (BudgetEditorPage):", error);
-            toast({ 
-                variant: 'destructive', 
-                title: 'Erro ao carregar unidades comerciais', 
-                description: error.message || 'Verifique as configurações do banco de dados ou permissões (RLS).' 
-            });
-            setUnitsMap(new Map());
+            console.error("Error fetching units:", error.message);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as unidades comerciais.' });
         }
     }, [toast]);
 
@@ -339,26 +250,21 @@ const BudgetEditorPage = () => {
     }, [fetchUfsAndMunicipalities, fetchUnits]);
 
     useEffect(() => {
-        if (activeCompanyId) {
-            fetchProducts();
-        }
-    }, [activeCompanyId, fetchProducts]);
-
-    useEffect(() => {
+        // Somente busca orçamento e pessoas depois que UFs e Municípios são carregados
         if (allUfs.length > 0 && allMunicipalities.length > 0) {
             fetchBudget();
-            fetchPeople();
-        } else if (!id) {
+            fetchPeople(); // Chamar fetchPeople aqui
+        } else if (!id) { // Se for um novo orçamento, e sem ID, podemos prosseguir sem esperar pelos dados de localização
             setLoading(false);
             setBudget(prev => ({
-                ...initialBudgetState,
+                ...prev,
                 cnpj_empresa: activeCompany?.cnpj || '',
-                usuario_id: user?.id || null,
+                funcionario_id: user?.id || null,
                 vendedor: user?.user_metadata?.full_name || user?.email || '',
-                numero_pedido: '',
             }));
         }
     }, [allUfs, allMunicipalities, fetchBudget, fetchPeople, id, activeCompany, user]);
+
 
     const handleInputChange = (e) => {
         const { id, value, type, checked } = e.target;
@@ -372,204 +278,37 @@ const BudgetEditorPage = () => {
         setBudget(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectNatureza = (selectedCfop) => {
-        if (selectedCfop) {
-            setBudget(prev => ({
-                ...prev,
-                cfop: selectedCfop.cfop,
-                natureza: selectedCfop.descricao,
-            }));
-        } else {
-            setBudget(prev => ({
-                ...prev,
-                cfop: '',
-                natureza: '',
-            }));
-        }
-    };
-
-    const handleSelectClient = async (person) => {
-        setSelectedClientData(person); // Store the full client object
-
-        if (!person) {
-            setBudget(prev => ({
-                ...prev,
-                cliente_id: null,
-                nome_cliente: '',
-                cliente_endereco_completo: '',
-                cfop: '', // Clear CFOP and Natureza when client is deselected
-                natureza: '',
-            }));
-            return;
-        }
-
+    const handleSelectClient = (person) => { // Agora recebe o objeto completo da pessoa
         const clientName = person.nome_fantasia && person.razao_social 
             ? `${person.nome_fantasia} - ${person.razao_social}` 
             : person.razao_social || person.nome_fantasia;
         
-        if (!id) {
-            setSaving(true);
-            try {
-                const defaultBudget = {
-                    ...initialBudgetState,
-                    cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                    usuario_id: user?.id || null,
-                    data_orcamento: budget.data_orcamento,
-                    vendedor: user?.user_metadata?.full_name || user?.email || '',
-                    cliente_id: person.cpf_cnpj,
-                    nome_cliente: clientName,
-                };
-
-                delete defaultBudget.cliente_endereco_completo;
-
-                let nextNumeroPedido = 1;
-                try {
-                    console.log("DEBUG: Fetching max numero_pedido for cnpj_empresa:", normalizeCnpj(activeCompany.cnpj));
-                    const { data: maxBudgetNumberData, error: maxBudgetNumberError } = await supabase
-                        .from('orcamento')
-                        .select('numero_pedido')
-                        .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
-                        .order('numero_pedido', { ascending: false })
-                        .limit(1)
-                        .single();
-
-                    if (maxBudgetNumberError && maxBudgetNumberError.code !== 'PGRST116') {
-                        console.error("DEBUG: Supabase error fetching max numero_pedido:", maxBudgetNumberError);
-                        throw maxBudgetNumberError;
-                    }
-                    console.log("DEBUG: Max budget number data fetched:", maxBudgetNumberData);
-
-                    if (maxBudgetNumberData && maxBudgetNumberData.numero_pedido !== null) {
-                        const maxNumeric = parseInt(maxBudgetNumberData.numero_pedido, 10);
-                        if (!isNaN(maxNumeric)) {
-                            nextNumeroPedido = maxNumeric + 1;
-                        } else {
-                            console.log("DEBUG: Max numero_pedido is not a valid number, starting from 1.");
-                        }
-                    } else {
-                        console.log("DEBUG: No previous budgets found for this company or max is null. Starting from 1.");
-                    }
-                } catch (numError) {
-                    console.error("DEBUG: Error calculating next numero_pedido:", numError);
-                    toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível gerar o próximo número de orçamento.' });
-                    setSaving(false);
-                    return;
-                }
-                console.log("DEBUG: Calculated nextNumeroPedido:", nextNumeroPedido);
-                defaultBudget.numero_pedido = nextNumeroPedido;
-
-                const { data: newBudgetData, error: insertError } = await supabase
-                    .from('orcamento')
-                    .insert([defaultBudget])
-                    .select();
-
-                if (insertError) {
-                    console.error("Error inserting new budget (BudgetEditorPage):", insertError);
-                    throw insertError;
-                }
-
-                const newBudgetId = newBudgetData[0].id;
-                
-                setBudget(prev => ({
-                    ...prev,
-                    ...newBudgetData[0],
-                    data_orcamento: newBudgetData[0].data_orcamento.split('T')[0],
-                    numero_pedido: defaultBudget.numero_pedido,
-                    cliente_endereco_completo: buildClientAddressString(person),
-                }));
-
-                if (user) {
-                    await logAction(user.id, 'budget_create', `Novo orçamento "${defaultBudget.numero_pedido}" (ID: ${newBudgetId}) criado ao selecionar cliente.`, activeCompanyId, null);
-                }
-
-                toast({ title: 'Orçamento Criado!', description: `Orçamento ${defaultBudget.numero_pedido} criado com sucesso.`, duration: 3000 });
-                navigate(`/app/budgets/${newBudgetId}/edit`);
-            } catch (error) {
-                console.error("Caught error in handleSelectClient (new budget creation):", error);
-                toast({ variant: 'destructive', title: 'Erro ao criar orçamento', description: error.message || 'Ocorreu um erro inesperado ao criar o orçamento.' });
-            } finally {
-                setSaving(false);
-            }
-        } else {
-            setBudget(prev => ({
-                ...prev,
-                cliente_id: person.cpf_cnpj,
-                nome_cliente: clientName,
-                cliente_endereco_completo: buildClientAddressString(person),
-                cfop: '', // Clear CFOP and Natureza when client changes
-                natureza: '',
-            }));
-        }
+        // Removido o CPF/CNPJ da exibição do nome do cliente
+        setBudget(prev => ({
+            ...prev,
+            cliente_id: person.cpf_cnpj, // Armazena o CPF/CNPJ
+            nome_cliente: clientName, // Apenas o nome do cliente
+            cliente_endereco_completo: buildClientAddressString(person),
+        }));
     };
 
     const handleSelectProduct = (product) => {
         const newCompositionItem = {
-            id: uuidv4(),
-            orcamento_id: id ? parseInt(id, 10) : null,
+            id: uuidv4(), // Temporary ID for new items
+            orcamento_id: id ? parseInt(id, 10) : null, // If editing, link to existing budget
             produto_id: product.id,
             quantidade: 1,
             valor_venda: product.prod_vUnCOM || 0,
             desconto_total: 0,
+            // Include product details for display immediately
             produtos: {
                 prod_xProd: product.prod_xProd,
                 prod_uCOM: product.prod_uCOM,
             },
-            isNew: true,
+            isNew: true, // Mark as new for saving logic
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
-    };
-
-    const handleSelectProductFromSearch = (product) => {
-        const newCompositionItem = {
-            id: uuidv4(),
-            orcamento_id: id ? parseInt(id, 10) : null,
-            produto_id: product.id,
-            quantidade: 1,
-            valor_venda: product.prod_vUnCOM || 0,
-            desconto_total: 0,
-            produtos: {
-                prod_xProd: product.prod_xProd,
-                prod_uCOM: product.prod_uCOM,
-            },
-            isNew: true,
-        };
-        setCompositions(prev => [...prev, newCompositionItem]);
-        toast({ 
-            title: "Produto adicionado!", 
-            description: `${product.prod_xProd} foi adicionado ao orçamento.`,
-            duration: 2000 
-        });
-    };
-
-    const handleQuantityChange = (compositionId, newQuantity) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, quantidade: parseFloat(newQuantity) || 0 }
-                    : comp
-            )
-        );
-    };
-
-    const handleValueChange = (compositionId, newValue) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, valor_venda: parseFloat(newValue) || 0 }
-                    : comp
-            )
-        );
-    };
-
-    const handleDiscountChange = (compositionId, newDiscount) => {
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, desconto_total: parseFloat(newDiscount) || 0 }
-                    : comp
-            )
-        );
     };
 
     const handleSave = async () => {
@@ -578,23 +317,19 @@ const BudgetEditorPage = () => {
             return;
         }
 
-        if (!id) {
-            toast({ variant: 'destructive', title: 'Erro', description: 'Orçamento ainda não foi criado. Selecione um cliente primeiro.' });
-            return;
-        }
-
         setSaving(true);
         try {
             const saveData = {
                 ...budget,
                 cnpj_empresa: normalizeCnpj(activeCompany.cnpj),
-                usuario_id: user?.id || null,
+                funcionario_id: user?.id,
                 data_orcamento: budget.data_orcamento ? new Date(budget.data_orcamento).toISOString() : null,
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
                 updated_at: new Date().toISOString(),
             };
 
+            // Remove client address fields before saving to 'orcamento' table
             delete saveData.cliente_endereco_completo;
 
             let error;
@@ -602,19 +337,31 @@ const BudgetEditorPage = () => {
             let description;
             let budgetId = id;
 
-            const { error: updateError } = await supabase
-                .from('orcamento')
-                .update(saveData)
-                .eq('id', parseInt(id, 10));
-            error = updateError;
-            actionType = 'budget_update';
-            description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
-            
-            if (error) {
-                console.error("Error updating budget (BudgetEditorPage):", error);
-                throw error;
+            if (id) {
+                const { error: updateError } = await supabase
+                    .from('orcamento')
+                    .update(saveData)
+                    .eq('id', parseInt(id, 10)); // Convertendo o ID do orçamento para inteiro
+                error = updateError;
+                actionType = 'budget_update';
+                description = `Orçamento "${budget.numero_pedido || id}" (ID: ${id}) atualizado.`;
+            } else {
+                delete saveData.id; 
+                const { data: newBudgetData, error: insertError } = await supabase
+                    .from('orcamento')
+                    .insert([saveData])
+                    .select();
+                error = insertError;
+                actionType = 'budget_create';
+                description = `Novo orçamento "${saveData.numero_pedido || newBudgetData?.[0]?.id}" (ID: ${newBudgetData?.[0]?.id}) criado.`;
+                if (newBudgetData && newBudgetData.length > 0) {
+                    budgetId = newBudgetData[0].id;
+                }
             }
 
+            if (error) throw error;
+
+            // Handle new compositions
             if (budgetId) {
                 for (const comp of compositions) {
                     if (comp.isNew) {
@@ -629,11 +376,9 @@ const BudgetEditorPage = () => {
                                 created_at: new Date().toISOString(),
                                 updated_at: new Date().toISOString(),
                             });
-                        if (compInsertError) {
-                            console.error("Error inserting composition item (BudgetEditorPage):", compInsertError);
-                            throw compInsertError;
-                        }
+                        if (compInsertError) throw compInsertError;
                     }
+                    // TODO: Add logic for updating existing compositions and deleting removed ones
                 }
             }
 
@@ -644,14 +389,14 @@ const BudgetEditorPage = () => {
             toast({ title: 'Sucesso!', description: `Orçamento ${id ? 'atualizado' : 'criado'} com sucesso.` });
             navigate('/app/budgets');
         } catch (error) {
-            console.error("Caught error in handleSave (BudgetEditorPage):", error);
-            toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message || 'Ocorreu um erro inesperado ao salvar o orçamento.' });
+            toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message });
         } finally {
             setSaving(false);
         }
     };
 
     const handleEditComposition = (compositionId) => {
+        // For now, just a toast. Full editing would involve another dialog/form.
         toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" });
     };
 
@@ -661,20 +406,19 @@ const BudgetEditorPage = () => {
         }
         setSaving(true);
         try {
+            // If it's a new item not yet saved to DB, just remove from state
             const itemToDelete = compositions.find(c => c.id === compositionId);
             if (itemToDelete && itemToDelete.isNew) {
                 setCompositions(prev => prev.filter(c => c.id !== compositionId));
                 toast({ title: "Item removido!", description: `"${productName}" foi removido da lista.` });
             } else {
+                // If it's an existing item, delete from DB
                 const { error } = await supabase
                     .from('orcamento_composicao')
                     .delete()
                     .eq('id', compositionId);
 
-                if (error) {
-                    console.error("Error deleting composition item (BudgetEditorPage):", error);
-                    throw error;
-                }
+                if (error) throw error;
 
                 setCompositions(prev => prev.filter(c => c.id !== compositionId));
                 toast({ title: 'Item excluído!', description: `"${productName}" foi removido(a) com sucesso.` });
@@ -683,26 +427,35 @@ const BudgetEditorPage = () => {
                 }
             }
         } catch (error) {
-            console.error("Caught error in handleDeleteComposition (BudgetEditorPage):", error);
-            toast({ variant: 'destructive', title: 'Erro ao excluir item', description: error.message || 'Ocorreu um erro inesperado ao excluir o item.' });
+            toast({ variant: 'destructive', title: 'Erro ao excluir item', description: error.message });
         } finally {
             setSaving(false);
         }
     };
 
+    // Derivar o tipo e os títulos/rótulos dinamicamente
     const displayTipo = useMemo(() => {
         return budget.faturado ? 'Pedido' : 'Orçamento';
     }, [budget.faturado]);
 
     const pageTitle = id ? `Editar ${displayTipo}` : `Novo ${displayTipo}`;
     const configTitle = `Dados do ${displayTipo}`;
-    const numeroLabel = `Nº do ${displayTipo}`;
+    const numeroLabel = `Número do ${displayTipo}`;
 
+    // Cálculos de totais conforme a lógica do usuário
     const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
-    const totalServicosBruto = 0;
+    const totalServicosBruto = 0; // Placeholder para serviços
+
+    // Soma dos descontos de cada item
     const sumOfItemDiscounts = compositions.reduce((sum, item) => sum + (item.desconto_total || 0), 0);
+    
+    // Total do Pedido R$ (total dos produtos + total servicos)
     const totalDoPedido = totalProdutosBruto + totalServicosBruto;
+
+    // Total Desconto R$ (apenas a soma dos descontos dos itens, para exibição)
     const totalDescontoDisplay = sumOfItemDiscounts;
+    
+    // Total Líq. do Pedido R$ (Total do Pedido - Total Desconto)
     const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
     if (loading) {
@@ -745,38 +498,44 @@ const BudgetEditorPage = () => {
                     {/* Row 1: Número do Pedido, Data do Orçamento, Cliente */}
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="numero_pedido" className="form-label">{numeroLabel}</Label>
-                        <Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} disabled={true} />
+                        <Input id="numero_pedido" type="text" className="form-input" value={budget.numero_pedido || ''} onChange={handleInputChange} />
                     </div>
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="data_orcamento" className="form-label">Data do Orçamento *</Label>
-                        <Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required disabled={isFaturado} />
+                        <Input id="data_orcamento" type="date" className="form-input" value={budget.data_orcamento} onChange={handleInputChange} required />
                     </div>
                     <div className="form-group lg:col-span-8">
                         <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
-                        <SelectSearchClient
-                            value={selectedClientData} // Pass the selected client data
-                            onValueChange={handleSelectClient}
-                            people={people}
-                            placeholder="Selecione um cliente..."
-                            disabled={isFaturado}
-                        />
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                id="nome_cliente_display"
+                                type="text"
+                                className="form-input flex-1"
+                                value={budget.nome_cliente || ''}
+                                readOnly
+                                placeholder="Selecione um cliente"
+                            />
+                            <Button variant="outline" size="icon" onClick={() => setIsClientSearchDialogOpen(true)}>
+                                <Search className="w-4 h-4" />
+                            </Button>
+                        </div>
                     </div>
 
                     {/* Row 2: Solicitante, Fone Solicitante, Vendedor */}
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="solicitante" className="form-label">Solicitante</Label>
-                        <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} disabled={isFaturado} />
+                        <Input id="solicitante" type="text" className="form-input" value={budget.solicitante || ''} onChange={handleInputChange} />
                     </div>
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="telefone" className="form-label">Fone Solicitante</Label>
-                        <Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} disabled={isFaturado} />
+                        <Input id="telefone" type="text" className="form-input" value={budget.telefone || ''} onChange={handleInputChange} />
                     </div>
                     <div className="form-group lg:col-span-4">
                         <Label htmlFor="vendedor" className="form-label">Vendedor</Label>
-                        <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} disabled={isFaturado} />
+                        <Input id="vendedor" type="text" className="form-input" value={budget.vendedor || ''} onChange={handleInputChange} />
                     </div>
                     
-                    {/* Endereço do Cliente */}
+                    {/* Endereço do Cliente (Input de uma linha, desabilitado e somente leitura) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="cliente_endereco_completo" className="form-label">Endereço do Cliente</Label>
                         <Input 
@@ -789,27 +548,20 @@ const BudgetEditorPage = () => {
                         />
                     </div>
 
-                    {/* Endereço de Entrega */}
+                    {/* Endereço de Entrega (Textarea de 2 linhas) */}
                     <div className="form-group lg:col-span-12">
                         <Label htmlFor="endereco_entrega_completo" className="form-label">Endereço de Entrega</Label>
-                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} disabled={isFaturado} />
+                        <Textarea id="endereco_entrega_completo" className="form-textarea" value={budget.endereco_entrega_completo || ''} onChange={handleInputChange} rows={2} />
                     </div>
 
-                    {/* Natureza da Operação, CFOP */}
+                    {/* Natureza da Operação, NF-e Nº */}
                     <div className="form-group lg:col-span-9">
                         <Label htmlFor="natureza" className="form-label">Natureza da Operação *</Label>
-                        <SelectSearchNatureza
-                            value={budget.natureza}
-                            onValueChange={handleSelectNatureza}
-                            disabled={isFaturado}
-                            required
-                            companyUf={activeCompany?.uf} // Pass active company UF
-                            clientUf={selectedClientData?.uf} // Pass selected client UF
-                        />
+                        <Input id="natureza" type="text" className="form-input" value={budget.natureza || ''} onChange={handleInputChange} />
                     </div>
                     <div className="form-group lg:col-span-3">
-                        <Label htmlFor="cfop" className="form-label">CFOP</Label>
-                        <Input id="cfop" type="text" className="form-input" value={budget.cfop || ''} readOnly disabled={true} />
+                        <Label htmlFor="numero_nfe" className="form-label">NF-e Nº</Label>
+                        <Input id="numero_nfe" type="text" className="form-input" value={budget.numero_nfe || ''} onChange={handleInputChange} />
                     </div>
                 </div>
 
@@ -817,19 +569,6 @@ const BudgetEditorPage = () => {
                     <Package className="w-5 h-5 text-blue-600" />
                     Itens de Composição do Orçamento
                 </h3>
-
-                
-                {/* Desabilita se não houver ID de orçamento */}
-                <div className="mt-4 mb-4">
-                    <SelectSearchProduct
-                        products={allProducts}
-                        onSelect={handleSelectProductFromSearch}
-                        placeholder="Digite para buscar e adicionar produto..."
-                        className="w-full"
-                        disabled={isFaturado || !id} 
-                    />
-                </div>
-
                 <div className="mt-4 data-table-container">
                     <Table>
                         <TableHeader>
@@ -847,63 +586,26 @@ const BudgetEditorPage = () => {
                         <TableBody>
                             {compositions.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="text-center text-slate-500 py-8">
-                                        Nenhum item adicionado. Use a busca acima para adicionar produtos.
+                                    <TableCell colSpan={8} className="text-center text-slate-500 py-4">
+                                        Nenhum item de composição adicionado.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 compositions.map(comp => (
-                                    <TableRow key={comp.id} className="hover:bg-slate-50">
-                                        <TableCell className="font-medium">
-                                            {comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
+                                    <TableRow key={comp.id}>
+                                        <TableCell className="font-medium">{comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`}</TableCell>
                                         <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.quantidade}
-                                                onChange={(e) => handleQuantityChange(comp.id, e.target.value)}
-                                                className="w-20 text-right"
-                                                disabled={isFaturado}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.valor_venda}
-                                                onChange={(e) => handleValueChange(comp.id, e.target.value)}
-                                                className="w-28 text-right"
-                                                disabled={isFaturado}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right font-medium">
-                                            {formatCurrency(comp.quantidade * comp.valor_venda)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.desconto_total || 0}
-                                                onChange={(e) => handleDiscountChange(comp.id, e.target.value)}
-                                                className="w-24 text-right"
-                                                disabled={isFaturado}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold">
-                                            {formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}
-                                        </TableCell>
+                                        <TableCell className="text-right">{comp.quantidade}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.quantidade * comp.valor_venda)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(comp.desconto_total || 0)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)} disabled={isFaturado}>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)}>
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" 
-                                                    onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}
-                                                    disabled={isFaturado}>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}>
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -913,25 +615,30 @@ const BudgetEditorPage = () => {
                             )}
                         </TableBody>
                     </Table>
+                    <div className="flex justify-center mt-4">
+                        <Button variant="outline" onClick={() => setIsProductSearchDialogOpen(true)}>
+                            <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Item
+                        </Button>
+                    </div>
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2">
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly disabled={isFaturado} /></div>
-                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly disabled={isFaturado} /></div>
+                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
+                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly /></div>
                         </div>
 
                         <h3 className="config-title mt-8 mb-4">Condições</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
                             <div className="form-group lg:col-span-4">
                                 <Label htmlFor="previsao_entrega" className="form-label">Previsão de Entrega</Label>
-                                <Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} disabled={isFaturado} />
+                                <Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} />
                             </div>
                             <div className="form-group lg:col-span-4">
                                 <Label htmlFor="status_orcamento" className="form-label">Status</Label>
-                                <Select onValueChange={(value) => handleSelectChange('faturado', value === 'true')} value={budget.faturado.toString()} disabled={isFaturado}>
+                                <Select onValueChange={(value) => handleSelectChange('faturado', value === 'true')} value={budget.faturado.toString()}>
                                     <SelectTrigger id="status_orcamento" className="form-select"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="true">FATURADO</SelectItem>
@@ -941,7 +648,7 @@ const BudgetEditorPage = () => {
                             </div>
                             <div className="form-group lg:col-span-4">
                                 <Label htmlFor="forma_pagamento" className="form-label">Forma de Pagamento *</Label>
-                                <Select onValueChange={(value) => handleSelectChange('forma_pagamento', value)} value={budget.forma_pagamento} disabled={isFaturado}>
+                                <Select onValueChange={(value) => handleSelectChange('forma_pagamento', value)} value={budget.forma_pagamento}>
                                     <SelectTrigger id="forma_pagamento" className="form-select">
                                         <SelectValue placeholder="Selecione a forma" />
                                     </SelectTrigger>
@@ -965,25 +672,26 @@ const BudgetEditorPage = () => {
                     </div>
                 </div>
                 
+                {/* Nova linha para Condição de Pagamento, Validade e Botões de Ação */}
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
                     <div className="form-group lg:col-span-5">
                         <Label htmlFor="condicao_pagamento" className="form-label">Condição de Pagamento</Label>
-                        <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} disabled={isFaturado} />
+                        <Input id="condicao_pagamento" type="text" className="form-input" value={budget.condicao_pagamento || ''} onChange={handleInputChange} />
                     </div>
                     <div className="form-group lg:col-span-2">
                         <Label htmlFor="validade" className="form-label">Validade Proposta (dias)</Label>
-                        <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} disabled={isFaturado} />
+                        <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} />
                     </div>
                     <div className="lg:col-span-5 flex justify-end space-x-2">
-                        <Select defaultValue="1_via" disabled={isFaturado}>
+                        <Select defaultValue="1_via">
                             <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="1_via">1ª Via</SelectItem>
                                 <SelectItem value="2_via">2ª Via</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })} disabled={isFaturado}>Desconto</Button>
-                        <Button onClick={handleSave} className="save-button" disabled={saving || isFaturado}>
+                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })}>Desconto</Button>
+                        <Button onClick={handleSave} className="save-button" disabled={saving}>
                             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                             Salvar Orçamento
                         </Button>
@@ -994,10 +702,17 @@ const BudgetEditorPage = () => {
                 <div className="pt-6">
                     <div className="form-group col-span-full">
                         <Label htmlFor="observacao" className="form-label">Observação</Label>
-                        <Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} disabled={isFaturado} />
+                        <Textarea id="observacao" className="form-textarea" value={budget.observacao || ''} onChange={handleInputChange} rows={3} />
                     </div>
                 </div>
             </div>
+
+            <ClientSearchDialog
+                isOpen={isClientSearchDialogOpen}
+                setIsOpen={setIsClientSearchDialogOpen}
+                people={people}
+                onSelectClient={handleSelectClient}
+            />
 
             <ProductSearchDialog
                 isOpen={isProductSearchDialogOpen}

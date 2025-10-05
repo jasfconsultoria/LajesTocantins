@@ -1,0 +1,219 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+}
+
+.glass-effect {
+  background-color: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sidebar-item {
+  @apply flex items-center px-4 py-2.5 text-sm font-medium text-slate-700 rounded-lg transition-all duration-200;
+}
+
+.sidebar-item:hover {
+  @apply bg-slate-200/60;
+}
+
+.sidebar-item.active {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md;
+}
+
+.config-card {
+  @apply bg-white/80 p-6 rounded-xl shadow-sm border border-white;
+}
+
+.config-header {
+  @apply flex justify-between items-start pb-4 border-b border-slate-200;
+}
+
+.config-title {
+  @apply text-lg font-semibold text-slate-800;
+}
+
+.config-description {
+  @apply text-sm text-slate-500;
+}
+
+.form-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 pt-6;
+}
+
+.form-group {
+  @apply space-y-2;
+}
+
+.form-label {
+  @apply block text-sm font-medium text-slate-700;
+}
+
+.form-input, .form-select, .form-textarea {
+  @apply block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+
+.form-radio {
+  @apply h-4 w-4 text-blue-600 border-slate-300 focus:ring-blue-500;
+}
+
+.save-button {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg transition-shadow;
+}
+
+.test-button {
+  @apply text-blue-700 bg-blue-100 border-blue-200 hover:bg-blue-200;
+}
+
+.copy-button {
+  @apply text-slate-600 bg-slate-100 border-slate-200 hover:bg-slate-200;
+}
+
+.integration-status {
+  @apply px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+.webhook-url {
+  @apply mt-6;
+}
+
+.filter-bar {
+  @apply flex flex-wrap items-center gap-3 p-4 bg-white/80 rounded-xl shadow-sm border border-white;
+}
+
+.search-input, .date-picker, .status-filter {
+  @apply h-10 px-3 bg-slate-100 border-none rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none;
+}
+
+.data-table-container {
+  /*@apply bg-white/80 rounded-xl shadow-sm border border-white overflow-hidden;
+@apply bg-white/80 rounded-xl shadow-sm border border-white overflow-hidden;*/
+  @apply rounded-xl border border-white shadow-sm bg-white/80; /* Removido overflow-hidden */
+
+}
+
+.data-table {
+  @apply w-full text-sm;
+}
+
+.table-header {
+  @apply bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider;
+}
+
+.table-row {
+  @apply border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 transition-colors duration-150;
+}
+
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium capitalize;
+}
+
+.status-authorized { @apply bg-green-100 text-green-800; }
+.status-rejected { @apply bg-red-100 text-red-800; }
+.status-pending { @apply bg-yellow-100 text-yellow-800; }
+.status-cancelled { @apply bg-slate-200 text-slate-700; }
+.status-not-issued { @apply bg-gray-100 text-gray-600; }
+
+@media (max-width: 768px) {
+  .responsive-table thead {
+    @apply hidden;
+  }
+  .responsive-table tr {
+    @apply block mb-4 border border-slate-200 rounded-lg p-4;
+  }
+  .responsive-table td {
+    @apply block text-right border-b border-slate-100 py-2;
+  }
+  .responsive-table td:before {
+    content: attr(data-label);
+    @apply float-left font-semibold text-slate-600;
+  }
+  .responsive-table td:last-child {
+    @apply border-b-0;
+  }
+}
+
+/* Adicione ao seu arquivo CSS global */
+.z-50 {
+  z-index: 50;
+}
+
+.max-h-60 {
+  max-height: 15rem;
+}
+
+/* Garantir que o dropdown fique acima de outros elementos */
+.relative {
+  position: relative;
+}
+
+.absolute {
+  position: absolute;
+}
+
+/* No seu arquivo CSS global */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.w-20 {
+  width: 5rem;
+}
+
+.w-24 {
+  width: 6rem;
+}
+
+.w-28 {
+  width: 7rem;
+}
+

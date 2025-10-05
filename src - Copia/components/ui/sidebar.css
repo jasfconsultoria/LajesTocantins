@@ -1,0 +1,26 @@
+/* src/components/ui/sidebar.css */
+
+/* Base styles for all sidebar items */
+.sidebar-item {
+  @apply flex items-center px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors duration-200;
+}
+
+/* Active state for top-level items */
+.sidebar-item.active {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md;
+}
+
+/* Styles for category headers */
+.sidebar-category-header {
+  @apply flex items-center px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors duration-200 cursor-pointer font-semibold justify-between;
+}
+
+/* Styles for submenu items */
+.sidebar-submenu-item {
+  @apply flex items-center pl-8 py-2 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors duration-200 text-sm;
+}
+
+/* Active state for submenu items */
+.sidebar-submenu-item.active {
+  @apply bg-blue-50 text-blue-700 font-medium;
+}
