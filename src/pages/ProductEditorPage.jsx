@@ -10,15 +10,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { logAction } from '@/lib/log';
-import SelectSearchUnit from '@/components/SelectSearchUnit'; // Importar o novo componente
+import SelectSearchUnit from '@/components/SelectSearchUnit';
 
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
-    prod_CEST_Opc: '', prod_CFOP: '', prod_uCOM: '', prod_vUnCOM: 0.0,
+    // prod_CEST_Opc: '', prod_CFOP: '', // Removidos
+    prod_uCOM: '', prod_vUnCOM: 0.0,
     icms_pICMS: 0.0, icms_pRedBC: 0.0, icms_modBC: 0, icms_CST: '',
     pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
     IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
-    prod_rastro: 'N', prod_nivelm: 0, prod_alert: 'N',
+    // prod_rastro: 'N', prod_nivelm: 0, prod_alert: 'N', // Removidos
 };
 
 const icmsModbcOptions = [
@@ -58,7 +59,6 @@ const ProductEditorPage = () => {
     const [product, setProduct] = useState(initialProductState);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    // Removido o estado 'units' pois o SelectSearchUnit fará a própria busca
 
     const formatCurrency = (value) => {
         if (value === null || value === undefined) return '';
@@ -93,14 +93,9 @@ const ProductEditorPage = () => {
         }
     }, [id, toast]);
 
-    // A função fetchUnits não é mais necessária aqui, pois o SelectSearchUnit fará a própria busca.
-    // No entanto, se você precisar de 'units' em outro lugar nesta página, pode mantê-la.
-    // Por enquanto, vou removê-la para simplificar.
-
     useEffect(() => {
         fetchProduct();
-        // fetchUnits(); // Removido
-    }, [fetchProduct]); // Removido fetchUnits das dependências
+    }, [fetchProduct]);
 
     const handleInputChange = (e) => {
         const { id, value, type } = e.target;
@@ -123,7 +118,7 @@ const ProductEditorPage = () => {
     const handleSelectChange = (id, value) => {
         setProduct(prev => ({
             ...prev,
-            [id]: id === 'prod_uCOM' ? parseInt(value, 10) : value // Converte para inteiro para prod_uCOM
+            [id]: id === 'prod_uCOM' ? parseInt(value, 10) : value
         }));
     };
 
@@ -135,7 +130,17 @@ const ProductEditorPage = () => {
 
         setSaving(true);
         try {
-            const saveData = { ...product, id_emit: activeCompanyId, updated_at: new Date().toISOString() };
+            const saveData = { 
+                ...product, 
+                id_emit: activeCompanyId, 
+                updated_at: new Date().toISOString(),
+                // Explicitly set removed fields to null or default if they exist in the DB schema
+                prod_CEST_Opc: null, 
+                prod_CFOP: null,
+                prod_rastro: 'N', // Default to 'N'
+                prod_alert: 'N',  // Default to 'N'
+                prod_nivelm: 0,   // Default to 0
+            };
             let error;
             let actionType;
             let description;
@@ -225,7 +230,7 @@ const ProductEditorPage = () => {
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_cEAN" className="form-label">GTIN/EAN</Label>
-                        <Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEEAN} onChange={handleInputChange} placeholder="Ex: 7891234567890" />
+                        <Input id="prod_cEAN" type="text" className="form-input" value={product.prod_cEAN} onChange={handleInputChange} placeholder="Ex: 7891234567890" />
                     </div>
                     <div className="form-group lg:col-span-3">
                         <Label htmlFor="prod_uCOM" className="form-label">Unidade Comercial *</Label>
@@ -250,48 +255,24 @@ const ProductEditorPage = () => {
                     </div>
 
                     {/* Row 2: Nome do Produto (prod_xProd) */}
-                    <div className="form-group lg:col-span-12">
+                    <div className="form-group lg:col-span-10"> {/* Ajustado para ocupar mais espaço */}
                         <Label htmlFor="prod_xProd" className="form-label">Nome do Produto *</Label>
                         <Input id="prod_xProd" type="text" className="form-input" value={product.prod_xProd} onChange={handleInputChange} required placeholder="Ex: Laje Treliçada H8" />
                     </div>
 
-                    {/* Combined Row for NCM, CFOP, CEST, Rastreável, Alerta, Nível Máximo, Ativo */}
-                    <div className="form-group lg:col-span-2">
-                        <Label htmlFor="prod_NCM" className="form-label">NCM</Label>
-                        <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} placeholder="Ex: 68101100" />
-                    </div>
-                    <div className="form-group lg:col-span-2">
-                        <Label htmlFor="prod_CFOP" className="form-label">CFOP</Label>
-                        <Input id="prod_CFOP" type="text" className="form-input" value={product.prod_CFOP} onChange={handleInputChange} placeholder="Ex: 5102" />
-                    </div>
-                    <div className="form-group lg:col-span-2">
-                        <Label htmlFor="prod_CEST_Opc" className="form-label">CEST (Opcional)</Label>
-                        <Input id="prod_CEST_Opc" type="text" className="form-input" value={product.prod_CEST_Opc} onChange={handleInputChange} placeholder="Ex: 2400100" />
-                    </div>
-                    <div className="form-group lg:col-span-1">
-                        <Label htmlFor="prod_rastro" className="form-label">Rastreável</Label>
-                        <Select onValueChange={(value) => handleSelectChange('prod_rastro', value)} value={product.prod_rastro}>
-                            <SelectTrigger id="prod_rastro" className="form-select"><SelectValue /></SelectTrigger>
-                            <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                    <div className="form-group lg:col-span-1">
-                        <Label htmlFor="prod_alert" className="form-label">Alerta</Label>
-                        <Select onValueChange={(value) => handleSelectChange('prod_alert', value)} value={product.prod_alert}>
-                            <SelectTrigger id="prod_alert" className="form-select"><SelectValue /></SelectTrigger>
-                            <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                    <div className="form-group lg:col-span-2">
-                        <Label htmlFor="prod_nivelm" className="form-label">Nível Máximo</Label>
-                        <Input id="prod_nivelm" type="number" className="form-input" value={product.prod_nivelm} onChange={handleInputChange} placeholder="Ex: 100" />
-                    </div>
-                    <div className="form-group lg:col-span-2">
+                    {/* Ativo agora ocupa 2 colunas */}
+                    <div className="form-group lg:col-span-2"> 
                         <Label htmlFor="prod_ativo" className="form-label">Ativo</Label>
                         <Select onValueChange={(value) => handleSelectChange('prod_ativo', value)} value={product.prod_ativo}>
                             <SelectTrigger id="prod_ativo" className="form-select"><SelectValue /></SelectTrigger>
                             <SelectContent>{yesNoOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}</SelectContent>
                         </Select>
+                    </div>
+
+                    {/* NCM agora ocupa 2 colunas */}
+                    <div className="form-group lg:col-span-12"> 
+                        <Label htmlFor="prod_NCM" className="form-label">NCM</Label>
+                        <Input id="prod_NCM" type="text" className="form-input" value={product.prod_NCM} onChange={handleInputChange} placeholder="Ex: 68101100" />
                     </div>
                 </div>
 
