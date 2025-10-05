@@ -15,7 +15,6 @@ import SelectSearchUnit from '@/components/SelectSearchUnit';
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
     prod_uCOM: '', prod_vUnCOM: 0.0,
-    // Campos removidos do DB: prod_qCOM, prod_vProd, prod_cEANTrib, prod_uTrib, prod_qTrib, prod_vUnTrib, prod_nFCI_Opc
     icms_pICMS: 0.0, icms_pRedBC: 0.0, icms_modBC: 0, icms_CST: '',
     pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
     IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
@@ -140,13 +139,16 @@ const ProductEditorPage = () => {
                 prod_alert,
                 prod_CEST_Opc,
                 prod_CFOP,
-                prod_qCOM, // Novo campo removido
-                prod_vProd, // Novo campo removido
-                prod_cEANTrib, // Novo campo removido
-                prod_uTrib, // Novo campo removido
-                prod_qTrib, // Novo campo removido
-                prod_vUnTrib, // Novo campo removido
-                prod_nFCI_Opc, // Novo campo removido
+                prod_qCOM,
+                prod_vProd,
+                prod_cEANTrib,
+                prod_uTrib,
+                prod_qTrib,
+                prod_vUnTrib,
+                prod_nFCI_Opc,
+                prod_sujST, // Removido
+                IPI_CNPJProd, // Removido
+                IPI_clEnq, // Removido
                 ...restOfProduct // This will contain all remaining fields
             } = product;
 
