@@ -11,36 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { logAction } from '@/lib/log';
 import SelectSearchUnit from '@/components/SelectSearchUnit';
+import BaseCalculoList from '@/components/BaseCalculoList'; // Importar o novo componente
 
 const initialProductState = {
     prod_cProd: '', prod_cEAN: '', prod_xProd: '', prod_NCM: '',
     prod_uCOM: '', prod_vUnCOM: 0.0,
-    icms_pICMS: 0.0, icms_pRedBC: 0.0, icms_modBC: 0, icms_CST: '',
     pis_CST: '', pis_pPIS: 0.0, cofins_CST: '', cofins_pCOFINS: 0.0,
-    IPI_CST: '', IPI_pIPI: 0.0, icms_orig: 0, prod_ativo: 'S',
+    IPI_CST: '', IPI_pIPI: 0.0, prod_ativo: 'S',
 };
-
-const icmsModbcOptions = [
-    { value: 0, label: '0 - Margem Valor Agregado (%)' },
-    { value: 1, label: '1 - Pauta (Valor)' },
-    { value: 2, label: '2 - Preço Tabelado Máx. (valor)' },
-    { value: 3, label: '3 - Valor da Operação' },
-    { value: 4, label: '4 - Custo Unitário' },
-    { value: 5, label: '5 - Valor da Entrada' },
-    { value: 6, label: '6 - Valor da Operação e Custo Unitário' },
-];
-
-const icmsOrigOptions = [
-    { value: 0, label: '0 - Nacional, exceto as indicadas nos códigos 3, 4, 5 e 8' },
-    { value: 1, label: '1 - Estrangeira - Importação direta, exceto a indicada no código 6' },
-    { value: 2, label: '2 - Estrangeira - Adquirida no mercado interno, exceto a indicada no código 7' },
-    { value: 3, label: '3 - Nacional, mercadoria ou bem com Conteúdo de Importação superior a 40% e inferior ou igual a 70%' },
-    { value: 4, label: '4 - Nacional, cuja produção tenha sido feita em conformidade com os processos produtivos básicos de que tratam as legislações pertinentes' },
-    { value: 5, label: '5 - Nacional, mercadoria ou bem com Conteúdo de Importação superior a 70%' },
-    { value: 6, label: '6 - Estrangeira - Importação direta, sem similar nacional, constante em lista de Resolução CAMEX e gás natural' },
-    { value: 7, label: '7 - Estrangeira - Adquirida no mercado interno, sem similar nacional, constante em lista de Resolução CAMEX e gás natural' },
-    { value: 8, label: '8 - Nacional, mercadoria ou bem com Conteúdo de Importação inferior ou igual a 40%' },
-];
 
 const yesNoOptions = [
     { value: 'S', label: 'Sim' },
@@ -50,7 +28,7 @@ const yesNoOptions = [
 const ProductEditorPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, activeCompany } = useAuth();
     const { toast } = useToast();
     const { activeCompanyId } = useOutletContext();
 
@@ -128,32 +106,8 @@ const ProductEditorPage = () => {
 
         setSaving(true);
         try {
-            // Destructure the product object to exclude all removed fields
-            const {
-                prod_rastro,
-                prod_indEscala,
-                prod_CNPJFab,
-                prod_cBenef,
-                icms_pMVAST,
-                prod_nivelm,
-                prod_alert,
-                prod_CEST_Opc,
-                prod_CFOP,
-                prod_qCOM,
-                prod_vProd,
-                prod_cEANTrib,
-                prod_uTrib,
-                prod_qTrib,
-                prod_vUnTrib,
-                prod_nFCI_Opc,
-                prod_sujST, // Removido
-                IPI_CNPJProd, // Removido
-                IPI_clEnq, // Removido
-                ...restOfProduct // This will contain all remaining fields
-            } = product;
-
             const saveData = { 
-                ...restOfProduct, // Use only the remaining fields
+                ...product,
                 id_emit: activeCompanyId, 
                 updated_at: new Date().toISOString(),
             };
@@ -271,7 +225,7 @@ const ProductEditorPage = () => {
                     </div>
 
                     {/* Row 2: Nome do Produto (prod_xProd) */}
-                    <div className="form-group lg:col-span-10"> {/* Ajustado para ocupar mais espaço */}
+                    <div className="form-group lg:col-span-10">
                         <Label htmlFor="prod_xProd" className="form-label">Nome do Produto *</Label>
                         <Input id="prod_xProd" type="text" className="form-input" value={product.prod_xProd} onChange={handleInputChange} required placeholder="Ex: Laje Treliçada H8" />
                     </div>
@@ -292,41 +246,9 @@ const ProductEditorPage = () => {
                     </div>
                 </div>
 
-                <h3 className="config-title mt-8 pt-6 border-t border-slate-200">ICMS</h3>
-                <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4">
-                    {/* Primeira linha */}
-                    <div className="form-group lg:col-span-8">
-                        <Label htmlFor="icms_orig" className="form-label">Origem da Mercadoria</Label>
-                        <Select onValueChange={(value) => handleSelectChange('icms_orig', parseInt(value))} value={(product.icms_orig ?? 0).toString()}>
-                            <SelectTrigger id="icms_orig" className="form-select">
-                                <SelectValue placeholder="Selecione a origem" className="text-left flex-1" />
-                            </SelectTrigger>
-                            <SelectContent>{icmsOrigOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-                    <div className="form-group lg:col-span-4">
-                        <Label htmlFor="icms_modBC" className="form-label">Modalidade BC ICMS</Label>
-                        <Select onValueChange={(value) => handleSelectChange('icms_modBC', parseInt(value))} value={(product.icms_modBC ?? 0).toString()}>
-                            <SelectTrigger id="icms_modBC" className="form-select">
-                                <SelectValue placeholder="Selecione a modalidade" className="text-left flex-1" />
-                            </SelectTrigger>
-                            <SelectContent>{icmsModbcOptions.map(opt => <SelectItem key={opt.value} value={opt.value.toString()}>{opt.label}</SelectItem>)}</SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Segunda linha */}
-                    <div className="form-group lg:col-span-4">
-                        <Label htmlFor="icms_pRedBC" className="form-label">% Redução BC ICMS</Label>
-                        <Input id="icms_pRedBC" type="number" step="0.01" className="form-input" value={product.icms_pRedBC} onChange={handleInputChange} placeholder="Ex: 0.00" />
-                    </div>
-                    <div className="form-group lg:col-span-4">
-                        <Label htmlFor="icms_pICMS" className="form-label">% Alíquota ICMS</Label>
-                        <Input id="icms_pICMS" type="number" step="0.01" className="form-input" value={product.icms_pICMS} onChange={handleInputChange} placeholder="Ex: 17.00" />
-                    </div>
-                    <div className="form-group lg:col-span-4">
-                        <Label htmlFor="icms_CST" className="form-label">CST ICMS</Label>
-                        <Input id="icms_CST" type="text" className="form-input" value={product.icms_CST} onChange={handleInputChange} placeholder="Ex: 00" />
-                    </div>
+                {/* Seção ICMS agora usa o BaseCalculoList */}
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                    <BaseCalculoList productId={id} activeCompanyCnpj={activeCompany?.cnpj} />
                 </div>
 
                 {/* Nova estrutura para PIS, COFINS, IPI em uma única linha */}
