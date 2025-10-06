@@ -202,29 +202,34 @@ const IcmsAliquotaList = () => {
                                 <TableHead className="text-right cursor-pointer" onClick={() => handleSort('aliquota_reducao')}>
                                     <div className="flex items-center justify-end">Redução BC (%) {renderSortIcon('aliquota_reducao')}</div>
                                 </TableHead>
+                                <TableHead className="text-right">Alíquota Aplicada (%)</TableHead> {/* New TableHead */}
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paginatedAliquotas.map((a) => (
-                                <TableRow key={a.id}>
-                                    <TableCell className="font-medium">{a.uf_origem}</TableCell>
-                                    <TableCell>{a.uf_destino}</TableCell>
-                                    <TableCell className="text-right">{a.aliquota_icms.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">{a.aliquota_fecp.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">{a.aliquota_reducao.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" onClick={() => navigate(`/app/notas/icms-aliquotas/${a.id}/edit`)}>
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteAliquota(a.id, a.uf_origem, a.uf_destino)}>
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {paginatedAliquotas.map((a) => {
+                                const aliquotaAplicada = (a.aliquota_icms + a.aliquota_fecp - a.aliquota_reducao).toFixed(2);
+                                return (
+                                    <TableRow key={a.id}>
+                                        <TableCell className="font-medium">{a.uf_origem}</TableCell>
+                                        <TableCell>{a.uf_destino}</TableCell>
+                                        <TableCell className="text-right">{a.aliquota_icms.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">{a.aliquota_fecp.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">{a.aliquota_reducao.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-bold">{aliquotaAplicada}</TableCell> {/* New TableCell */}
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => navigate(`/app/notas/icms-aliquotas/${a.id}/edit`)}>
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" onClick={() => handleDeleteAliquota(a.id, a.uf_origem, a.uf_destino)}>
+                                                    <Trash2 className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </div>
