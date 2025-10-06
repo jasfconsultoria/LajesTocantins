@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, PencilLine, Copy } from 'lucide-react'; // Changed SignatureIcon to PencilLine
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, PencilLine, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +33,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog'; // Import Dialog components
+} from '@/components/ui/dialog';
 
 // Helper function to get date + N days in YYYY-MM-DD format
 const getDatePlusDays = (days) => {
@@ -53,7 +53,7 @@ const initialBudgetState = {
     cnpj_empresa: '',
     cfop: '',
     natureza: '',
-    status_orcamento: 'pendente', // Default to 'pendente'
+    status: '0', // Default to '0' (Pendente) - Changed from status_orcamento
     vendedor: '',
     desconto: 0.0,
     condicao_pagamento: '',
@@ -75,7 +75,7 @@ const initialBudgetState = {
     codigo_antigo: null,
     previsao_entrega: getDatePlusDays(10),
     cliente_endereco_completo: '',
-    signature_url: null, // New field for signature
+    signature_url: null,
 };
 
 const BudgetEditorPage = () => {
@@ -94,8 +94,8 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // New state for share link dialog
-    const [shareLink, setShareLink] = useState(''); // State to hold the generated share link
+    const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false);
+    const [shareLink, setShareLink] = useState('');
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
@@ -103,8 +103,9 @@ const BudgetEditorPage = () => {
     const [baseIcmsTotal, setBaseIcmsTotal] = useState(0);
     const [totalIcmsTotal, setTotalIcmsTotal] = useState(0);
 
-    const isFaturado = budget.status_orcamento === 'faturado';
-    const isAprovado = budget.status_orcamento === 'aprovado';
+    // Updated to use the new numeric status values
+    const isFaturado = budget.status === '2';
+    const isAprovado = budget.status === '1';
 
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
@@ -689,8 +690,8 @@ const BudgetEditorPage = () => {
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
                 updated_at: new Date().toISOString(),
-                status_orcamento: newStatus || budget.status_orcamento, // Use newStatus if provided
-                signature_url: signatureUrl || budget.signature_url, // Use signatureUrl if provided
+                status: newStatus || budget.status, // Use newStatus if provided - Changed from status_orcamento
+                signature_url: signatureUrl || budget.signature_url,
             };
 
             delete saveData.cliente_endereco_completo;
@@ -826,10 +827,11 @@ const BudgetEditorPage = () => {
     };
 
     const displayTipo = useMemo(() => {
-        if (budget.status_orcamento === 'faturado') return 'Pedido';
-        if (budget.status_orcamento === 'aprovado') return 'Orçamento Aprovado';
-        return 'Orçamento';
-    }, [budget.status_orcamento]);
+        // Updated to use the new numeric status values
+        if (budget.status === '2') return 'Pedido'; // Faturado
+        if (budget.status === '1') return 'Orçamento Aprovado'; // Aprovado
+        return 'Orçamento'; // Pendente, Alterado, NF-e Emitida
+    }, [budget.status]);
 
     const pageTitle = id ? `Editar ${displayTipo}` : `Novo ${displayTipo}`;
     const configTitle = `Dados do ${displayTipo}`;
@@ -1066,17 +1068,15 @@ const BudgetEditorPage = () => {
                                 <Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} disabled={isFaturado} />
                             </div>
                             <div className="form-group lg:col-span-4">
-                                <Label htmlFor="status_orcamento" className="form-label">Status</Label>
-                                <Select onValueChange={(value) => handleSelectChange('status_orcamento', value)} value={budget.status_orcamento} disabled={isFaturado}>
-                                    <SelectTrigger id="status_orcamento" className="form-select"><SelectValue /></SelectTrigger>
+                                <Label htmlFor="status" className="form-label">Status</Label> {/* Changed id to 'status' */}
+                                <Select onValueChange={(value) => handleSelectChange('status', value)} value={budget.status} disabled={isFaturado}> {/* Changed id to 'status' */}
+                                    <SelectTrigger id="status" className="form-select"><SelectValue /></SelectTrigger> {/* Changed id to 'status' */}
                                     <SelectContent>
-                                        <SelectItem value="pendente">Pendente</SelectItem>
-                                        <SelectItem value="aprovado">Aprovado</SelectItem>
-                                        <SelectItem value="faturado">Faturado</SelectItem>
-                                        <SelectItem value="nf_e_emitida">NF-e Emitida</SelectItem>
-                                        <SelectItem value="cancelado">Cancelado</SelectItem>
-                                        <SelectItem value="alterado">Alterado</SelectItem>
-                                        <SelectItem value="pre_orcamento">Pré-Orçamento</SelectItem>
+                                        <SelectItem value="0">Pendente</SelectItem>
+                                        <SelectItem value="1">Aprovado</SelectItem>
+                                        <SelectItem value="2">Faturado</SelectItem>
+                                        <SelectItem value="3">Alterado</SelectItem>
+                                        <SelectItem value="4">NF-e Emitida</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1122,7 +1122,7 @@ const BudgetEditorPage = () => {
                         <Button 
                             variant="outline" 
                             onClick={handleGenerateShareLink} 
-                            disabled={!id || isFaturado} // Disable if no budget ID or already Faturado
+                            disabled={!id || isFaturado}
                             className="bg-green-500 hover:bg-green-600 text-white"
                         >
                             <Share2 className="w-4 h-4 mr-2" /> Compartilhar Orçamento

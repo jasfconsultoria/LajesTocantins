@@ -5,7 +5,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock, ArrowUp, ArrowDown, FileText, CheckSquare } from 'lucide-react'; // Added FileText and CheckSquare
+import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock, ArrowUp, ArrowDown, FileText, CheckSquare, XCircle } from 'lucide-react'; // Added XCircle for Cancelado
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -46,6 +46,7 @@ const BudgetList = () => {
             const limit = 1000;
 
             while (true) {
+                // Assuming orcamento_summary_view now selects 'status' instead of 'status_orcamento'
                 const { data, error } = await supabase
                     .from('orcamento_summary_view')
                     .select('*')
@@ -108,7 +109,15 @@ const BudgetList = () => {
                 const normalizedNomeCliente = normalizeString(b.nome_cliente);
                 const normalizedNumeroPedido = normalizeString(b.numero_pedido);
                 const normalizedVendedor = normalizeString(b.vendedor);
-                const normalizedStatus = normalizeString(b.status_orcamento); // Include new status in search
+                // Map numeric status to string for search
+                const statusText = {
+                    '0': 'Pendente',
+                    '1': 'Aprovado',
+                    '2': 'Faturado',
+                    '3': 'Alterado',
+                    '4': 'NF-e Emitida',
+                }[b.status] || 'Desconhecido';
+                const normalizedStatus = normalizeString(statusText);
 
                 return (
                     normalizedNomeCliente.includes(normalizedSearchTerm) ||
@@ -126,9 +135,12 @@ const BudgetList = () => {
                 case 'numero_pedido':
                 case 'nome_cliente':
                 case 'vendedor':
-                case 'status_orcamento': // Sort by new status field
                     aValue = normalizeString(a[sortColumn] || '');
                     bValue = normalizeString(b[sortColumn] || '');
+                    break;
+                case 'status': // Sort by new status field
+                    aValue = a.status || '0'; // Default to '0' for sorting
+                    bValue = b.status || '0';
                     break;
                 case 'data_orcamento':
                     aValue = new Date(a.data_orcamento).getTime();
@@ -205,47 +217,35 @@ const BudgetList = () => {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'faturado':
+            case '2': // Faturado
                 return (
                     <span className="status-badge bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
+                        <CheckCircle className="w-3 h-3 mr-1" /> Faturado
                     </span>
                 );
-            case 'aprovado':
+            case '1': // Aprovado
                 return (
                     <span className="status-badge bg-blue-100 text-blue-800">
-                        <CheckSquare className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
+                        <CheckSquare className="w-3 h-3 mr-1" /> Aprovado
                     </span>
                 );
-            case 'nf_e_emitida':
+            case '4': // NF-e Emitida
                 return (
                     <span className="status-badge bg-purple-100 text-purple-800">
                         <FileText className="w-3 h-3 mr-1" /> NF-e Emitida
                     </span>
                 );
-            case 'cancelado':
-                return (
-                    <span className="status-badge bg-red-100 text-red-800">
-                        <XCircle className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
-                    </span>
-                );
-            case 'alterado':
+            case '3': // Alterado
                 return (
                     <span className="status-badge bg-orange-100 text-orange-800">
-                        <Edit className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
+                        <Edit className="w-3 h-3 mr-1" /> Alterado
                     </span>
                 );
-            case 'pre_orcamento':
-                return (
-                    <span className="status-badge bg-gray-100 text-gray-800">
-                        <ClipboardList className="w-3 h-3 mr-1" /> Pré-Orçamento
-                    </span>
-                );
-            case 'pendente':
+            case '0': // Pendente
             default:
                 return (
                     <span className="status-badge bg-yellow-100 text-yellow-800">
-                        <Clock className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
+                        <Clock className="w-3 h-3 mr-1" /> Pendente
                     </span>
                 );
         }
@@ -321,8 +321,8 @@ const BudgetList = () => {
                                     <TableHead className="text-right cursor-pointer" onClick={() => handleSort('total_liquido_calculado')}>
                                         <div className="flex items-center justify-end">Líquido R$ {renderSortIcon('total_liquido_calculado')}</div>
                                     </TableHead>
-                                    <TableHead className="cursor-pointer" onClick={() => handleSort('status_orcamento')}>
-                                        <div className="flex items-center justify-end">Status {renderSortIcon('status_orcamento')}</div>
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('status')}> {/* Changed to 'status' */}
+                                        <div className="flex items-center justify-end">Status {renderSortIcon('status')}</div> {/* Changed to 'status' */}
                                     </TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
@@ -338,7 +338,7 @@ const BudgetList = () => {
                                         <TableCell className="text-right">{formatCurrency(b.total_desconto_itens)}</TableCell>
                                         <TableCell className="text-right">{formatCurrency(b.total_liquido_calculado)}</TableCell>
                                         <TableCell className="text-right">
-                                            {getStatusBadge(b.status_orcamento)}
+                                            {getStatusBadge(b.status)} {/* Changed to b.status */}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">

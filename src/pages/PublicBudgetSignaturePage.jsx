@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle } from 'lucide-react'; // Changed SignatureIcon to PencilLine
+import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SignatureDialog from '@/components/SignatureDialog';
 import { formatCurrency, formatCpfCnpj, capitalizeFirstLetter } from '@/lib/utils';
@@ -19,13 +19,23 @@ const PublicBudgetSignaturePage = () => {
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false);
-  const [unitsMap, setUnitsMap] = useState(new Map()); // Corrected initialization
+  const [unitsMap, setUnitsMap] = useState(new Map());
   const [allMunicipalities, setAllMunicipalities] = useState([]);
-  const [activeCompanyData, setActiveCompanyData] = useState(null); // To store company data for display
+  const [activeCompanyData, setActiveCompanyData] = useState(null);
 
-  const isPendente = budget?.status_orcamento === 'pendente';
-  const isAprovado = budget?.status_orcamento === 'aprovado';
-  const isFaturado = budget?.status_orcamento === 'faturado';
+  // Map numeric status to display string
+  const statusMapDisplay = {
+      '0': 'Pendente',
+      '1': 'Aprovado',
+      '2': 'Faturado',
+      '3': 'Alterado',
+      '4': 'NF-e Emitida',
+  };
+
+  // Updated to use the new numeric status values
+  const isPendente = budget?.status === '0';
+  const isAprovado = budget?.status === '1';
+  const isFaturado = budget?.status === '2';
 
   const fetchUfsAndMunicipalities = useCallback(async () => {
     try {
@@ -180,17 +190,17 @@ const PublicBudgetSignaturePage = () => {
         .from('budget_signatures')
         .getPublicUrl(filePath);
       
-      // Update budget status to 'aprovado' and save signature URL
+      // Update budget status to '1' (Aprovado) and save signature URL
       const { error: updateError } = await supabase
         .from('orcamento')
-        .update({ status_orcamento: 'aprovado', signature_url: publicUrl, updated_at: new Date().toISOString() })
+        .update({ status: '1', signature_url: publicUrl, updated_at: new Date().toISOString() }) // Changed status_orcamento to status and value to '1'
         .eq('id', budget.id)
-        .eq('status_orcamento', 'pendente') // Only update if still pending
+        .eq('status', '0') // Only update if still '0' (Pendente) - Changed status_orcamento to status and value to '0'
         .is('signature_url', null); // Only update if no signature yet
 
       if (updateError) throw updateError;
 
-      setBudget(prev => ({ ...prev, status_orcamento: 'aprovado', signature_url: publicUrl }));
+      setBudget(prev => ({ ...prev, status: '1', signature_url: publicUrl })); // Changed status_orcamento to status and value to '1'
       toast({ title: 'Orçamento Aprovado!', description: 'Assinatura salva e status atualizado para Aprovado.' });
       setIsSignatureDialogOpen(false);
     } catch (error) {
@@ -278,7 +288,7 @@ const PublicBudgetSignaturePage = () => {
                   <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Unit. R$</th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Total R$</th>
                   <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Desc. R$</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-slate-500 uppercase">Líq. R$</th>
+                  <th className="px-4 py-2 whitespace-nowrap text-sm text-right font-semibold text-slate-800">Líq. R$</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-slate-200">
@@ -340,7 +350,7 @@ const PublicBudgetSignaturePage = () => {
             <>
               <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center justify-center gap-2">
                 {isAprovado ? <CheckCircle className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-600" />}
-                Status do Orçamento: <span className={`ml-2 ${isAprovado ? 'text-green-600' : 'text-red-600'}`}>{capitalizeFirstLetter(budget?.status_orcamento || 'Desconhecido')}</span>
+                Status do Orçamento: <span className={`ml-2 ${isAprovado ? 'text-green-600' : 'text-red-600'}`}>{statusMapDisplay[budget?.status] || 'Desconhecido'}</span> {/* Updated to use statusMapDisplay */}
               </h3>
               {budget.signature_url && (
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md mx-auto">
@@ -361,7 +371,7 @@ const PublicBudgetSignaturePage = () => {
         setIsOpen={setIsSignatureDialogOpen}
         onSaveSignature={handleSaveSignature}
         budgetNumber={budget.numero_pedido || budget.id}
-        isFaturado={isFaturado} // Pass isFaturado to disable signing if already faturado
+        isFaturado={isFaturado}
       />
     </div>
   );
