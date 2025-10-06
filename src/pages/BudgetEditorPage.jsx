@@ -383,12 +383,21 @@ const BudgetEditorPage = () => {
             return;
         }
 
+        const companyCrt = parseInt(activeCompany.crt, 10); // Ensure CRT is a number
+
+        // Only calculate if CRT is 3 (Regime Normal)
+        if (companyCrt === 1 || companyCrt === 2) { // Simples Nacional or Simples Nacional - excesso
+            setBaseIcmsTotal(0);
+            setTotalIcmsTotal(0);
+            return;
+        }
+
         let currentBaseIcms = 0;
         let currentTotalIcms = 0;
 
         const companyUf = activeCompany.uf;
         const clientUf = selectedClientData.uf;
-        const companyCrt = parseInt(activeCompany.crt, 10); // Ensure CRT is a number
+        
 
         compositions.forEach(comp => {
             const productSubtotal = (comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0);
@@ -401,17 +410,9 @@ const BudgetEditorPage = () => {
             if (matchingBaseCalculo) {
                 const aliquotaAplicada = (matchingBaseCalculo.aliquota_icms_value + matchingBaseCalculo.aliquota_fecp_value - matchingBaseCalculo.aliquota_reducao_value) / 100; // Convert to decimal
 
-                // Apply CRT logic
-                if (companyCrt === 1 || companyCrt === 2) { // Simples Nacional or Simples Nacional - excesso
-                    // For Simples Nacional, ICMS is generally not calculated on the invoice itself.
-                    // However, the request implies calculation based on 'aliquota aplicada'.
-                    // We will calculate the theoretical ICMS for internal tracking.
-                    currentBaseIcms += productSubtotal;
-                    currentTotalIcms += productSubtotal * aliquotaAplicada;
-                } else if (companyCrt === 3) { // Regime Normal
-                    currentBaseIcms += productSubtotal;
-                    currentTotalIcms += productSubtotal * aliquotaAplicada;
-                }
+                // Apply CRT logic (only Regime Normal will reach here due to early return)
+                currentBaseIcms += productSubtotal;
+                currentTotalIcms += productSubtotal * aliquotaAplicada;
             }
         });
 
