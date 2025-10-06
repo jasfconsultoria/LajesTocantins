@@ -10,7 +10,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const SelectSearchCfop = ({
-  value, // current selected CFOP object { id: bigint, cfop: string, descricao: string } or null
+  value, // current selected CFOP object { id: bigint, cfop: string, descricao: string, tipo_operacao: string } or null
   onValueChange, // function to call with the selected CFOP object or null
   disabled,
   placeholder = "Selecione o CFOP",
@@ -28,7 +28,7 @@ const SelectSearchCfop = ({
   // Update searchTerm when external value changes
   useEffect(() => {
     if (value && value.cfop && value.descricao) {
-      setSearchTerm(`${value.cfop} - ${value.descricao}`);
+      setSearchTerm(`${value.cfop} - ${value.descricao} (${value.tipo_operacao})`);
     } else {
       setSearchTerm('');
     }
@@ -39,7 +39,7 @@ const SelectSearchCfop = ({
     try {
       const { data, error } = await supabase
         .from('cfop')
-        .select('id, cfop, descricao') // Seleciona o ID também
+        .select('id, cfop, descricao, tipo_operacao') // Seleciona o ID e tipo_operacao também
         .order('cfop', { ascending: true });
       
       if (error) throw error;
@@ -65,13 +65,16 @@ const SelectSearchCfop = ({
     return allCfops.filter(c => {
       const normalizedCfopCode = normalizeString(c.cfop);
       const normalizedDescricao = normalizeString(c.descricao);
-      return normalizedCfopCode.includes(normalizedSearchTerm) || normalizedDescricao.includes(normalizedSearchTerm);
+      const normalizedTipoOperacao = normalizeString(c.tipo_operacao || ''); // Include in search
+      return normalizedCfopCode.includes(normalizedSearchTerm) || 
+             normalizedDescricao.includes(normalizedSearchTerm) ||
+             normalizedTipoOperacao.includes(normalizedSearchTerm);
     });
   }, [allCfops, searchTerm]);
 
   const handleSelect = (cfopObject) => {
     onValueChange(cfopObject); // Passa o objeto completo, incluindo o ID
-    setSearchTerm(`${cfopObject.cfop} - ${cfopObject.descricao}`);
+    setSearchTerm(`${cfopObject.cfop} - ${cfopObject.descricao} (${cfopObject.tipo_operacao})`);
     setIsOpen(false);
   };
 
@@ -99,8 +102,8 @@ const SelectSearchCfop = ({
         setIsOpen(false);
         if (!value && searchTerm) {
             setSearchTerm('');
-        } else if (value && searchTerm !== `${value.cfop} - ${value.descricao}`) {
-            setSearchTerm(`${value.cfop} - ${value.descricao}`);
+        } else if (value && searchTerm !== `${value.cfop} - ${value.descricao} (${value.tipo_operacao})`) {
+            setSearchTerm(`${value.cfop} - ${value.descricao} (${value.tipo_operacao})`);
         }
       }
     }, 200);
@@ -112,8 +115,8 @@ const SelectSearchCfop = ({
         setIsOpen(false);
         if (!value && searchTerm) {
             setSearchTerm('');
-        } else if (value && searchTerm !== `${value.cfop} - ${value.descricao}`) {
-            setSearchTerm(`${value.cfop} - ${value.descricao}`);
+        } else if (value && searchTerm !== `${value.cfop} - ${value.descricao} (${value.tipo_operacao})`) {
+            setSearchTerm(`${value.cfop} - ${value.descricao} (${value.tipo_operacao})`);
         }
       }
     };
@@ -170,7 +173,7 @@ const SelectSearchCfop = ({
                   >
                     <div className="flex items-center text-sm font-medium text-slate-800">
                       <FileText className="w-3 h-3 mr-2 text-slate-500 flex-shrink-0" />
-                      <span className="truncate">{cfopObj.cfop} - {cfopObj.descricao}</span>
+                      <span className="truncate">{cfopObj.cfop} - {cfopObj.descricao} ({cfopObj.tipo_operacao})</span>
                     </div>
                   </button>
                 ))

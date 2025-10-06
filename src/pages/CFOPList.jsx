@@ -38,7 +38,7 @@ const CFOPList = () => {
         try {
             const { data, error } = await supabase
                 .from('cfop')
-                .select('*')
+                .select('*, tipo_operacao') // Select tipo_operacao
                 .order('cfop', { ascending: true });
             
             if (error) throw error;
@@ -84,7 +84,10 @@ const CFOPList = () => {
             currentFilteredCfops = cfops.filter(c => {
                 const normalizedCfop = normalizeString(c.cfop || '');
                 const normalizedDescricao = normalizeString(c.descricao || '');
-                return normalizedCfop.includes(normalizedSearchTerm) || normalizedDescricao.includes(normalizedSearchTerm);
+                const normalizedTipoOperacao = normalizeString(c.tipo_operacao || ''); // Include in search
+                return normalizedCfop.includes(normalizedSearchTerm) || 
+                       normalizedDescricao.includes(normalizedSearchTerm) ||
+                       normalizedTipoOperacao.includes(normalizedSearchTerm);
             });
         }
 
@@ -94,6 +97,7 @@ const CFOPList = () => {
             switch (sortColumn) {
                 case 'cfop':
                 case 'descricao':
+                case 'tipo_operacao': // Include in sort
                     aValue = normalizeString(a[sortColumn] || '');
                     bValue = normalizeString(b[sortColumn] || '');
                     break;
@@ -169,7 +173,7 @@ const CFOPList = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                         type="text"
-                        placeholder="Buscar por CFOP ou descrição..."
+                        placeholder="Buscar por CFOP, descrição ou tipo de operação..."
                         className="pl-10"
                         value={searchTerm}
                         onChange={(e) => {
@@ -193,6 +197,9 @@ const CFOPList = () => {
                                 <TableHead className="cursor-pointer" onClick={() => handleSort('descricao')}>
                                     <div className="flex items-center">Descrição {renderSortIcon('descricao')}</div>
                                 </TableHead>
+                                <TableHead className="cursor-pointer" onClick={() => handleSort('tipo_operacao')}>
+                                    <div className="flex items-center">Tipo de Operação {renderSortIcon('tipo_operacao')}</div>
+                                </TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -201,6 +208,7 @@ const CFOPList = () => {
                                 <TableRow key={c.cfop}>
                                     <TableCell className="font-medium">{c.cfop}</TableCell>
                                     <TableCell>{c.descricao}</TableCell>
+                                    <TableCell>{c.tipo_operacao}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => navigate(`/app/notas/cfop/${c.cfop}/edit`)}>

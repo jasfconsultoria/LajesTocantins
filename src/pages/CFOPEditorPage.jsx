@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -8,15 +10,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components
 import { logAction } from '@/lib/log';
 
 const initialCfopState = {
     cfop: '',
     descricao: '',
+    tipo_operacao: 'Saída', // Default value for new CFOPs
 };
 
 const CFOPEditorPage = () => {
-    const { cfop: cfopCodeParam } = useParams(); // Renomeado para evitar conflito com o estado
+    const { cfop: cfopCodeParam } = useParams();
     const navigate = useNavigate();
     const { user } = useAuth();
     const { toast } = useToast();
@@ -34,7 +38,7 @@ const CFOPEditorPage = () => {
         try {
             const { data, error } = await supabase
                 .from('cfop')
-                .select('*')
+                .select('*, tipo_operacao') // Select tipo_operacao
                 .eq('cfop', cfopCodeParam)
                 .single();
             if (error) throw error;
@@ -53,6 +57,10 @@ const CFOPEditorPage = () => {
     const handleInputChange = (e) => {
         const { id, value } = e.target;
         setCfopData(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSelectChange = (value) => { // For Select component
+        setCfopData(prev => ({ ...prev, tipo_operacao: value }));
     };
 
     const handleSave = async () => {
@@ -135,6 +143,18 @@ const CFOPEditorPage = () => {
                         />
                     </div>
                     <div className="form-group">
+                        <Label htmlFor="tipo_operacao" className="form-label">Tipo de Operação *</Label>
+                        <Select onValueChange={handleSelectChange} value={cfopData.tipo_operacao}>
+                            <SelectTrigger id="tipo_operacao" className="form-select">
+                                <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Entrada">Entrada</SelectItem>
+                                <SelectItem value="Saída">Saída</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="form-group md:col-span-2">
                         <Label htmlFor="descricao" className="form-label">Descrição *</Label>
                         <Textarea 
                             id="descricao" 

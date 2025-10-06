@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 const SelectSearchNatureza = ({
   value, // current selected nature description (string)
-  onValueChange, // function to call with the selected CFOP object { cfop: string, descricao: string } or null
+  onValueChange, // function to call with the selected CFOP object { cfop: string, descricao: string, tipo_operacao: string } or null
   disabled,
   placeholder = "Selecione a Natureza da Operação",
   required = false,
@@ -41,7 +41,7 @@ const SelectSearchNatureza = ({
     try {
       const { data, error } = await supabase
         .from('cfop')
-        .select('cfop, descricao')
+        .select('cfop, descricao, tipo_operacao') // Select tipo_operacao
         .order('cfop', { ascending: true });
       
       if (error) throw error;
@@ -63,10 +63,8 @@ const SelectSearchNatureza = ({
     const normalizedSearchTerm = normalizeString(searchTerm);
     let currentCfops = allCfops;
 
-    // 1. Filter for "Venda" operations (CFOPs starting with 5, 6, or 7)
-    currentCfops = currentCfops.filter(c => 
-        c.cfop.startsWith('5') || c.cfop.startsWith('6') || c.cfop.startsWith('7')
-    );
+    // 1. Filter for "Saída" operations (CFOPs starting with 5, 6, or 7)
+    currentCfops = currentCfops.filter(c => c.tipo_operacao === 'Saída');
 
     // 2. Apply location-based filtering if clientUf and companyUf are available
     if (clientUf && companyUf) {
@@ -79,7 +77,7 @@ const SelectSearchNatureza = ({
         }
     }
     // If clientUf or companyUf is not available, no specific geographic filter is applied,
-    // so all sales CFOPs (5xxx, 6xxx, 7xxx) remain.
+    // so all sales CFOPs (5xxx, 6xxx) remain.
 
     // 3. Apply search term filter
     if (normalizedSearchTerm) {
@@ -197,7 +195,7 @@ const SelectSearchNatureza = ({
                   >
                     <div className="flex items-center text-sm font-medium text-slate-800">
                       <FileText className="w-3 h-3 mr-2 text-slate-500 flex-shrink-0" />
-                      <span className="truncate">{cfopObj.cfop} - {cfopObj.descricao}</span>
+                      <span className="truncate">{cfopObj.cfop} - {cfopObj.descricao} ({cfopObj.tipo_operacao})</span>
                     </div>
                   </button>
                 ))
