@@ -42,10 +42,20 @@ const CompanyList = () => {
 
     const ITEMS_PER_PAGE = 10;
 
+    const getCrtDescription = (crtCode) => {
+        switch (parseInt(crtCode, 10)) {
+            case 1: return 'Simples Nacional';
+            case 2: return 'Simples Nacional - Excesso';
+            case 3: return 'Regime Normal';
+            default: return 'Desconhecido';
+        }
+    };
+
     const fetchCompanies = useCallback(async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase.functions.invoke('get-all-companies');
+            // Incluindo 'crt' na seleção
+            const { data, error } = await supabase.from('emitente').select('id, razao_social, cnpj, municipio, uf, crt');
             
             if (error) throw error;
             setCompanies(data);
@@ -155,6 +165,7 @@ const CompanyList = () => {
                                 <TableHead>Razão Social</TableHead>
                                 <TableHead>CNPJ</TableHead>
                                 <TableHead>Cidade/UF</TableHead>
+                                <TableHead>Regime Tributário</TableHead> {/* Nova coluna */}
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -164,6 +175,7 @@ const CompanyList = () => {
                                     <TableCell className="font-medium">{c.razao_social}</TableCell>
                                     <TableCell>{c.cnpj}</TableCell>
                                     <TableCell>{c.municipio}/{c.uf}</TableCell>
+                                    <TableCell>{getCrtDescription(c.crt)}</TableCell> {/* Nova célula */}
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             {/* Removed UsersIcon button */}
