@@ -96,7 +96,7 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // New state for share link dialog
     const [shareLink, setShareLink] = useState(''); // State to hold the generated share link
-    const [unitsMap, setUnitsMap] = useState(new Map()); // Corrected initialization
+    const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
@@ -1112,13 +1112,7 @@ const BudgetEditorPage = () => {
                         <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="lg:col-span-5 flex justify-end space-x-2">
-                        <Select defaultValue="1_via" disabled={isFaturado}>
-                            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Tipo Impressão" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="1_via">1ª Via</SelectItem>
-                                <SelectItem value="2_via">2ª Via</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        {/* Removido o Select de 'Tipo Impressão' */}
                         <Button variant="outline" onClick={() => setIsDiscountDialogOpen(true)} disabled={isFaturado || !id || compositions.length === 0}>
                             <Percent className="w-4 h-4 mr-2" /> Desconto
                         </Button>
