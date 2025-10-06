@@ -30,8 +30,9 @@ import CFOPList from '@/pages/CFOPList';
 import CFOPEditorPage from '@/pages/CFOPEditorPage';
 import IcmsAliquotaList from '@/pages/IcmsAliquotaList';
 import IcmsAliquotaEditorPage from '@/pages/IcmsAliquotaEditorPage';
-import CstCsosnList from '@/pages/CstCsosnList'; // New import
-import CstCsosnEditorPage from '@/pages/CstCsosnEditorPage'; // New import
+import CstCsosnList from '@/pages/CstCsosnList';
+import CstCsosnEditorPage from '@/pages/CstCsosnEditorPage';
+import PublicBudgetSignaturePage from '@/pages/PublicBudgetSignaturePage'; // New import
 
 const ProtectedRoute = () => {
   const { session, loading } = useAuth();
@@ -51,6 +52,10 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <LandingPage />,
+  },
+  {
+    path: "/public/budgets/:id/sign", // Public route for signature
+    element: <PublicBudgetSignaturePage />,
   },
   {
     path: "/app",
@@ -95,9 +100,9 @@ const router = createBrowserRouter([
           { path: "notas/icms-aliquotas", element: <IcmsAliquotaList /> },
           { path: "notas/icms-aliquotas/new", element: <IcmsAliquotaEditorPage /> },
           { path: "notas/icms-aliquotas/:id/edit", element: <IcmsAliquotaEditorPage /> },
-          { path: "notas/cst", element: <CstCsosnList /> }, // New CST/CSOSN list route
-          { path: "notas/cst/new", element: <CstCsosnEditorPage /> }, // New CST/CSOSN create route
-          { path: "notas/cst/:id/edit", element: <CstCsosnEditorPage /> }, // New CST/CSOSN edit route
+          { path: "notas/cst", element: <CstCsosnList /> },
+          { path: "notas/cst/new", element: <CstCsosnEditorPage /> },
+          { path: "notas/cst/:id/edit", element: <CstCsosnEditorPage /> },
 
           { path: "users", element: <UserManagement /> },
           { path: "sefaz", element: <SefazSettings /> },

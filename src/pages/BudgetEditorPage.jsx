@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, Signature as SignatureIcon } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, Signature as SignatureIcon, Copy } from 'lucide-react'; // Added Copy icon
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +17,6 @@ import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
 import SelectSearchNatureza from '@/components/SelectSearchNatureza';
 import DiscountDialog from '@/components/DiscountDialog';
-import SignatureDialog from '@/components/SignatureDialog'; // Import the new SignatureDialog
 import { v4 as uuidv4 } from 'uuid';
 import {
   Table,
@@ -27,6 +26,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'; // Import Dialog components
 
 // Helper function to get date + N days in YYYY-MM-DD format
 const getDatePlusDays = (days) => {
@@ -87,7 +94,8 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false); // New state for signature dialog
+    const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // New state for share link dialog
+    const [shareLink, setShareLink] = useState(''); // State to hold the generated share link
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
@@ -794,40 +802,26 @@ const BudgetEditorPage = () => {
         }
     };
 
-    const handleSaveSignature = async (dataUrl) => {
-        setSaving(true);
+    const handleGenerateShareLink = () => {
+        if (!id) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Salve o orçamento primeiro para gerar o link de compartilhamento.' });
+            return;
+        }
+        // Assuming your app is hosted at a base URL, e.g., 'https://your-app.com'
+        // You might need to configure this base URL in an environment variable
+        const baseUrl = window.location.origin; 
+        const link = `${baseUrl}/public/budgets/${id}/sign`;
+        setShareLink(link);
+        setIsShareLinkDialogOpen(true);
+    };
+
+    const handleCopyLink = async () => {
         try {
-            const fileExt = 'png';
-            const fileName = `${uuidv4()}.${fileExt}`;
-            const filePath = `${user.id}/${budget.id}/${fileName}`;
-
-            const response = await fetch(dataUrl);
-            const blob = await response.blob();
-
-            const { error: uploadError } = await supabase.storage
-                .from('budget_signatures')
-                .upload(filePath, blob, {
-                    cacheControl: '3600',
-                    upsert: false,
-                    contentType: 'image/png',
-                });
-
-            if (uploadError) throw uploadError;
-
-            const { data: { publicUrl } } = supabase.storage
-                .from('budget_signatures')
-                .getPublicUrl(filePath);
-            
-            // Update budget status to 'aprovado' and save signature URL
-            await handleSave('aprovado', publicUrl);
-            setBudget(prev => ({ ...prev, status_orcamento: 'aprovado', signature_url: publicUrl }));
-
-            toast({ title: 'Orçamento Aprovado!', description: 'Assinatura salva e status atualizado para Aprovado.' });
-        } catch (error) {
-            console.error("Error uploading signature:", error);
-            toast({ variant: 'destructive', title: 'Erro ao salvar assinatura', description: error.message || 'Ocorreu um erro inesperado ao salvar a assinatura.' });
-        } finally {
-            setSaving(false);
+            await navigator.clipboard.writeText(shareLink);
+            toast({ title: 'Link Copiado!', description: 'O link de compartilhamento foi copiado para a área de transferência.' });
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+            toast({ variant: 'destructive', title: 'Erro ao Copiar', description: 'Não foi possível copiar o link. Tente manualmente.' });
         }
     };
 
@@ -1130,8 +1124,8 @@ const BudgetEditorPage = () => {
                         </Button>
                         <Button 
                             variant="outline" 
-                            onClick={() => setIsSignatureDialogOpen(true)} 
-                            disabled={!id || isFaturado || isAprovado} // Disable if no budget ID, already Faturado or Aprovado
+                            onClick={handleGenerateShareLink} 
+                            disabled={!id || isFaturado} // Disable if no budget ID or already Faturado
                             className="bg-green-500 hover:bg-green-600 text-white"
                         >
                             <Share2 className="w-4 h-4 mr-2" /> Compartilhar Orçamento
@@ -1179,13 +1173,42 @@ const BudgetEditorPage = () => {
                 isFaturado={isFaturado}
             />
 
-            <SignatureDialog
-                isOpen={isSignatureDialogOpen}
-                setIsOpen={setIsSignatureDialogOpen}
-                onSaveSignature={handleSaveSignature}
-                budgetNumber={budget.numero_pedido}
-                isFaturado={isFaturado || isAprovado}
-            />
+            {/* Share Link Dialog */}
+            <Dialog open={isShareLinkDialogOpen} onOpenChange={setIsShareLinkDialogOpen}>
+                <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Share2 className="w-5 h-5 text-blue-600" /> Compartilhar Orçamento
+                        </DialogTitle>
+                        <DialogDescription>
+                            Copie o link abaixo para compartilhar este orçamento com o cliente para assinatura.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="share-link" className="sr-only">Link de Compartilhamento</Label>
+                        <div className="flex space-x-2">
+                            <Input
+                                id="share-link"
+                                type="text"
+                                value={shareLink}
+                                readOnly
+                                className="flex-1"
+                            />
+                            <Button onClick={handleCopyLink} className="shrink-0">
+                                <Copy className="w-4 h-4 mr-2" /> Copiar
+                            </Button>
+                        </div>
+                        <p className="text-sm text-slate-500 mt-2">
+                            O cliente poderá visualizar e assinar o orçamento através deste link.
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsShareLinkDialogOpen(false)}>
+                            Fechar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
