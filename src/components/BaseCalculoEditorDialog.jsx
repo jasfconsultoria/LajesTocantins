@@ -89,7 +89,7 @@ const BaseCalculoEditorDialog = ({ isOpen, setIsOpen, productId, activeCompanyCn
             const saveData = {
                 id_produto: productId,
                 id_cst_csosn: formData.id_cst_csosn,
-                id_cfop: formData.id_cfop,
+                id_cfop: formData.id_cfop, // Garante que é uma string
                 id_aliquota: formData.id_aliquota,
                 updated_at: new Date().toISOString(),
             };
