@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ import SelectSearchClient from '@/components/SelectSearchClient';
 import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
 import SelectSearchNatureza from '@/components/SelectSearchNatureza';
+import DiscountDialog from '@/components/DiscountDialog'; // Import the new DiscountDialog
 import { v4 as uuidv4 } from 'uuid';
 import {
   Table,
@@ -83,6 +84,7 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
+    const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false); // New state for discount dialog
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null); // New state for selected client's full data
@@ -625,6 +627,45 @@ const BudgetEditorPage = () => {
         );
     };
 
+    const handleApplyDiscount = useCallback(async (totalDiscountAmount, totalDiscountPercentage) => {
+        if (totalDiscountAmount === 0 && totalDiscountPercentage === 0) {
+            toast({ title: "Nenhum desconto aplicado", description: "O valor do desconto é zero." });
+            return;
+        }
+
+        const currentTotalItemsValue = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
+
+        if (currentTotalItemsValue === 0) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não há itens no orçamento para aplicar o desconto.' });
+            return;
+        }
+
+        let finalDiscountToApply = totalDiscountAmount;
+
+        // If percentage was the primary input, calculate amount from it
+        if (totalDiscountAmount === 0 && totalDiscountPercentage > 0) {
+            finalDiscountToApply = (currentTotalItemsValue * totalDiscountPercentage) / 100;
+        }
+
+        if (finalDiscountToApply > currentTotalItemsValue) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'O desconto não pode ser maior que o valor total dos itens.' });
+            return;
+        }
+
+        const updatedCompositions = compositions.map(comp => {
+            const itemValue = comp.quantidade * comp.valor_venda;
+            if (itemValue === 0) {
+                return { ...comp, desconto_total: 0 };
+            }
+            const proportionalDiscount = (itemValue / currentTotalItemsValue) * finalDiscountToApply;
+            return { ...comp, desconto_total: proportionalDiscount };
+        });
+
+        setCompositions(updatedCompositions);
+        toast({ title: "Desconto Aplicado!", description: `Desconto de ${formatCurrency(finalDiscountToApply)} aplicado aos itens.` });
+    }, [compositions, toast]);
+
+
     const handleSave = async () => {
         if (!activeCompanyId) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Nenhuma empresa ativa selecionada para salvar o orçamento.' });
@@ -685,6 +726,21 @@ const BudgetEditorPage = () => {
                         if (compInsertError) {
                             console.error("Error inserting composition item (BudgetEditorPage):", compInsertError);
                             throw compInsertError;
+                        }
+                    } else {
+                        // Update existing compositions
+                        const { error: compUpdateError } = await supabase
+                            .from('orcamento_composicao')
+                            .update({
+                                quantidade: comp.quantidade,
+                                valor_venda: comp.valor_venda,
+                                desconto_total: comp.desconto_total,
+                                updated_at: new Date().toISOString(),
+                            })
+                            .eq('id', comp.id);
+                        if (compUpdateError) {
+                            console.error("Error updating composition item (BudgetEditorPage):", compUpdateError);
+                            throw compUpdateError;
                         }
                     }
                 }
@@ -1035,7 +1091,9 @@ const BudgetEditorPage = () => {
                                 <SelectItem value="2_via">2ª Via</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" onClick={() => toast({ title: "Em desenvolvimento", description: "Funcionalidade de Desconto será adicionada em breve!" })} disabled={isFaturado}>Desconto</Button>
+                        <Button variant="outline" onClick={() => setIsDiscountDialogOpen(true)} disabled={isFaturado || !id || compositions.length === 0}> {/* Open discount dialog */}
+                            <Percent className="w-4 h-4 mr-2" /> Desconto
+                        </Button>
                         <Button onClick={handleSave} className="save-button" disabled={saving || isFaturado}>
                             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                             Salvar Orçamento
@@ -1057,6 +1115,14 @@ const BudgetEditorPage = () => {
                 setIsOpen={setIsProductSearchDialogOpen}
                 onSelectProduct={handleSelectProduct}
                 activeCompanyId={activeCompanyId}
+            />
+
+            <DiscountDialog
+                isOpen={isDiscountDialogOpen}
+                setIsOpen={setIsDiscountDialogOpen}
+                totalOrderValue={totalDoPedido} // Pass the total value of the order
+                onApplyDiscount={handleApplyDiscount}
+                isFaturado={isFaturado}
             />
         </div>
     );
