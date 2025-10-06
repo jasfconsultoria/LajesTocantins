@@ -42,11 +42,36 @@ const BaseCalculoEditorDialog = ({ isOpen, setIsOpen, productId, activeCompanyCn
     useEffect(() => {
         if (isOpen) {
             if (initialData) {
+                // Constrói os objetos aninhados a partir dos dados planos da RPC
+                const cstCsosnObj = initialData.id_cst_csosn ? {
+                    id: initialData.id_cst_csosn,
+                    cst_csosn: initialData.cst_csosn_code,
+                    descricao: initialData.cst_csosn_description,
+                    // Adicione 'origem' e 'resumo' se a RPC os retornar e o SelectSearch precisar
+                    // origem: initialData.cst_csosn_origem,
+                    // resumo: initialData.cst_csosn_resumo,
+                } : null;
+
+                const cfopObj = initialData.id_cfop ? {
+                    id: initialData.id_cfop,
+                    cfop: initialData.cfop_code,
+                    descricao: initialData.cfop_description,
+                } : null;
+
+                const aliquotaObj = initialData.id_aliquota ? {
+                    id: initialData.id_aliquota,
+                    uf_origem: initialData.aliquota_uf_origem,
+                    uf_destino: initialData.aliquota_uf_destino,
+                    aliquota_icms: initialData.aliquota_icms_value,
+                    aliquota_fecp: initialData.aliquota_fecp_value,
+                    aliquota_reducao: initialData.aliquota_reducao_value,
+                } : null;
+
                 setFormData({
                     ...initialData,
-                    cst_csosn_obj: initialData.cst_csosn_obj || null,
-                    cfop_obj: initialData.cfop_obj || null,
-                    aliquota_obj: initialData.aliquota_obj || null,
+                    cst_csosn_obj: cstCsosnObj,
+                    cfop_obj: cfopObj,
+                    aliquota_obj: aliquotaObj,
                 });
             } else {
                 setFormData({ ...initialBaseCalculoState, id_produto: productId });
