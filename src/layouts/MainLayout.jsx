@@ -6,7 +6,7 @@ import {
   HelpCircle, History, UserCheck, Menu, X,
   DollarSign, ArrowUpCircle, ArrowDownCircle, // Financeiro icons
   Warehouse, ArrowRightToLine, ArrowLeftToLine, // Estoque icons
-  Receipt, FileText // Notas icons
+  Receipt, FileText, Percent // Notas icons, added Percent
 } from 'lucide-react'; // Importa todos os ícones necessários
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
@@ -71,7 +71,8 @@ function MainLayout() {
       subItems: [
         { to: '/app/notas/nfe', label: 'NF-e', icon: FileText },
         { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt },
-        { to: '/app/notas/cfop', label: 'CFOP', icon: FileText }, // New CFOP submenu item
+        { to: '/app/notas/cfop', label: 'CFOP', icon: FileText },
+        { to: '/app/notas/icms-aliquotas', label: 'Alíquota ICMS', icon: Percent }, // New ICMS Aliquota submenu item
       ]
     },
 

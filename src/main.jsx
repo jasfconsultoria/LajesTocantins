@@ -26,8 +26,10 @@ import ProductEditorPage from '@/pages/ProductEditorPage';
 import BudgetList from '@/pages/BudgetList';
 import BudgetEditorPage from '@/pages/BudgetEditorPage';
 import NotImplementedPage from '@/pages/NotImplementedPage';
-import CFOPList from '@/pages/CFOPList'; // New import
-import CFOPEditorPage from '@/pages/CFOPEditorPage'; // New import
+import CFOPList from '@/pages/CFOPList';
+import CFOPEditorPage from '@/pages/CFOPEditorPage';
+import IcmsAliquotaList from '@/pages/IcmsAliquotaList'; // New import
+import IcmsAliquotaEditorPage from '@/pages/IcmsAliquotaEditorPage'; // New import
 
 const ProtectedRoute = () => {
   const { session, loading } = useAuth();
@@ -85,9 +87,12 @@ const router = createBrowserRouter([
           // New Notas Routes
           { path: "notas/nfe", element: <NotImplementedPage title="NF-e" /> },
           { path: "notas/nfce", element: <NotImplementedPage title="NFC-e" /> },
-          { path: "notas/cfop", element: <CFOPList /> }, // New CFOP list route
-          { path: "notas/cfop/new", element: <CFOPEditorPage /> }, // New CFOP create route
-          { path: "notas/cfop/:cfop/edit", element: <CFOPEditorPage /> }, // New CFOP edit route
+          { path: "notas/cfop", element: <CFOPList /> },
+          { path: "notas/cfop/new", element: <CFOPEditorPage /> },
+          { path: "notas/cfop/:cfop/edit", element: <CFOPEditorPage /> },
+          { path: "notas/icms-aliquotas", element: <IcmsAliquotaList /> }, // New ICMS Aliquota list route
+          { path: "notas/icms-aliquotas/new", element: <IcmsAliquotaEditorPage /> }, // New ICMS Aliquota create route
+          { path: "notas/icms-aliquotas/:id/edit", element: <IcmsAliquotaEditorPage /> }, // New ICMS Aliquota edit route
 
           { path: "users", element: <UserManagement /> },
           { path: "sefaz", element: <SefazSettings /> },
