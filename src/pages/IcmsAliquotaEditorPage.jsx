@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -48,7 +48,13 @@ const IcmsAliquotaEditorPage = () => {
     }, [toast]);
 
     const fetchAliquota = useCallback(async () => {
+        if (!activeCompany?.cnpj) { // Ensure activeCompany is loaded
+            setLoading(false);
+            return;
+        }
+
         if (!isEditing) {
+            setAliquota(prev => ({ ...prev, uf_origem: activeCompany.uf || '' })); // Pre-fill uf_origem for new entries
             setLoading(false);
             return;
         }
@@ -66,7 +72,7 @@ const IcmsAliquotaEditorPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, isEditing, toast]);
+    }, [id, isEditing, toast, activeCompany]); // Added activeCompany to dependencies
 
     useEffect(() => {
         fetchUfs();
@@ -165,6 +171,13 @@ const IcmsAliquotaEditorPage = () => {
         }
     };
 
+    const aliquotaAplicada = useMemo(() => {
+        const icms = aliquota.aliquota_icms || 0;
+        const fecp = aliquota.aliquota_fecp || 0;
+        const reducao = aliquota.aliquota_reducao || 0;
+        return (icms + fecp - reducao).toFixed(2);
+    }, [aliquota.aliquota_icms, aliquota.aliquota_fecp, aliquota.aliquota_reducao]);
+
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
     }
@@ -204,7 +217,7 @@ const IcmsAliquotaEditorPage = () => {
                 <div className="form-grid pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="form-group">
                         <Label htmlFor="uf_origem" className="form-label">UF de Origem *</Label>
-                        <Select onValueChange={(value) => handleSelectChange('uf_origem', value)} value={aliquota.uf_origem} disabled={isEditing}>
+                        <Select onValueChange={(value) => handleSelectChange('uf_origem', value)} value={aliquota.uf_origem} disabled={isEditing || true}>
                             <SelectTrigger id="uf_origem" className="form-select">
                                 <SelectValue placeholder="Selecione a UF" />
                             </SelectTrigger>
@@ -252,7 +265,7 @@ const IcmsAliquotaEditorPage = () => {
                             placeholder="Ex: 1.00"
                         />
                     </div>
-                    <div className="form-group md:col-span-2">
+                    <div className="form-group">
                         <Label htmlFor="aliquota_reducao" className="form-label">Alíquota Redução BC (%) *</Label>
                         <Input 
                             id="aliquota_reducao" 
@@ -262,6 +275,17 @@ const IcmsAliquotaEditorPage = () => {
                             value={aliquota.aliquota_reducao} 
                             onChange={handleInputChange} 
                             placeholder="Ex: 0.00"
+                        />
+                    </div>
+                    <div className="form-group">
+                        <Label htmlFor="aliquota_aplicada" className="form-label">Alíquota Aplicada (%)</Label>
+                        <Input 
+                            id="aliquota_aplicada" 
+                            type="text" 
+                            className="form-input" 
+                            value={aliquotaAplicada} 
+                            readOnly 
+                            disabled 
                         />
                     </div>
                 </div>
