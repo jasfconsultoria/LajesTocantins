@@ -1,3 +1,4 @@
+UF Destino) como a primeira coluna na lista de bases de cálculo.">
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -113,6 +114,7 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>Alíquota</TableHead> {/* Nova coluna */}
                                 <TableHead>CST/CSOSN</TableHead>
                                 <TableHead>CFOP</TableHead>
                                 <TableHead className="text-right">Alíquota ICMS (%)</TableHead>
@@ -125,7 +127,7 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
                         <TableBody>
                             {baseCalculoEntries.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-slate-500 py-4">
+                                    <TableCell colSpan={8} className="text-center text-slate-500 py-4"> {/* Colspan ajustado */}
                                         Nenhuma base de cálculo configurada para este produto.
                                     </TableCell>
                                 </TableRow>
@@ -134,6 +136,9 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
                                     const aliquotaAplicada = (entry.aliquota_icms_value + entry.aliquota_fecp_value - entry.aliquota_reducao_value).toFixed(2);
                                     return (
                                         <TableRow key={entry.id}>
+                                            <TableCell className="font-medium">
+                                                {entry.aliquota_uf_origem} {'->'} {entry.aliquota_uf_destino}
+                                            </TableCell> {/* Nova célula */}
                                             <TableCell className="font-medium">{entry.cst_csosn_code}</TableCell>
                                             <TableCell>{entry.cfop_code}</TableCell>
                                             <TableCell className="text-right">{entry.aliquota_icms_value.toFixed(2)}</TableCell>
