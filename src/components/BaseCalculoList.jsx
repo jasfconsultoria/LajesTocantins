@@ -1,4 +1,3 @@
-UF Destino) como a primeira coluna na lista de bases de cálculo.">
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
