@@ -184,7 +184,8 @@ const PublicBudgetSignaturePage = () => {
 
     setSavingSignature(true);
     try {
-      const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+      // Use getCanvas() instead of getTrimmedCanvas() to avoid internal module error
+      const dataUrl = sigCanvas.current.getCanvas().toDataURL('image/png');
       const fileExt = 'png';
       const fileName = `${uuidv4()}.${fileExt}`;
       const filePath = `public/${budget.id}/${fileName}`; // Store in a public subfolder
