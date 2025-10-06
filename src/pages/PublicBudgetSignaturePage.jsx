@@ -242,6 +242,9 @@ const PublicBudgetSignaturePage = () => {
   const totalDescontoDisplay = sumOfItemDiscounts;
   const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
+  // Nova condição para exibir o campo de assinatura
+  const canShowSignatureField = !hasSignature && !isFaturado && (isPendente || budget?.status === '3' || isAprovado);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
@@ -359,7 +362,7 @@ const PublicBudgetSignaturePage = () => {
         )}
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-          {isPendente && !hasSignature && !isFaturado ? (
+          {canShowSignatureField ? (
             <>
               <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center justify-center gap-2">
                 <PencilLine className="w-6 h-6 text-blue-600" /> Sua Assinatura:
