@@ -16,7 +16,7 @@ import {
 import BaseCalculoEditorDialog from '@/components/BaseCalculoEditorDialog';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { logAction } from '@/lib/log';
-import { isValidUuid } from '@/lib/utils'; // Importa a função de validação de UUID
+// import { isValidUuid } from '@/lib/utils'; // Removido: productId não é UUID
 
 const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
     const { toast } = useToast();
@@ -27,8 +27,9 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
     const [selectedEntry, setSelectedEntry] = useState(null);
 
     const fetchBaseCalculoEntries = useCallback(async () => {
-        if (!productId || !isValidUuid(productId)) { // Valida o productId como UUID
-            console.warn("BaseCalculoList: productId is missing or not a valid UUID. Skipping fetch.");
+        // Ajustado: Apenas verifica se productId existe e é um número válido
+        if (!productId || isNaN(parseInt(productId, 10))) { 
+            console.warn("BaseCalculoList: productId is missing or not a valid number. Skipping fetch.");
             setBaseCalculoEntries([]);
             setLoading(false);
             return;
@@ -36,7 +37,7 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
         setLoading(true);
         try {
             // Using an RPC function to fetch base_calculo with joined data
-            const { data, error } = await supabase.rpc('get_base_calculo_details', { p_product_id: productId });
+            const { data, error } = await supabase.rpc('get_base_calculo_details', { p_product_id: parseInt(productId, 10) }); // Converte para inteiro
             
             if (error) throw error;
             setBaseCalculoEntries(data || []);
@@ -100,7 +101,7 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
                     <Calculator className="w-5 h-5 text-blue-600" />
                     Bases de Cálculo ICMS
                 </h3>
-                <Button onClick={handleAddEntry} className="save-button" size="sm" disabled={!productId || !isValidUuid(productId)}>
+                <Button onClick={handleAddEntry} className="save-button" size="sm" disabled={!productId || isNaN(parseInt(productId, 10))}>
                     <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Base
                 </Button>
             </div>
