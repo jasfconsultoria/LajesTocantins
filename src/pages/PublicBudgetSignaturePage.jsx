@@ -242,8 +242,9 @@ const PublicBudgetSignaturePage = () => {
   const totalDescontoDisplay = sumOfItemDiscounts;
   const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
-  // Nova condição para exibir o campo de assinatura
-  const canShowSignatureField = !hasSignature && !isFaturado && (isPendente || budget?.status === '3' || isAprovado);
+  // Para fins de teste, o campo de assinatura aparecerá SEMPRE.
+  // Depois de confirmar que funciona, podemos reintroduzir as regras de status.
+  const canShowSignatureField = true; 
 
   if (loading) {
     return (
