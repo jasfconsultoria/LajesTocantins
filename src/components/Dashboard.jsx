@@ -34,12 +34,15 @@ const Dashboard = () => {
             const prevMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString();
             const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59, 999).toISOString();
 
+            // Statuses to include for revenue and orders: '1' (Aprovado), '2' (Faturado), '4' (NF-e Emitida)
+            const relevantStatuses = ['1', '2', '4'];
+
             // Fetch current month's data for all metrics
             const { data: currentMonthBudgets, error: currentMonthError } = await supabase
                 .from('orcamento_summary_view')
                 .select('total_liquido_calculado, cliente_id, nome_cliente')
                 .eq('cnpj_empresa', activeCompany.cnpj)
-                .eq('status', '2') // Changed from status_orcamento: 'faturado' to status: '2'
+                .in('status', relevantStatuses) // Updated to include multiple statuses
                 .gte('data_orcamento', currentMonthStart)
                 .lte('data_orcamento', currentMonthEnd);
 
@@ -84,7 +87,7 @@ const Dashboard = () => {
                 .from('orcamento_summary_view')
                 .select('total_liquido_calculado')
                 .eq('cnpj_empresa', activeCompany.cnpj)
-                .eq('status', '2') // Changed from status_orcamento: 'faturado' to status: '2'
+                .in('status', relevantStatuses) // Updated to include multiple statuses
                 .gte('data_orcamento', prevMonthStart)
                 .lte('data_orcamento', prevMonthEnd);
 
