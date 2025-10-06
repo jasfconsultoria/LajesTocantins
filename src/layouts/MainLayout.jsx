@@ -6,7 +6,7 @@ import {
   HelpCircle, History, UserCheck, Menu, X,
   DollarSign, ArrowUpCircle, ArrowDownCircle, // Financeiro icons
   Warehouse, ArrowRightToLine, ArrowLeftToLine, // Estoque icons
-  Receipt, FileText, Percent // Notas icons, added Percent
+  Receipt, FileText, Percent, Signature // Notas icons, added Percent and Signature
 } from 'lucide-react'; // Importa todos os ícones necessários
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
