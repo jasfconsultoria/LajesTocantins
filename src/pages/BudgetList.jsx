@@ -321,8 +321,8 @@ const BudgetList = () => {
                                     <TableHead className="text-right cursor-pointer" onClick={() => handleSort('total_liquido_calculado')}>
                                         <div className="flex items-center justify-end">Líquido R$ {renderSortIcon('total_liquido_calculado')}</div>
                                     </TableHead>
-                                    <TableHead className="cursor-pointer" onClick={() => handleSort('status')}> {/* Changed to 'status' */}
-                                        <div className="flex items-center justify-end">Status {renderSortIcon('status')}</div> {/* Changed to 'status' */}
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('status')}>
+                                        <div className="flex items-center justify-end">Status {renderSortIcon('status')}</div>
                                     </TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
@@ -338,7 +338,7 @@ const BudgetList = () => {
                                         <TableCell className="text-right">{formatCurrency(b.total_desconto_itens)}</TableCell>
                                         <TableCell className="text-right">{formatCurrency(b.total_liquido_calculado)}</TableCell>
                                         <TableCell className="text-right">
-                                            {getStatusBadge(b.status)} {/* Changed to b.status */}
+                                            {getStatusBadge(b.status?.toString())}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">

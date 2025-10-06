@@ -96,7 +96,7 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false);
     const [shareLink, setShareLink] = useState('');
-    const [unitsMap, setUnitsMap] = useState(new Map());
+    const [unitsMap, setUnitsMap] = new Map();
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
@@ -1068,9 +1068,9 @@ const BudgetEditorPage = () => {
                                 <Input id="previsao_entrega" type="date" className="form-input" value={budget.previsao_entrega || ''} onChange={handleInputChange} disabled={isFaturado} />
                             </div>
                             <div className="form-group lg:col-span-4">
-                                <Label htmlFor="status" className="form-label">Status</Label> {/* Changed id to 'status' */}
-                                <Select onValueChange={(value) => handleSelectChange('status', value)} value={budget.status} disabled={isFaturado}> {/* Changed id to 'status' */}
-                                    <SelectTrigger id="status" className="form-select"><SelectValue /></SelectTrigger> {/* Changed id to 'status' */}
+                                <Label htmlFor="status" className="form-label">Status</Label>
+                                <Select onValueChange={(value) => handleSelectChange('status', value)} value={budget.status?.toString()} disabled={isFaturado}>
+                                    <SelectTrigger id="status" className="form-select"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="0">Pendente</SelectItem>
                                         <SelectItem value="1">Aprovado</SelectItem>
