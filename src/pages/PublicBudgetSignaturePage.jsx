@@ -340,7 +340,7 @@ const PublicBudgetSignaturePage = () => {
             <>
               <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center justify-center gap-2">
                 {isAprovado ? <CheckCircle className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-600" />}
-                Status do Orçamento: <span className={`ml-2 ${isAprovado ? 'text-green-600' : 'text-red-600'}`}>{budget.status_orcamento.toUpperCase()}</span>
+                Status do Orçamento: <span className={`ml-2 ${isAprovado ? 'text-green-600' : 'text-red-600'}`}>{budget?.status_orcamento?.toUpperCase() || 'DESCONHECIDO'}</span>
               </h3>
               {budget.signature_url && (
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md mx-auto">
