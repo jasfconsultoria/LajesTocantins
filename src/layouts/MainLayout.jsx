@@ -72,7 +72,8 @@ function MainLayout() {
         { to: '/app/notas/nfe', label: 'NF-e', icon: FileText },
         { to: '/app/notas/nfce', label: 'NFC-e', icon: Receipt },
         { to: '/app/notas/cfop', label: 'CFOP', icon: FileText },
-        { to: '/app/notas/icms-aliquotas', label: 'Alíquota ICMS', icon: Percent }, // New ICMS Aliquota submenu item
+        { to: '/app/notas/icms-aliquotas', label: 'Alíquota ICMS', icon: Percent },
+        { to: '/app/notas/cst', label: 'CST/CSOSN', icon: FileText }, // New CST/CSOSN submenu item
       ]
     },
 
