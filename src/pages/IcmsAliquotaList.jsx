@@ -42,7 +42,7 @@ const IcmsAliquotaList = () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('aliquota_interestadual')
+                .from('aliquota_icms') // Corrected table name
                 .select('*')
                 .eq('cnpj_empresa', activeCompany.cnpj)
                 .order(sortColumn, { ascending: sortDirection === 'asc' });
@@ -119,7 +119,7 @@ const IcmsAliquotaList = () => {
         }
         try {
             const { error } = await supabase
-                .from('aliquota_interestadual')
+                .from('aliquota_icms') // Corrected table name
                 .delete()
                 .eq('id', id);
 

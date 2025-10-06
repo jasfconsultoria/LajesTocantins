@@ -61,7 +61,7 @@ const IcmsAliquotaEditorPage = () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('aliquota_interestadual')
+                .from('aliquota_icms') // Corrected table name
                 .select('*')
                 .eq('id', id)
                 .single();
@@ -127,7 +127,7 @@ const IcmsAliquotaEditorPage = () => {
 
             if (isEditing) {
                 const { error: updateError } = await supabase
-                    .from('aliquota_interestadual')
+                    .from('aliquota_icms') // Corrected table name
                     .update(saveData)
                     .eq('id', id);
                 error = updateError;
@@ -136,7 +136,7 @@ const IcmsAliquotaEditorPage = () => {
             } else {
                 delete saveData.id; // Ensure ID is not sent for new records
                 const { data: newAliquotaData, error: insertError } = await supabase
-                    .from('aliquota_interestadual')
+                    .from('aliquota_icms') // Corrected table name
                     .insert([saveData])
                     .select();
                 error = insertError;
