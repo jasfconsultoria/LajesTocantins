@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle } from 'lucide-react'; // Changed SignatureIcon to PencilLine
 import { Button } from '@/components/ui/button';
 import SignatureDialog from '@/components/SignatureDialog';
-import { formatCurrency, formatCpfCnpj } from '@/lib/utils';
+import { formatCurrency, formatCpfCnpj, capitalizeFirstLetter } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
 const PublicBudgetSignaturePage = () => {
@@ -340,7 +340,7 @@ const PublicBudgetSignaturePage = () => {
             <>
               <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center justify-center gap-2">
                 {isAprovado ? <CheckCircle className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-600" />}
-                Status do Orçamento: <span className={`ml-2 ${isAprovado ? 'text-green-600' : 'text-red-600'}`}>{budget?.status_orcamento?.toUpperCase() || 'DESCONHECIDO'}</span>
+                Status do Orçamento: <span className={`ml-2 ${isAprovado ? 'text-green-600' : 'text-red-600'}`}>{capitalizeFirstLetter(budget?.status_orcamento || 'Desconhecido')}</span>
               </h3>
               {budget.signature_url && (
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md mx-auto">

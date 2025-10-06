@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, normalizeString } from '@/lib/utils';
+import { normalizeCnpj, normalizeString, capitalizeFirstLetter } from '@/lib/utils';
 
 const BudgetList = () => {
     const { handleNotImplemented } = useOutletContext();
@@ -208,20 +208,44 @@ const BudgetList = () => {
             case 'faturado':
                 return (
                     <span className="status-badge bg-green-100 text-green-800">
-                        <CheckCircle className="w-3 h-3 mr-1" /> FATURADO
+                        <CheckCircle className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
                     </span>
                 );
             case 'aprovado':
                 return (
                     <span className="status-badge bg-blue-100 text-blue-800">
-                        <CheckSquare className="w-3 h-3 mr-1" /> APROVADO
+                        <CheckSquare className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
+                    </span>
+                );
+            case 'nf_e_emitida':
+                return (
+                    <span className="status-badge bg-purple-100 text-purple-800">
+                        <FileText className="w-3 h-3 mr-1" /> NF-e Emitida
+                    </span>
+                );
+            case 'cancelado':
+                return (
+                    <span className="status-badge bg-red-100 text-red-800">
+                        <XCircle className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
+                    </span>
+                );
+            case 'alterado':
+                return (
+                    <span className="status-badge bg-orange-100 text-orange-800">
+                        <Edit className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
+                    </span>
+                );
+            case 'pre_orcamento':
+                return (
+                    <span className="status-badge bg-gray-100 text-gray-800">
+                        <ClipboardList className="w-3 h-3 mr-1" /> Pré-Orçamento
                     </span>
                 );
             case 'pendente':
             default:
                 return (
                     <span className="status-badge bg-yellow-100 text-yellow-800">
-                        <Clock className="w-3 h-3 mr-1" /> PENDENTE
+                        <Clock className="w-3 h-3 mr-1" /> {capitalizeFirstLetter(status)}
                     </span>
                 );
         }

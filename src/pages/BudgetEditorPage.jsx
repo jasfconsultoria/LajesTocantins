@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString } from '@/lib/utils';
+import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString, capitalizeFirstLetter } from '@/lib/utils';
 import SelectSearchClient from '@/components/SelectSearchClient';
 import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
@@ -53,7 +53,7 @@ const initialBudgetState = {
     cnpj_empresa: '',
     cfop: '',
     natureza: '',
-    status_orcamento: 'pendente', // Changed from faturado: false
+    status_orcamento: 'pendente', // Default to 'pendente'
     vendedor: '',
     desconto: 0.0,
     condicao_pagamento: '',
@@ -1070,9 +1070,13 @@ const BudgetEditorPage = () => {
                                 <Select onValueChange={(value) => handleSelectChange('status_orcamento', value)} value={budget.status_orcamento} disabled={isFaturado}>
                                     <SelectTrigger id="status_orcamento" className="form-select"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="pendente">PENDENTE</SelectItem>
-                                        <SelectItem value="aprovado">APROVADO</SelectItem>
-                                        <SelectItem value="faturado">FATURADO</SelectItem>
+                                        <SelectItem value="pendente">Pendente</SelectItem>
+                                        <SelectItem value="aprovado">Aprovado</SelectItem>
+                                        <SelectItem value="faturado">Faturado</SelectItem>
+                                        <SelectItem value="nf_e_emitida">NF-e Emitida</SelectItem>
+                                        <SelectItem value="cancelado">Cancelado</SelectItem>
+                                        <SelectItem value="alterado">Alterado</SelectItem>
+                                        <SelectItem value="pre_orcamento">Pré-Orçamento</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1112,7 +1116,6 @@ const BudgetEditorPage = () => {
                         <Input id="validade" type="number" className="form-input" value={budget.validade} onChange={handleInputChange} disabled={isFaturado} />
                     </div>
                     <div className="lg:col-span-5 flex justify-end space-x-2">
-                        {/* Removido o Select de 'Tipo Impressão' */}
                         <Button variant="outline" onClick={() => setIsDiscountDialogOpen(true)} disabled={isFaturado || !id || compositions.length === 0}>
                             <Percent className="w-4 h-4 mr-2" /> Desconto
                         </Button>
