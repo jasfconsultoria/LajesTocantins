@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle, Eraser, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import SignatureDialog from '@/components/SignatureDialog';
+import SignatureCanvas from 'react-signature-canvas'; // Importar SignatureCanvas
 import { formatCurrency, formatCpfCnpj, capitalizeFirstLetter } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,10 +18,14 @@ const PublicBudgetSignaturePage = () => {
   const [budget, setBudget] = useState(null);
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false);
   const [unitsMap, setUnitsMap] = useState(new Map());
   const [allMunicipalities, setAllMunicipalities] = useState([]);
   const [activeCompanyData, setActiveCompanyData] = useState(null);
+
+  // Signature state
+  const sigCanvas = useRef({});
+  const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
+  const [savingSignature, setSavingSignature] = useState(false);
 
   // Map numeric status to display string
   const statusMapDisplay = {
@@ -32,10 +36,10 @@ const PublicBudgetSignaturePage = () => {
       '4': 'NF-e Emitida',
   };
 
-  // Updated to use the new numeric status values
   const isPendente = budget?.status === '0';
   const isAprovado = budget?.status === '1';
   const isFaturado = budget?.status === '2';
+  const hasSignature = budget?.signature_url && budget.signature_url.trim() !== '';
 
   const fetchUfsAndMunicipalities = useCallback(async () => {
     try {
@@ -162,13 +166,23 @@ const PublicBudgetSignaturePage = () => {
     }
   }, [allMunicipalities, fetchBudgetDetails]);
 
-  const handleSaveSignature = async (dataUrl) => {
+  const saveSignatureAndApprove = async () => {
+    if (sigCanvas.current.isEmpty()) {
+      toast({
+        variant: 'destructive',
+        title: 'Assinatura vazia',
+        description: 'Por favor, assine no campo antes de salvar.',
+      });
+      return;
+    }
     if (!budget?.id) {
       toast({ variant: 'destructive', title: 'Erro', description: 'ID do orçamento não disponível.' });
       return;
     }
 
+    setSavingSignature(true);
     try {
+      const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
       const fileExt = 'png';
       const fileName = `${uuidv4()}.${fileExt}`;
       const filePath = `public/${budget.id}/${fileName}`; // Store in a public subfolder
@@ -193,20 +207,30 @@ const PublicBudgetSignaturePage = () => {
       // Update budget status to '1' (Aprovado) and save signature URL
       const { error: updateError } = await supabase
         .from('orcamento')
-        .update({ status: '1', signature_url: publicUrl, updated_at: new Date().toISOString() }) // Changed status_orcamento to status and value to '1'
+        .update({ status: '1', signature_url: publicUrl, updated_at: new Date().toISOString() })
         .eq('id', budget.id)
-        .eq('status', '0') // Only update if still '0' (Pendente) - Changed status_orcamento to status and value to '0'
-        .is('signature_url', null); // Only update if no signature yet
+        .or('status.eq.0,signature_url.is.null,signature_url.eq.') // Only update if still '0' (Pendente) or no signature yet
+        .select(); // Select the updated data to refresh state
 
       if (updateError) throw updateError;
 
-      setBudget(prev => ({ ...prev, status: '1', signature_url: publicUrl })); // Changed status_orcamento to status and value to '1'
+      setBudget(prev => ({ ...prev, status: '1', signature_url: publicUrl }));
       toast({ title: 'Orçamento Aprovado!', description: 'Assinatura salva e status atualizado para Aprovado.' });
-      setIsSignatureDialogOpen(false);
     } catch (error) {
       console.error("Error uploading signature:", error);
       toast({ variant: 'destructive', title: 'Erro ao salvar assinatura', description: error.message || 'Ocorreu um erro inesperado.' });
+    } finally {
+      setSavingSignature(false);
     }
+  };
+
+  const clearSignature = () => {
+    sigCanvas.current.clear();
+    setIsSignatureEmpty(true);
+  };
+
+  const handleCanvasChange = () => {
+    setIsSignatureEmpty(sigCanvas.current.isEmpty());
   };
 
   const totalProdutosBruto = compositions.reduce((sum, item) => sum + (item.quantidade * item.valor_venda), 0);
@@ -333,24 +357,41 @@ const PublicBudgetSignaturePage = () => {
         )}
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-          {isPendente && !budget.signature_url ? (
+          {isPendente && !hasSignature && !isFaturado ? (
             <>
               <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center justify-center gap-2">
-                <PencilLine className="w-6 h-6 text-blue-600" /> Assinatura do Cliente
+                <PencilLine className="w-6 h-6 text-blue-600" /> Sua Assinatura:
               </h3>
-              <p className="text-slate-600 mb-4">Por favor, assine abaixo para aprovar este orçamento.</p>
-              <Button 
-                onClick={() => setIsSignatureDialogOpen(true)} 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md"
-              >
-                <PencilLine className="w-5 h-5 mr-2" /> Assinar Orçamento
-              </Button>
+              <div className="border border-slate-300 rounded-md overflow-hidden bg-slate-50 max-w-md mx-auto">
+                <SignatureCanvas
+                  ref={sigCanvas}
+                  canvasProps={{ width: 450, height: 200, className: 'signature-canvas bg-white' }}
+                  penColor="black"
+                  minWidth={1}
+                  maxWidth={2}
+                  onEnd={handleCanvasChange}
+                  onBegin={handleCanvasChange}
+                />
+              </div>
+              <p className="text-center text-sm text-slate-500 mt-2">Assine aqui</p>
+              <div className="flex justify-center space-x-4 mt-6">
+                <Button variant="destructive" onClick={() => navigate('/')}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+                </Button>
+                <Button variant="outline" onClick={clearSignature} disabled={isSignatureEmpty || savingSignature}>
+                  <Eraser className="mr-2 h-4 w-4" /> Limpar
+                </Button>
+                <Button onClick={saveSignatureAndApprove} disabled={isSignatureEmpty || savingSignature}>
+                  {savingSignature && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Save className="mr-2 h-4 w-4" /> Assinar e Salvar
+                </Button>
+              </div>
             </>
           ) : (
             <>
               <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center justify-center gap-2">
-                {isAprovado ? <CheckCircle className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-600" />}
-                Status do Orçamento: <span className={`ml-2 ${isAprovado ? 'text-green-600' : 'text-red-600'}`}>{statusMapDisplay[budget?.status] || 'Desconhecido'}</span> {/* Updated to use statusMapDisplay */}
+                {isAprovado || isFaturado ? <CheckCircle className="w-6 h-6 text-green-600" /> : <XCircle className="w-6 h-6 text-red-600" />}
+                Status do Orçamento: <span className={`ml-2 ${isAprovado || isFaturado ? 'text-green-600' : 'text-red-600'}`}>{statusMapDisplay[budget?.status] || 'Desconhecido'}</span>
               </h3>
               {budget.signature_url && (
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md mx-auto">
@@ -361,18 +402,11 @@ const PublicBudgetSignaturePage = () => {
               {isFaturado && (
                 <p className="text-lg font-medium text-slate-700 mt-4">Este orçamento já foi faturado.</p>
               )}
+              <Button onClick={() => navigate('/')} className="mt-6">Voltar para o Início</Button>
             </>
           )}
         </div>
       </div>
-
-      <SignatureDialog
-        isOpen={isSignatureDialogOpen}
-        setIsOpen={setIsSignatureDialogOpen}
-        onSaveSignature={handleSaveSignature}
-        budgetNumber={budget.numero_pedido || budget.id}
-        isFaturado={isFaturado}
-      />
     </div>
   );
 };
