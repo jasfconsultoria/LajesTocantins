@@ -96,7 +96,7 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // New state for share link dialog
     const [shareLink, setShareLink] = useState(''); // State to hold the generated share link
-    const [unitsMap, setUnitsMap] = new Map();
+    const [unitsMap, setUnitsMap] = useState(new Map()); // Corrected initialization
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
