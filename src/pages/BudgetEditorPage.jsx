@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, Signature as SignatureIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,7 +16,8 @@ import SelectSearchClient from '@/components/SelectSearchClient';
 import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
 import SelectSearchNatureza from '@/components/SelectSearchNatureza';
-import DiscountDialog from '@/components/DiscountDialog'; // Import the new DiscountDialog
+import DiscountDialog from '@/components/DiscountDialog';
+import SignatureDialog from '@/components/SignatureDialog'; // Import the new SignatureDialog
 import { v4 as uuidv4 } from 'uuid';
 import {
   Table,
@@ -37,7 +38,7 @@ const getDatePlusDays = (days) => {
 const initialBudgetState = {
     data_orcamento: new Date().toISOString().split('T')[0],
     cliente_id: null,
-    usuario_id: null, // Changed from funcionario_id to usuario_id
+    usuario_id: null,
     endereco_entrega: '',
     historico: '',
     debito_credito: 'D',
@@ -45,7 +46,7 @@ const initialBudgetState = {
     cnpj_empresa: '',
     cfop: '',
     natureza: '',
-    faturado: false,
+    status_orcamento: 'pendente', // Changed from faturado: false
     vendedor: '',
     desconto: 0.0,
     condicao_pagamento: '',
@@ -65,8 +66,9 @@ const initialBudgetState = {
     solicitante: '',
     telefone: '',
     codigo_antigo: null,
-    previsao_entrega: getDatePlusDays(10), // Default to today + 10 days
+    previsao_entrega: getDatePlusDays(10),
     cliente_endereco_completo: '',
+    signature_url: null, // New field for signature
 };
 
 const BudgetEditorPage = () => {
@@ -84,15 +86,17 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false); // New state for discount dialog
+    const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
+    const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false); // New state for signature dialog
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
-    const [selectedClientData, setSelectedClientData] = useState(null); // New state for selected client's full data
+    const [selectedClientData, setSelectedClientData] = useState(null);
 
-    const [baseIcmsTotal, setBaseIcmsTotal] = useState(0); // New state for ICMS Base
-    const [totalIcmsTotal, setTotalIcmsTotal] = useState(0); // New state for ICMS Total
+    const [baseIcmsTotal, setBaseIcmsTotal] = useState(0);
+    const [totalIcmsTotal, setTotalIcmsTotal] = useState(0);
 
-    const isFaturado = budget.faturado;
+    const isFaturado = budget.status_orcamento === 'faturado';
+    const isAprovado = budget.status_orcamento === 'aprovado';
 
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
@@ -291,7 +295,7 @@ const BudgetEditorPage = () => {
                         
                         budgetData.nome_cliente = clientName;
                         budgetData.cliente_endereco_completo = buildClientAddressString(clientData);
-                        setSelectedClientData(clientData); // Set selected client data
+                        setSelectedClientData(clientData);
                     }
                 }
                 setBudget(budgetData);
@@ -306,12 +310,10 @@ const BudgetEditorPage = () => {
                 throw compError;
             }
             if (compData) {
-                // For each composition, fetch its base_calculo entries
                 const compositionsWithBaseCalculo = await Promise.all(compData.map(async (comp) => {
                     const { data: baseCalculoData, error: baseCalculoError } = await supabase.rpc('get_base_calculo_details', { p_product_id: comp.produto_id });
                     if (baseCalculoError) {
                         console.error(`Error fetching base_calculo for product ${comp.produto_id}:`, baseCalculoError);
-                        // Return composition without base_calculo_entries if there's an error
                         return { ...comp, base_calculo_entries: [] };
                     }
                     return { ...comp, base_calculo_entries: baseCalculoData || [] };
@@ -385,10 +387,9 @@ const BudgetEditorPage = () => {
             return;
         }
 
-        const companyCrt = parseInt(activeCompany.crt, 10); // Ensure CRT is a number
+        const companyCrt = parseInt(activeCompany.crt, 10);
 
-        // Only calculate if CRT is 3 (Regime Normal)
-        if (companyCrt === 1 || companyCrt === 2) { // Simples Nacional or Simples Nacional - excesso
+        if (companyCrt === 1 || companyCrt === 2) {
             setBaseIcmsTotal(0);
             setTotalIcmsTotal(0);
             return;
@@ -404,15 +405,12 @@ const BudgetEditorPage = () => {
         compositions.forEach(comp => {
             const productSubtotal = (comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0);
 
-            // Find the matching base_calculo entry for this product, company UF, and client UF
             const matchingBaseCalculo = comp.base_calculo_entries?.find(bc =>
                 bc.aliquota_uf_origem === companyUf && bc.aliquota_uf_destino === clientUf
             );
 
             if (matchingBaseCalculo) {
-                const aliquotaAplicada = (matchingBaseCalculo.aliquota_icms_value + matchingBaseCalculo.aliquota_fecp_value - matchingBaseCalculo.aliquota_reducao_value) / 100; // Convert to decimal
-
-                // Apply CRT logic (only Regime Normal will reach here due to early return)
+                const aliquotaAplicada = (matchingBaseCalculo.aliquota_icms_value + matchingBaseCalculo.aliquota_fecp_value - matchingBaseCalculo.aliquota_reducao_value) / 100;
                 currentBaseIcms += productSubtotal;
                 currentTotalIcms += productSubtotal * aliquotaAplicada;
             }
@@ -453,7 +451,7 @@ const BudgetEditorPage = () => {
     };
 
     const handleSelectClient = async (person) => {
-        setSelectedClientData(person); // Store the full client object
+        setSelectedClientData(person);
 
         if (!person) {
             setBudget(prev => ({
@@ -461,7 +459,7 @@ const BudgetEditorPage = () => {
                 cliente_id: null,
                 nome_cliente: '',
                 cliente_endereco_completo: '',
-                cfop: '', // Clear CFOP and Natureza when client is deselected
+                cfop: '',
                 natureza: '',
             }));
             return;
@@ -560,19 +558,17 @@ const BudgetEditorPage = () => {
                 cliente_id: person.cpf_cnpj,
                 nome_cliente: clientName,
                 cliente_endereco_completo: buildClientAddressString(person),
-                cfop: '', // Clear CFOP and Natureza when client changes
+                cfop: '',
                 natureza: '',
             }));
         }
     };
 
     const handleSelectProduct = async (product) => {
-        // Fetch base_calculo entries for the selected product
         const { data: baseCalculoData, error: baseCalculoError } = await supabase.rpc('get_base_calculo_details', { p_product_id: product.id });
         if (baseCalculoError) {
             console.error("Error fetching base_calculo for product:", baseCalculoError);
             toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as bases de cálculo para o produto.' });
-            // Proceed without base_calculo data for this item
         }
 
         const newCompositionItem = {
@@ -587,14 +583,14 @@ const BudgetEditorPage = () => {
                 prod_uCOM: product.prod_uCOM,
             },
             isNew: true,
-            base_calculo_entries: baseCalculoData || [], // Store all relevant base_calculo entries
+            base_calculo_entries: baseCalculoData || [],
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
     };
 
     const handleSelectProductFromSearch = (product) => {
-        handleSelectProduct(product); // Use the same logic for both
+        handleSelectProduct(product);
     };
 
     const handleQuantityChange = (compositionId, newQuantity) => {
@@ -642,7 +638,6 @@ const BudgetEditorPage = () => {
 
         let finalDiscountToApply = totalDiscountAmount;
 
-        // If percentage was the primary input, calculate amount from it
         if (totalDiscountAmount === 0 && totalDiscountPercentage > 0) {
             finalDiscountToApply = (currentTotalItemsValue * totalDiscountPercentage) / 100;
         }
@@ -665,8 +660,7 @@ const BudgetEditorPage = () => {
         toast({ title: "Desconto Aplicado!", description: `Desconto de ${formatCurrency(finalDiscountToApply)} aplicado aos itens.` });
     }, [compositions, toast]);
 
-
-    const handleSave = async () => {
+    const handleSave = async (newStatus = null, signatureUrl = null) => {
         if (!activeCompanyId) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Nenhuma empresa ativa selecionada para salvar o orçamento.' });
             return;
@@ -687,6 +681,8 @@ const BudgetEditorPage = () => {
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
                 updated_at: new Date().toISOString(),
+                status_orcamento: newStatus || budget.status_orcamento, // Use newStatus if provided
+                signature_url: signatureUrl || budget.signature_url, // Use signatureUrl if provided
             };
 
             delete saveData.cliente_endereco_completo;
@@ -728,7 +724,6 @@ const BudgetEditorPage = () => {
                             throw compInsertError;
                         }
                     } else {
-                        // Update existing compositions
                         const { error: compUpdateError } = await supabase
                             .from('orcamento_composicao')
                             .update({
@@ -799,9 +794,48 @@ const BudgetEditorPage = () => {
         }
     };
 
+    const handleSaveSignature = async (dataUrl) => {
+        setSaving(true);
+        try {
+            const fileExt = 'png';
+            const fileName = `${uuidv4()}.${fileExt}`;
+            const filePath = `${user.id}/${budget.id}/${fileName}`;
+
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+
+            const { error: uploadError } = await supabase.storage
+                .from('budget_signatures')
+                .upload(filePath, blob, {
+                    cacheControl: '3600',
+                    upsert: false,
+                    contentType: 'image/png',
+                });
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('budget_signatures')
+                .getPublicUrl(filePath);
+            
+            // Update budget status to 'aprovado' and save signature URL
+            await handleSave('aprovado', publicUrl);
+            setBudget(prev => ({ ...prev, status_orcamento: 'aprovado', signature_url: publicUrl }));
+
+            toast({ title: 'Orçamento Aprovado!', description: 'Assinatura salva e status atualizado para Aprovado.' });
+        } catch (error) {
+            console.error("Error uploading signature:", error);
+            toast({ variant: 'destructive', title: 'Erro ao salvar assinatura', description: error.message || 'Ocorreu um erro inesperado ao salvar a assinatura.' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const displayTipo = useMemo(() => {
-        return budget.faturado ? 'Pedido' : 'Orçamento';
-    }, [budget.faturado]);
+        if (budget.status_orcamento === 'faturado') return 'Pedido';
+        if (budget.status_orcamento === 'aprovado') return 'Orçamento Aprovado';
+        return 'Orçamento';
+    }, [budget.status_orcamento]);
 
     const pageTitle = id ? `Editar ${displayTipo}` : `Novo ${displayTipo}`;
     const configTitle = `Dados do ${displayTipo}`;
@@ -863,7 +897,7 @@ const BudgetEditorPage = () => {
                     <div className="form-group lg:col-span-8">
                         <Label htmlFor="cliente_id" className="form-label">Cliente *</Label>
                         <SelectSearchClient
-                            value={selectedClientData} // Pass the selected client data
+                            value={selectedClientData}
                             onValueChange={handleSelectClient}
                             people={people}
                             placeholder="Selecione um cliente..."
@@ -912,8 +946,8 @@ const BudgetEditorPage = () => {
                             onValueChange={handleSelectNatureza}
                             disabled={isFaturado}
                             required
-                            companyUf={activeCompany?.uf} // Pass active company UF
-                            clientUf={selectedClientData?.uf} // Pass selected client UF
+                            companyUf={activeCompany?.uf}
+                            clientUf={selectedClientData?.uf}
                         />
                     </div>
                     <div className="form-group lg:col-span-3">
@@ -928,7 +962,6 @@ const BudgetEditorPage = () => {
                 </h3>
 
                 
-                {/* Desabilita se não houver ID de orçamento */}
                 <div className="mt-4 mb-4">
                     <SelectSearchProduct
                         products={allProducts}
@@ -1040,11 +1073,12 @@ const BudgetEditorPage = () => {
                             </div>
                             <div className="form-group lg:col-span-4">
                                 <Label htmlFor="status_orcamento" className="form-label">Status</Label>
-                                <Select onValueChange={(value) => handleSelectChange('faturado', value === 'true')} value={budget.faturado.toString()} disabled={isFaturado}>
+                                <Select onValueChange={(value) => handleSelectChange('status_orcamento', value)} value={budget.status_orcamento} disabled={isFaturado}>
                                     <SelectTrigger id="status_orcamento" className="form-select"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="true">FATURADO</SelectItem>
-                                        <SelectItem value="false">PENDENTE</SelectItem>
+                                        <SelectItem value="pendente">PENDENTE</SelectItem>
+                                        <SelectItem value="aprovado">APROVADO</SelectItem>
+                                        <SelectItem value="faturado">FATURADO</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1091,15 +1125,35 @@ const BudgetEditorPage = () => {
                                 <SelectItem value="2_via">2ª Via</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button variant="outline" onClick={() => setIsDiscountDialogOpen(true)} disabled={isFaturado || !id || compositions.length === 0}> {/* Open discount dialog */}
+                        <Button variant="outline" onClick={() => setIsDiscountDialogOpen(true)} disabled={isFaturado || !id || compositions.length === 0}>
                             <Percent className="w-4 h-4 mr-2" /> Desconto
                         </Button>
-                        <Button onClick={handleSave} className="save-button" disabled={saving || isFaturado}>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setIsSignatureDialogOpen(true)} 
+                            disabled={!id || isFaturado || isAprovado} // Disable if no budget ID, already Faturado or Aprovado
+                            className="bg-green-500 hover:bg-green-600 text-white"
+                        >
+                            <Share2 className="w-4 h-4 mr-2" /> Compartilhar Orçamento
+                        </Button>
+                        <Button onClick={() => handleSave()} className="save-button" disabled={saving || isFaturado}>
                             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                             Salvar Orçamento
                         </Button>
                     </div>
                 </div>
+
+                {budget.signature_url && (
+                    <div className="mt-8 pt-6 border-t border-slate-200">
+                        <h3 className="config-title mb-4 flex items-center gap-2">
+                            <SignatureIcon className="w-5 h-5 text-blue-600" /> Assinatura do Orçamento
+                        </h3>
+                        <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md">
+                            <img src={budget.signature_url} alt="Assinatura do Orçamento" className="max-w-full h-auto" />
+                            <p className="text-sm text-slate-600 mt-2">Orçamento assinado digitalmente em {new Date(budget.updated_at).toLocaleDateString('pt-BR')}.</p>
+                        </div>
+                    </div>
+                )}
 
                 <h3 className="config-title mt-8 pt-6 border-t border-slate-200">Observação</h3>
                 <div className="pt-6">
@@ -1120,9 +1174,17 @@ const BudgetEditorPage = () => {
             <DiscountDialog
                 isOpen={isDiscountDialogOpen}
                 setIsOpen={setIsDiscountDialogOpen}
-                totalOrderValue={totalDoPedido} // Pass the total value of the order
+                totalOrderValue={totalDoPedido}
                 onApplyDiscount={handleApplyDiscount}
                 isFaturado={isFaturado}
+            />
+
+            <SignatureDialog
+                isOpen={isSignatureDialogOpen}
+                setIsOpen={setIsSignatureDialogOpen}
+                onSaveSignature={handleSaveSignature}
+                budgetNumber={budget.numero_pedido}
+                isFaturado={isFaturado || isAprovado}
             />
         </div>
     );

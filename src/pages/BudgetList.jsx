@@ -5,7 +5,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock, ArrowUp, ArrowDown, FileText, CheckSquare } from 'lucide-react'; // Added FileText and CheckSquare
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,24 +17,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, normalizeString } from '@/lib/utils'; // Importar normalizeString
+import { normalizeCnpj, normalizeString } from '@/lib/utils';
 
 const BudgetList = () => {
     const { handleNotImplemented } = useOutletContext();
-    const { user: currentUser, activeCompany } = useAuth(); // Get activeCompany from useAuth
+    const { user: currentUser, activeCompany } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
     const [budgets, setBudgets] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [sortColumn, setSortColumn] = useState('data_orcamento'); // Default sort by date
-    const [sortDirection, setSortDirection] = useState('desc'); // Default sort descending
+    const [sortColumn, setSortColumn] = useState('data_orcamento');
+    const [sortDirection, setSortDirection] = useState('desc');
 
     const ITEMS_PER_PAGE = 10;
 
     const fetchBudgets = useCallback(async () => {
-        if (!activeCompany?.cnpj) { // Use activeCompany.cnpj for filtering
+        if (!activeCompany?.cnpj) {
             setBudgets([]);
             setLoading(false);
             return;
@@ -43,14 +43,14 @@ const BudgetList = () => {
         try {
             let allBudgets = [];
             let offset = 0;
-            const limit = 1000; // Supabase/PostgREST default limit
+            const limit = 1000;
 
             while (true) {
                 const { data, error } = await supabase
-                    .from('orcamento_summary_view') // Consultando a nova VIEW
+                    .from('orcamento_summary_view')
                     .select('*')
-                    .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj)) // Normaliza o CNPJ aqui
-                    .order('data_orcamento', { ascending: false }) // Keep initial order for fetching
+                    .eq('cnpj_empresa', normalizeCnpj(activeCompany.cnpj))
+                    .order('data_orcamento', { ascending: false })
                     .range(offset, offset + limit - 1);
 
                 if (error) throw error;
@@ -59,13 +59,13 @@ const BudgetList = () => {
                     allBudgets = allBudgets.concat(data);
                     offset += data.length;
                     if (data.length < limit) {
-                        break; // No more data
+                        break;
                     }
                 } else {
-                    break; // No data or no more data
+                    break;
                 }
             }
-            setBudgets(allBudgets); // Definir os orçamentos diretamente da VIEW
+            setBudgets(allBudgets);
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -75,7 +75,7 @@ const BudgetList = () => {
         } finally {
             setLoading(false);
         }
-    }, [activeCompany?.cnpj, toast]); // Depend on activeCompany.cnpj
+    }, [activeCompany?.cnpj, toast]);
 
     useEffect(() => {
         fetchBudgets();
@@ -86,9 +86,9 @@ const BudgetList = () => {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
             setSortColumn(column);
-            setSortDirection('asc'); // Default to asc when changing column
+            setSortDirection('asc');
         }
-        setCurrentPage(1); // Reset to first page on sort change
+        setCurrentPage(1);
     };
 
     const renderSortIcon = (column) => {
@@ -103,29 +103,30 @@ const BudgetList = () => {
 
         let currentFilteredBudgets = budgets;
 
-        // 1. Aplicar filtragem se houver termo de busca
         if (normalizedSearchTerm) {
             currentFilteredBudgets = budgets.filter(b => {
                 const normalizedNomeCliente = normalizeString(b.nome_cliente);
                 const normalizedNumeroPedido = normalizeString(b.numero_pedido);
                 const normalizedVendedor = normalizeString(b.vendedor);
+                const normalizedStatus = normalizeString(b.status_orcamento); // Include new status in search
 
                 return (
                     normalizedNomeCliente.includes(normalizedSearchTerm) ||
                     normalizedNumeroPedido.includes(normalizedSearchTerm) ||
-                    normalizedVendedor.includes(normalizedSearchTerm)
+                    normalizedVendedor.includes(normalizedSearchTerm) ||
+                    normalizedStatus.includes(normalizedSearchTerm)
                 );
             });
         }
 
-        // 2. Aplicar ordenação aos resultados filtrados (ou à lista completa se não houver busca)
-        return [...currentFilteredBudgets].sort((a, b) => { // Cria uma cópia para não modificar o array original
+        return [...currentFilteredBudgets].sort((a, b) => {
             let aValue, bValue;
 
             switch (sortColumn) {
                 case 'numero_pedido':
                 case 'nome_cliente':
                 case 'vendedor':
+                case 'status_orcamento': // Sort by new status field
                     aValue = normalizeString(a[sortColumn] || '');
                     bValue = normalizeString(b[sortColumn] || '');
                     break;
@@ -133,15 +134,11 @@ const BudgetList = () => {
                     aValue = new Date(a.data_orcamento).getTime();
                     bValue = new Date(b.data_orcamento).getTime();
                     break;
-                case 'total_do_pedido_calculado': // Usar o nome da coluna da VIEW
-                case 'total_desconto_itens': // Usar o nome da coluna da VIEW
-                case 'total_liquido_calculado': // Usar o nome da coluna da VIEW
+                case 'total_do_pedido_calculado':
+                case 'total_desconto_itens':
+                case 'total_liquido_calculado':
                     aValue = a[sortColumn] || 0;
                     bValue = b[sortColumn] || 0;
-                    break;
-                case 'faturado':
-                    aValue = a.faturado ? 1 : 0;
-                    bValue = b.faturado ? 1 : 0;
                     break;
                 default:
                     aValue = normalizeString(a[sortColumn] || '');
@@ -174,7 +171,6 @@ const BudgetList = () => {
             return;
         }
         try {
-            // First delete compositions related to the budget
             const { error: deleteCompositionsError } = await supabase
                 .from('orcamento_composicao')
                 .delete()
@@ -182,7 +178,6 @@ const BudgetList = () => {
 
             if (deleteCompositionsError) throw deleteCompositionsError;
 
-            // Then delete the budget itself
             const { error: deleteBudgetError } = await supabase
                 .from('orcamento')
                 .delete()
@@ -208,8 +203,32 @@ const BudgetList = () => {
         return new Date(dateString).toLocaleDateString('pt-BR');
     };
 
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'faturado':
+                return (
+                    <span className="status-badge bg-green-100 text-green-800">
+                        <CheckCircle className="w-3 h-3 mr-1" /> FATURADO
+                    </span>
+                );
+            case 'aprovado':
+                return (
+                    <span className="status-badge bg-blue-100 text-blue-800">
+                        <CheckSquare className="w-3 h-3 mr-1" /> APROVADO
+                    </span>
+                );
+            case 'pendente':
+            default:
+                return (
+                    <span className="status-badge bg-yellow-100 text-yellow-800">
+                        <Clock className="w-3 h-3 mr-1" /> PENDENTE
+                    </span>
+                );
+        }
+    };
+
     return (
-        <div className="space-y-6"> {/* Este é o elemento raiz consistente */}
+        <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold gradient-text flex items-center gap-2">
@@ -232,7 +251,7 @@ const BudgetList = () => {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <Input
                         type="text"
-                        placeholder="Buscar por cliente, número do pedido ou vendedor..."
+                        placeholder="Buscar por cliente, número do pedido, vendedor ou status..."
                         className="pl-10"
                         value={searchTerm}
                         onChange={(e) => {
@@ -245,14 +264,14 @@ const BudgetList = () => {
             
             {loading ? (
                  <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>
-            ) : !activeCompany?.cnpj ? ( // Esta condição agora renderiza DENTRO do elemento raiz
+            ) : !activeCompany?.cnpj ? (
                 <div className="flex flex-col items-center justify-center h-64 text-center bg-white/80 rounded-xl shadow-sm border border-white p-8">
                     <ClipboardList className="w-16 h-16 text-blue-500 mb-4" />
                     <h2 className="text-2xl font-bold text-slate-800">Nenhuma Empresa Ativa</h2>
                     <p className="text-slate-600">Selecione uma empresa para visualizar e gerenciar seus orçamentos.</p>
                 </div>
             ) : (
-                <> {/* Fragmento para o conteúdo real quando activeCompany.cnpj está presente */}
+                <>
                     <div className="data-table-container">
                         <Table>
                             <TableHeader>
@@ -278,8 +297,8 @@ const BudgetList = () => {
                                     <TableHead className="text-right cursor-pointer" onClick={() => handleSort('total_liquido_calculado')}>
                                         <div className="flex items-center justify-end">Líquido R$ {renderSortIcon('total_liquido_calculado')}</div>
                                     </TableHead>
-                                    <TableHead className="cursor-pointer" onClick={() => handleSort('faturado')}>
-                                        <div className="flex items-center justify-end">Status {renderSortIcon('faturado')}</div>
+                                    <TableHead className="cursor-pointer" onClick={() => handleSort('status_orcamento')}>
+                                        <div className="flex items-center justify-end">Status {renderSortIcon('status_orcamento')}</div>
                                     </TableHead>
                                     <TableHead className="text-right">Ações</TableHead>
                                 </TableRow>
@@ -295,15 +314,7 @@ const BudgetList = () => {
                                         <TableCell className="text-right">{formatCurrency(b.total_desconto_itens)}</TableCell>
                                         <TableCell className="text-right">{formatCurrency(b.total_liquido_calculado)}</TableCell>
                                         <TableCell className="text-right">
-                                            {b.faturado ? (
-                                                <span className="status-badge bg-green-100 text-green-800">
-                                                    <CheckCircle className="w-3 h-3 mr-1" /> Faturado
-                                                </span>
-                                            ) : (
-                                                <span className="status-badge bg-yellow-100 text-yellow-800">
-                                                    <Clock className="w-3 h-3 mr-1" /> Pendente
-                                                </span>
-                                            )}
+                                            {getStatusBadge(b.status_orcamento)}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">

@@ -5,8 +5,8 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Hand, Calendar, TrendingUp, Users, FileText, Loader2, ShoppingCart, MapPin, User } from 'lucide-react';
 import { formatCurrency, normalizeString } from '@/lib/utils';
-import ClientSalesChart from '@/components/charts/ClientSalesChart'; // Import new chart component
-import CitySalesChart from '@/components/charts/CitySalesChart';     // Import new chart component
+import ClientSalesChart from '@/components/charts/ClientSalesChart';
+import CitySalesChart from '@/components/charts/CitySalesChart';
 
 const Dashboard = () => {
     const { user, activeCompany } = useAuth();
@@ -39,7 +39,7 @@ const Dashboard = () => {
                 .from('orcamento_summary_view')
                 .select('total_liquido_calculado, cliente_id, nome_cliente')
                 .eq('cnpj_empresa', activeCompany.cnpj)
-                .eq('faturado', true)
+                .eq('status_orcamento', 'faturado') // Changed from faturado: true
                 .gte('data_orcamento', currentMonthStart)
                 .lte('data_orcamento', currentMonthEnd);
 
@@ -84,7 +84,7 @@ const Dashboard = () => {
                 .from('orcamento_summary_view')
                 .select('total_liquido_calculado')
                 .eq('cnpj_empresa', activeCompany.cnpj)
-                .eq('faturado', true)
+                .eq('status_orcamento', 'faturado') // Changed from faturado: true
                 .gte('data_orcamento', prevMonthStart)
                 .lte('data_orcamento', prevMonthEnd);
 
