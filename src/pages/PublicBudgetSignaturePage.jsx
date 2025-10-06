@@ -127,6 +127,8 @@ const PublicBudgetSignaturePage = () => {
         previsao_entrega: budgetData.previsao_entrega ? new Date(budgetData.previsao_entrega).toLocaleDateString('pt-BR') : '',
         nome_cliente: clientDetails ? (clientDetails.nome_fantasia && clientDetails.razao_social ? `${clientDetails.nome_fantasia} - ${clientDetails.razao_social}` : clientDetails.razao_social || clientDetails.nome_fantasia) : 'Cliente Não Informado',
         cliente_endereco_completo: clientDetails ? buildClientAddressString(clientDetails) : '',
+        // Ensure signature_url is truly null if it's empty or whitespace
+        signature_url: (budgetData.signature_url && budgetData.signature_url.trim() !== '') ? budgetData.signature_url : null,
       };
       setBudget(enrichedBudgetData);
 
