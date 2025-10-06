@@ -39,7 +39,7 @@ const Dashboard = () => {
                 .from('orcamento_summary_view')
                 .select('total_liquido_calculado, cliente_id, nome_cliente')
                 .eq('cnpj_empresa', activeCompany.cnpj)
-                .eq('status_orcamento', 'faturado') // Changed from faturado: true
+                .eq('status', '2') // Changed from status_orcamento: 'faturado' to status: '2'
                 .gte('data_orcamento', currentMonthStart)
                 .lte('data_orcamento', currentMonthEnd);
 
@@ -84,7 +84,7 @@ const Dashboard = () => {
                 .from('orcamento_summary_view')
                 .select('total_liquido_calculado')
                 .eq('cnpj_empresa', activeCompany.cnpj)
-                .eq('status_orcamento', 'faturado') // Changed from faturado: true
+                .eq('status', '2') // Changed from status_orcamento: 'faturado' to status: '2'
                 .gte('data_orcamento', prevMonthStart)
                 .lte('data_orcamento', prevMonthEnd);
 
