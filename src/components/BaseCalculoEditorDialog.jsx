@@ -65,7 +65,7 @@ const BaseCalculoEditorDialog = ({ isOpen, setIsOpen, productId, activeCompanyCn
     const handleSelectCfop = (selected) => {
         setFormData(prev => ({
             ...prev,
-            id_cfop: selected ? selected.cfop : null, // CFOP é string
+            id_cfop: selected ? selected.id : null, // Agora armazena o ID do CFOP
             cfop_obj: selected,
         }));
     };
@@ -89,7 +89,7 @@ const BaseCalculoEditorDialog = ({ isOpen, setIsOpen, productId, activeCompanyCn
             const saveData = {
                 id_produto: productId,
                 id_cst_csosn: formData.id_cst_csosn,
-                id_cfop: formData.id_cfop, // Garante que é uma string
+                id_cfop: formData.id_cfop, // Agora é o ID do CFOP
                 id_aliquota: formData.id_aliquota,
                 updated_at: new Date().toISOString(),
             };

@@ -10,7 +10,7 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
 const SelectSearchCfop = ({
-  value, // current selected CFOP object { cfop: string, descricao: string } or null
+  value, // current selected CFOP object { id: bigint, cfop: string, descricao: string } or null
   onValueChange, // function to call with the selected CFOP object or null
   disabled,
   placeholder = "Selecione o CFOP",
@@ -39,7 +39,7 @@ const SelectSearchCfop = ({
     try {
       const { data, error } = await supabase
         .from('cfop')
-        .select('cfop, descricao')
+        .select('id, cfop, descricao') // Seleciona o ID também
         .order('cfop', { ascending: true });
       
       if (error) throw error;
@@ -70,7 +70,7 @@ const SelectSearchCfop = ({
   }, [allCfops, searchTerm]);
 
   const handleSelect = (cfopObject) => {
-    onValueChange(cfopObject);
+    onValueChange(cfopObject); // Passa o objeto completo, incluindo o ID
     setSearchTerm(`${cfopObject.cfop} - ${cfopObject.descricao}`);
     setIsOpen(false);
   };
@@ -162,7 +162,7 @@ const SelectSearchCfop = ({
               ) : (
                 filteredCfops.map((cfopObj) => (
                   <button
-                    key={cfopObj.cfop}
+                    key={cfopObj.id} // Usa o ID como chave
                     type="button"
                     className="w-full text-left px-3 py-2 hover:bg-slate-100 focus:bg-slate-100 focus:outline-none transition-colors"
                     onMouseDown={(e) => e.preventDefault()} 

@@ -100,3 +100,9 @@ export const normalizeString = (str) => {
         .replace(/\s{2,}/g," ") // Replace multiple spaces with a single space
         .trim(); // Trim leading/trailing whitespace
 };
+
+// Função para validar se uma string é um UUID válido
+export const isValidUuid = (uuid) => {
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  return uuidRegex.test(uuid);
+};

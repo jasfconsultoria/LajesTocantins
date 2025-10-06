@@ -16,6 +16,7 @@ import {
 import BaseCalculoEditorDialog from '@/components/BaseCalculoEditorDialog';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { logAction } from '@/lib/log';
+import { isValidUuid } from '@/lib/utils'; // Importa a função de validação de UUID
 
 const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
     const { toast } = useToast();
@@ -26,7 +27,8 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
     const [selectedEntry, setSelectedEntry] = useState(null);
 
     const fetchBaseCalculoEntries = useCallback(async () => {
-        if (!productId) {
+        if (!productId || !isValidUuid(productId)) { // Valida o productId como UUID
+            console.warn("BaseCalculoList: productId is missing or not a valid UUID. Skipping fetch.");
             setBaseCalculoEntries([]);
             setLoading(false);
             return;
@@ -98,7 +100,7 @@ const BaseCalculoList = ({ productId, activeCompanyCnpj }) => {
                     <Calculator className="w-5 h-5 text-blue-600" />
                     Bases de Cálculo ICMS
                 </h3>
-                <Button onClick={handleAddEntry} className="save-button" size="sm" disabled={!productId}>
+                <Button onClick={handleAddEntry} className="save-button" size="sm" disabled={!productId || !isValidUuid(productId)}>
                     <PlusCircle className="w-4 h-4 mr-2" /> Adicionar Base
                 </Button>
             </div>
