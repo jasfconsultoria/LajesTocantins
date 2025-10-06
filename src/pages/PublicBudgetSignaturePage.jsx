@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ClipboardList, Signature as SignatureIcon, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle } from 'lucide-react'; // Changed SignatureIcon to PencilLine
 import { Button } from '@/components/ui/button';
 import SignatureDialog from '@/components/SignatureDialog';
 import { formatCurrency, formatCpfCnpj } from '@/lib/utils';
@@ -19,7 +19,7 @@ const PublicBudgetSignaturePage = () => {
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false);
-  const [unitsMap, setUnitsMap] = useState(new Map());
+  const [unitsMap, setUnitsMap] = new Map();
   const [allMunicipalities, setAllMunicipalities] = useState([]);
   const [activeCompanyData, setActiveCompanyData] = useState(null); // To store company data for display
 
@@ -326,14 +326,14 @@ const PublicBudgetSignaturePage = () => {
           {isPendente && !budget.signature_url ? (
             <>
               <h3 className="text-xl font-semibold text-slate-800 mb-4 flex items-center justify-center gap-2">
-                <SignatureIcon className="w-6 h-6 text-blue-600" /> Assinatura do Cliente
+                <PencilLine className="w-6 h-6 text-blue-600" /> Assinatura do Cliente
               </h3>
               <p className="text-slate-600 mb-4">Por favor, assine abaixo para aprovar este orçamento.</p>
               <Button 
                 onClick={() => setIsSignatureDialogOpen(true)} 
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md"
               >
-                <SignatureIcon className="w-5 h-5 mr-2" /> Assinar Orçamento
+                <PencilLine className="w-5 h-5 mr-2" /> Assinar Orçamento
               </Button>
             </>
           ) : (

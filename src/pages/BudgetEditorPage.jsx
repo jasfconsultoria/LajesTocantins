@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, Signature as SignatureIcon, Copy } from 'lucide-react'; // Added Copy icon
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, PencilLine, Copy } from 'lucide-react'; // Changed SignatureIcon to PencilLine
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -96,7 +96,7 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // New state for share link dialog
     const [shareLink, setShareLink] = useState(''); // State to hold the generated share link
-    const [unitsMap, setUnitsMap] = useState(new Map());
+    const [unitsMap, setUnitsMap] = new Map();
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
@@ -1140,7 +1140,7 @@ const BudgetEditorPage = () => {
                 {budget.signature_url && (
                     <div className="mt-8 pt-6 border-t border-slate-200">
                         <h3 className="config-title mb-4 flex items-center gap-2">
-                            <SignatureIcon className="w-5 h-5 text-blue-600" /> Assinatura do Orçamento
+                            <PencilLine className="w-5 h-5 text-blue-600" /> Assinatura do Orçamento
                         </h3>
                         <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 max-w-md">
                             <img src={budget.signature_url} alt="Assinatura do Orçamento" className="max-w-full h-auto" />

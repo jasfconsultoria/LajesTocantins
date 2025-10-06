@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Loader2, Signature as SignatureIcon, Eraser, Save } from 'lucide-react';
+import { Loader2, PencilLine, Eraser, Save } from 'lucide-react'; // Changed SignatureIcon to PencilLine
 import SignatureCanvas from 'react-signature-canvas';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -66,7 +66,7 @@ const SignatureDialog = ({ isOpen, setIsOpen, onSaveSignature, budgetNumber, isF
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <SignatureIcon className="w-5 h-5 text-blue-600" /> Assinar Orçamento {budgetNumber ? `#${budgetNumber}` : ''}
+            <PencilLine className="w-5 h-5 text-blue-600" /> Assinar Orçamento {budgetNumber ? `#${budgetNumber}` : ''}
           </DialogTitle>
           <DialogDescription>
             Por favor, assine digitalmente para aprovar este orçamento.
