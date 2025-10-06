@@ -19,7 +19,7 @@ const PublicBudgetSignaturePage = () => {
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSignatureDialogOpen, setIsSignatureDialogOpen] = useState(false);
-  const [unitsMap, setUnitsMap] = new Map();
+  const [unitsMap, setUnitsMap] = useState(new Map()); // Corrected initialization
   const [allMunicipalities, setAllMunicipalities] = useState([]);
   const [activeCompanyData, setActiveCompanyData] = useState(null); // To store company data for display
 
@@ -195,7 +195,7 @@ const PublicBudgetSignaturePage = () => {
       setIsSignatureDialogOpen(false);
     } catch (error) {
       console.error("Error uploading signature:", error);
-      toast({ variant: 'destructive', title: 'Erro ao salvar assinatura', description: error.message || 'Ocorreu um erro inesperado ao salvar a assinatura.' });
+      toast({ variant: 'destructive', title: 'Erro ao salvar assinatura', description: error.message || 'Ocorreu um erro inesperado.' });
     }
   };
 
