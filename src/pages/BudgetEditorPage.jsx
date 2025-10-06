@@ -83,9 +83,12 @@ const BudgetEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Adicionado useState
+    const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null); // New state for selected client's full data
+
+    const [baseIcmsTotal, setBaseIcmsTotal] = useState(0); // New state for ICMS Base
+    const [totalIcmsTotal, setTotalIcmsTotal] = useState(0); // New state for ICMS Total
 
     const isFaturado = budget.faturado;
 
@@ -300,7 +303,19 @@ const BudgetEditorPage = () => {
                 console.error("Error fetching compositions for budget (BudgetEditorPage):", compError);
                 throw compError;
             }
-            if (compData) setCompositions(compData);
+            if (compData) {
+                // For each composition, fetch its base_calculo entries
+                const compositionsWithBaseCalculo = await Promise.all(compData.map(async (comp) => {
+                    const { data: baseCalculoData, error: baseCalculoError } = await supabase.rpc('get_base_calculo_details', { p_product_id: comp.produto_id });
+                    if (baseCalculoError) {
+                        console.error(`Error fetching base_calculo for product ${comp.produto_id}:`, baseCalculoError);
+                        // Return composition without base_calculo_entries if there's an error
+                        return { ...comp, base_calculo_entries: [] };
+                    }
+                    return { ...comp, base_calculo_entries: baseCalculoData || [] };
+                }));
+                setCompositions(compositionsWithBaseCalculo);
+            }
 
         } catch (error) {
             console.error("Caught error fetching budget (BudgetEditorPage):", error);
@@ -359,6 +374,52 @@ const BudgetEditorPage = () => {
             }));
         }
     }, [allUfs, allMunicipalities, fetchBudget, fetchPeople, id, activeCompany, user]);
+
+    // Effect to calculate ICMS totals
+    useEffect(() => {
+        if (!activeCompany || !selectedClientData) {
+            setBaseIcmsTotal(0);
+            setTotalIcmsTotal(0);
+            return;
+        }
+
+        let currentBaseIcms = 0;
+        let currentTotalIcms = 0;
+
+        const companyUf = activeCompany.uf;
+        const clientUf = selectedClientData.uf;
+        const companyCrt = parseInt(activeCompany.crt, 10); // Ensure CRT is a number
+
+        compositions.forEach(comp => {
+            const productSubtotal = (comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0);
+
+            // Find the matching base_calculo entry for this product, company UF, and client UF
+            const matchingBaseCalculo = comp.base_calculo_entries?.find(bc =>
+                bc.aliquota_uf_origem === companyUf && bc.aliquota_uf_destino === clientUf
+            );
+
+            if (matchingBaseCalculo) {
+                const aliquotaAplicada = (matchingBaseCalculo.aliquota_icms_value + matchingBaseCalculo.aliquota_fecp_value - matchingBaseCalculo.aliquota_reducao_value) / 100; // Convert to decimal
+
+                // Apply CRT logic
+                if (companyCrt === 1 || companyCrt === 2) { // Simples Nacional or Simples Nacional - excesso
+                    // For Simples Nacional, ICMS is generally not calculated on the invoice itself.
+                    // However, the request implies calculation based on 'aliquota aplicada'.
+                    // We will calculate the theoretical ICMS for internal tracking.
+                    currentBaseIcms += productSubtotal;
+                    currentTotalIcms += productSubtotal * aliquotaAplicada;
+                } else if (companyCrt === 3) { // Regime Normal
+                    currentBaseIcms += productSubtotal;
+                    currentTotalIcms += productSubtotal * aliquotaAplicada;
+                }
+            }
+        });
+
+        setBaseIcmsTotal(currentBaseIcms);
+        setTotalIcmsTotal(currentTotalIcms);
+
+    }, [compositions, activeCompany, selectedClientData]);
+
 
     const handleInputChange = (e) => {
         const { id, value, type, checked } = e.target;
@@ -502,7 +563,15 @@ const BudgetEditorPage = () => {
         }
     };
 
-    const handleSelectProduct = (product) => {
+    const handleSelectProduct = async (product) => {
+        // Fetch base_calculo entries for the selected product
+        const { data: baseCalculoData, error: baseCalculoError } = await supabase.rpc('get_base_calculo_details', { p_product_id: product.id });
+        if (baseCalculoError) {
+            console.error("Error fetching base_calculo for product:", baseCalculoError);
+            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as bases de cálculo para o produto.' });
+            // Proceed without base_calculo data for this item
+        }
+
         const newCompositionItem = {
             id: uuidv4(),
             orcamento_id: id ? parseInt(id, 10) : null,
@@ -515,31 +584,14 @@ const BudgetEditorPage = () => {
                 prod_uCOM: product.prod_uCOM,
             },
             isNew: true,
+            base_calculo_entries: baseCalculoData || [], // Store all relevant base_calculo entries
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
     };
 
     const handleSelectProductFromSearch = (product) => {
-        const newCompositionItem = {
-            id: uuidv4(),
-            orcamento_id: id ? parseInt(id, 10) : null,
-            produto_id: product.id,
-            quantidade: 1,
-            valor_venda: product.prod_vUnCOM || 0,
-            desconto_total: 0,
-            produtos: {
-                prod_xProd: product.prod_xProd,
-                prod_uCOM: product.prod_uCOM,
-            },
-            isNew: true,
-        };
-        setCompositions(prev => [...prev, newCompositionItem]);
-        toast({ 
-            title: "Produto adicionado!", 
-            description: `${product.prod_xProd} foi adicionado ao orçamento.`,
-            duration: 2000 
-        });
+        handleSelectProduct(product); // Use the same logic for both
     };
 
     const handleQuantityChange = (compositionId, newQuantity) => {
@@ -919,8 +971,8 @@ const BudgetEditorPage = () => {
                     <div className="lg:col-span-2">
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly disabled={isFaturado} /></div>
-                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value="0.00" readOnly disabled={isFaturado} /></div>
+                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value={baseIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
+                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value={totalIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
                         </div>
 
                         <h3 className="config-title mt-8 mb-4">Condições</h3>
