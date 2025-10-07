@@ -27,11 +27,6 @@ const PublicBudgetSignaturePage = () => {
   const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
   const [savingSignature, setSavingSignature] = useState(false);
 
-  // Log the ID received by this component
-  useEffect(() => {
-    console.log("PublicBudgetSignaturePage: Received ID from useParams:", id);
-  }, [id]);
-
   // Map numeric status to display string
   const statusMapDisplay = {
       '0': 'Pendente',
@@ -46,7 +41,14 @@ const PublicBudgetSignaturePage = () => {
   const isFaturado = budget?.status === '2';
   const hasSignature = budget?.signature_url && budget.signature_url.trim() !== '';
 
+  // Log the ID received by this component
+  useEffect(() => {
+    console.log("PublicBudgetSignaturePage: Component mounted/updated.");
+    console.log("PublicBudgetSignaturePage: ID from useParams:", id); // Log the ID here
+  }, [id]);
+
   const fetchUfsAndMunicipalities = useCallback(async () => {
+    console.log("PublicBudgetSignaturePage: fetchUfsAndMunicipalities called.");
     try {
       const { data: municipalitiesData, error: municipalitiesError } = await supabase
         .from('municipios')
@@ -54,8 +56,9 @@ const PublicBudgetSignaturePage = () => {
         .order('municipio');
       if (municipalitiesError) throw municipalitiesError;
       setAllMunicipalities(municipalitiesData);
+      console.log("PublicBudgetSignaturePage: Municipalities fetched successfully.");
     } catch (error) {
-      console.error("Error fetching Municipalities:", error);
+      console.error("PublicBudgetSignaturePage: Error fetching Municipalities:", error);
       toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar dados de localização.' });
     }
   }, [toast]);
@@ -85,7 +88,9 @@ const PublicBudgetSignaturePage = () => {
   }, [allMunicipalities]);
 
   const fetchBudgetDetails = useCallback(async () => {
+    console.log("PublicBudgetSignaturePage: fetchBudgetDetails called for ID:", id); // Log when fetch starts
     if (!id) {
+      console.log("PublicBudgetSignaturePage: ID is null or undefined, skipping fetch.");
       setLoading(false);
       return;
     }
@@ -99,10 +104,14 @@ const PublicBudgetSignaturePage = () => {
         .single();
 
       if (budgetError) {
-        console.error("Error fetching public budget details:", budgetError);
+        console.error("PublicBudgetSignaturePage: Supabase error fetching budget:", budgetError); // More specific error log
         throw new Error(`Orçamento não encontrado ou você não tem permissão para acessá-lo. Detalhes: ${budgetError.message}`);
       }
-      if (!budgetData) throw new Error("Orçamento não encontrado.");
+      if (!budgetData) {
+        console.log("PublicBudgetSignaturePage: No budget data returned for ID:", id); // Log if no data
+        throw new Error("Orçamento não encontrado.");
+      }
+      console.log("PublicBudgetSignaturePage: Budget data fetched:", budgetData);
 
       // Fetch client details
       let clientDetails = null;
@@ -112,9 +121,10 @@ const PublicBudgetSignaturePage = () => {
           .select('*')
           .eq('cpf_cnpj', budgetData.cliente_id)
           .single();
-        if (clientError) console.error("Error fetching client for public budget:", clientError);
+        if (clientError) console.error("PublicBudgetSignaturePage: Error fetching client for public budget:", clientError);
         clientDetails = clientData;
       }
+      console.log("PublicBudgetSignaturePage: Client data fetched:", clientDetails);
 
       // Fetch active company details for display
       let companyDetails = null;
@@ -124,10 +134,11 @@ const PublicBudgetSignaturePage = () => {
           .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url')
           .eq('cnpj', budgetData.cnpj_empresa)
           .single();
-        if (companyError) console.error("Error fetching company for public budget:", companyError);
+        if (companyError) console.error("PublicBudgetSignaturePage: Error fetching company for public budget:", companyError);
         companyDetails = companyRes;
       }
       setActiveCompanyData(companyDetails);
+      console.log("PublicBudgetSignaturePage: Company data fetched:", companyDetails);
 
       const enrichedBudgetData = {
         ...budgetData,
@@ -147,6 +158,7 @@ const PublicBudgetSignaturePage = () => {
         .eq('orcamento_id', parseInt(id, 10));
       if (compError) throw compError;
       setCompositions(compData);
+      console.log("PublicBudgetSignaturePage: Compositions data fetched:", compData);
 
       // Fetch units
       const { data: unitsData, error: unitsError } = await supabase
@@ -156,15 +168,17 @@ const PublicBudgetSignaturePage = () => {
       if (unitsError) throw unitsError;
       const map = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
       setUnitsMap(map);
+      console.log("PublicBudgetSignaturePage: Units data fetched.");
 
     } catch (error) {
-      console.error("Error fetching public budget details:", error);
+      console.error("PublicBudgetSignaturePage: Caught error in fetchBudgetDetails:", error); // Log caught error
       toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message || 'Ocorreu um erro inesperado ao carregar o orçamento.' });
-      setBudget(null);
+      setBudget(null); // Ensure budget is null on error
     } finally {
       setLoading(false);
+      console.log("PublicBudgetSignaturePage: fetchBudgetDetails finished. Budget state (after setBudget):", budget); // Log final budget state
     }
-  }, [id, toast, buildClientAddressString, allMunicipalities]);
+  }, [id, toast, buildClientAddressString, allMunicipalities, budget]); // Added budget to dependencies for logging
 
   useEffect(() => {
     fetchUfsAndMunicipalities();
@@ -262,6 +276,9 @@ const PublicBudgetSignaturePage = () => {
       </div>
     );
   }
+
+  // Log the budget state right before the conditional render
+  console.log("PublicBudgetSignaturePage: Rendering. Current budget state:", budget);
 
   if (!budget) {
     return (
