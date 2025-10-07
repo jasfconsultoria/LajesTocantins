@@ -93,7 +93,10 @@ const PublicBudgetSignaturePage = () => {
         .eq('id', parseInt(id, 10))
         .single();
 
-      if (budgetError) throw budgetError;
+      if (budgetError) {
+        console.error("Error fetching public budget details:", budgetError);
+        throw new Error(`Orçamento não encontrado ou você não tem permissão para acessá-lo. Detalhes: ${budgetError.message}`);
+      }
       if (!budgetData) throw new Error("Orçamento não encontrado.");
 
       // Fetch client details
@@ -260,7 +263,11 @@ const PublicBudgetSignaturePage = () => {
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 text-center">
         <XCircle className="w-16 h-16 text-red-500 mb-4" />
         <h2 className="text-2xl font-bold text-slate-800">Orçamento Não Encontrado</h2>
-        <p className="text-slate-600">Verifique o link e tente novamente.</p>
+        <p className="text-slate-600">
+          Verifique o link e tente novamente. Se o problema persistir, pode ser um problema de permissões.
+          Certifique-se de que as políticas de RLS (Row Level Security) para as tabelas `orcamento`, `pessoas`, `emitente`, `municipios` e `unidade`
+          permitam acesso de leitura para o papel `anon` (usuários não autenticados).
+        </p>
         <Button onClick={() => navigate('/')} className="mt-6">Voltar para o Início</Button>
       </div>
     );
