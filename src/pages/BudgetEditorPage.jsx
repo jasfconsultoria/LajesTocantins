@@ -96,7 +96,7 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     // const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // Removed
     // const [shareLink, setShareLink] = useState(''); // Removed
-    const [unitsMap, setUnitsMap] = useState(new Map());
+    const [unitsMap, setUnitsMap] = new Map(); // Changed to new Map() directly
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
@@ -286,8 +286,8 @@ const BudgetEditorPage = () => {
                 const budgetData = {
                     ...data,
                     data_orcamento: data.data_orcamento ? data.data_orcamento.split('T')[0] : '',
-                    data_venda: data.data_venda ? data.data_venda.split('T')[0] : null,
-                    previsao_entrega: data.previsao_entrega ? data.previsao_entrega.split('T')[0] : null,
+                    data_venda: data.data_venda ? new Date(data.data_venda).toISOString().split('T')[0] : null,
+                    previsao_entrega: data.previsao_entrega ? new Date(data.previsao_entrega).toISOString().split('T')[0] : null,
                 };
 
                 if (data.cliente_id) {
@@ -834,8 +834,8 @@ const BudgetEditorPage = () => {
         const baseUrl = window.location.origin; 
         const link = `${baseUrl}/public/budgets/${id}/sign`;
         console.log("Generated share link:", link);
-        // Usar window.location.href para forçar uma navegação completa
-        window.location.href = link; 
+        // Usar window.open para abrir em uma nova aba
+        window.open(link, '_blank'); 
     };
 
     const displayTipo = useMemo(() => {
