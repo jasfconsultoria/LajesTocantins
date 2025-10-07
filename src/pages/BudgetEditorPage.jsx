@@ -94,7 +94,7 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map());
+    const [unitsMap, setUnitsMap] = new Map(); // Initialize as empty map
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
@@ -1053,8 +1053,9 @@ const BudgetEditorPage = () => {
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'quantidade', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'quantidade')}
                                                 className="w-20 text-right"
-                                                // disabled={isFaturado} // REMOVIDO TEMPORARIAMENTE
-                                                ref={(el) => itemQuantityInputRefs.current.set(comp.id, el)} // Atribui a ref aqui
+                                                inputMode="decimal"
+                                                pattern="[0-9,.]*"
+                                                ref={(el) => itemQuantityInputRefs.current.set(comp.id, el)}
                                             />
                                         </TableCell>
                                         <TableCell>
@@ -1064,7 +1065,8 @@ const BudgetEditorPage = () => {
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'valor_venda', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'valor_venda')}
                                                 className="w-28 text-right"
-                                                // disabled={isFaturado} // REMOVIDO TEMPORARIAMENTE
+                                                inputMode="decimal"
+                                                pattern="[0-9,.]*"
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
@@ -1077,7 +1079,8 @@ const BudgetEditorPage = () => {
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'desconto_total', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'desconto_total')}
                                                 className="w-24 text-right"
-                                                // disabled={isFaturado} // REMOVIDO TEMPORARIAMENTE
+                                                inputMode="decimal"
+                                                pattern="[0-9,.]*"
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-bold">
@@ -1168,7 +1171,7 @@ const BudgetEditorPage = () => {
                         </Button>
                         <Button 
                             variant="outline" 
-                            onClick={handleShareBudgetDirectly} // Changed to direct navigation
+                            onClick={handleShareBudgetDirectly}
                             disabled={!id || isFaturado}
                             className="bg-green-500 hover:bg-green-600 text-white"
                         >
