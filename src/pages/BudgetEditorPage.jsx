@@ -1052,7 +1052,7 @@ const BudgetEditorPage = () => {
                                                 value={comp.quantidade_display}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'quantidade', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'quantidade')}
-                                                onFocus={(e) => e.target.select()} // Adicionado para selecionar o texto
+                                                // onFocus={(e) => e.target.select()} // Removido para testar o problema de digitação
                                                 className="w-20 text-right"
                                                 disabled={isFaturado}
                                                 ref={(el) => itemQuantityInputRefs.current.set(comp.id, el)} // Atribui a ref aqui
@@ -1064,7 +1064,7 @@ const BudgetEditorPage = () => {
                                                 value={comp.valor_venda_display}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'valor_venda', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'valor_venda')}
-                                                onFocus={(e) => e.target.select()} // Adicionado para selecionar o texto
+                                                // onFocus={(e) => e.target.select()} // Removido para testar o problema de digitação
                                                 className="w-28 text-right"
                                                 disabled={isFaturado}
                                             />
@@ -1078,7 +1078,7 @@ const BudgetEditorPage = () => {
                                                 value={comp.desconto_total_display}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'desconto_total', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'desconto_total')}
-                                                onFocus={(e) => e.target.select()} // Adicionado para selecionar o texto
+                                                // onFocus={(e) => e.target.select()} // Removido para testar o problema de digitação
                                                 className="w-24 text-right"
                                                 disabled={isFaturado}
                                             />
