@@ -18,7 +18,7 @@ const PublicBudgetSignaturePage = () => {
   const [budget, setBudget] = useState(null);
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [unitsMap, setUnitsMap] = useState(new Map());
+  const [unitsMap, setUnitsMap] = new Map(); // CORRIGIDO: Inicialização com useState(new Map())
   const [allMunicipalities, setAllMunicipalities] = useState([]);
   const [activeCompanyData, setActiveCompanyData] = useState(null);
 
@@ -131,7 +131,7 @@ const PublicBudgetSignaturePage = () => {
       if (budgetData.cnpj_empresa) {
         const { data: companyRes, error: companyError } = await supabase
           .from('emitente')
-          .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url, logo_documentos_url') // Adicionado logo_documentos_url
+          .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url, logo_documentos_url, logradouro, numero, complemento, bairro, municipio, uf') // Adicionado mais campos
           .eq('cnpj', budgetData.cnpj_empresa)
           .single();
         if (companyError) console.error("PublicBudgetSignaturePage: Error fetching company for public budget:", companyError);
@@ -295,6 +295,15 @@ const PublicBudgetSignaturePage = () => {
     );
   }
 
+  const companyAddress = [
+    activeCompanyData?.logradouro,
+    activeCompanyData?.numero,
+    activeCompanyData?.complemento,
+    activeCompanyData?.bairro,
+    activeCompanyData?.municipio,
+    activeCompanyData?.uf
+  ].filter(Boolean).join(', ');
+
   return (
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
       <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl p-8 rounded-xl shadow-lg border border-white space-y-6">
@@ -309,7 +318,9 @@ const PublicBudgetSignaturePage = () => {
             )}
             <div>
               <h1 className="text-2xl font-bold text-slate-800">{activeCompanyData?.razao_social || 'Sua Empresa'}</h1>
+              {activeCompanyData?.nome_fantasia && <p className="text-sm text-slate-600">{activeCompanyData.nome_fantasia}</p>}
               <p className="text-sm text-slate-600">{activeCompanyData?.cnpj}</p>
+              <p className="text-sm text-slate-600">{companyAddress}</p>
               <p className="text-sm text-slate-600">{activeCompanyData?.telefone} | {activeCompanyData?.email}</p>
             </div>
           </div>
