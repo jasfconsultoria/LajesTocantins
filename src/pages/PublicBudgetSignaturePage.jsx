@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams, useNavigate } => from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // Linha corrigida
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle, Eraser, Save, ArrowLeft } from 'lucide-react';
