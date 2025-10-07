@@ -680,14 +680,13 @@ const BudgetEditorPage = () => {
 
     const handleCompositionInputBlur = async (compositionId, field) => {
         setSaving(true);
-        const originalCompositions = [...compositions]; // Store original state for rollback
         let updatedComp = null;
-        let originalDisplayValue = null; // To store the original display value for rollback
+        let originalDisplayValue = null;
 
         setCompositions(prev => 
             prev.map(comp => {
                 if (comp.id === compositionId) {
-                    originalDisplayValue = comp[`${field}_display`]; // Store original display value
+                    originalDisplayValue = comp[`${field}_display`];
                     const displayValue = comp[`${field}_display`] || '';
                     const parsedValue = parseFormattedNumber(displayValue);
                     const numericValue = parsedValue !== null ? parsedValue : 0;
@@ -703,23 +702,21 @@ const BudgetEditorPage = () => {
         );
 
         if (updatedComp) {
-            console.log(`[DEBUG] Attempting to save composition item ${compositionId}, field ${field}:`, {
-                [field]: updatedComp[field],
-                updated_at: new Date().toISOString(),
-            });
+            console.log(`[DEBUG] Attempting to save composition item ${compositionId}, field ${field}. Value to send:`, updatedComp[field]);
             try {
                 const { error: updateError } = await supabase
                     .from('orcamento_composicao')
                     .update({
-                        [field]: updatedComp[field], // Only update the specific field
+                        [field]: updatedComp[field],
                         updated_at: new Date().toISOString(),
                     })
-                    .eq('id', compositionId);
+                    .eq('id', parseInt(compositionId, 10)); // Explicitly parse ID
 
                 if (updateError) {
                     console.error(`[ERROR] Supabase update failed for composition item ${compositionId}, field ${field}:`, updateError);
                     throw updateError;
                 }
+                console.log(`[SUCCESS] Supabase update for composition item ${compositionId}, field ${field} completed without error.`);
                 toast({ title: "Item atualizado!", description: "A composição foi salva com sucesso." });
             } catch (error) {
                 console.error(`[ERROR] Caught error during composition item update for ${compositionId}, field ${field}:`, error);
@@ -736,7 +733,7 @@ const BudgetEditorPage = () => {
                 setSaving(false);
             }
         } else {
-            setSaving(false); // Ensure saving state is reset even if updatedComp is null
+            setSaving(false);
         }
     };
 
