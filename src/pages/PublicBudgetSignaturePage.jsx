@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Linha corrigida
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle, Eraser, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import SignatureCanvas from 'react-signature-canvas'; // Importar SignatureCanvas
+import SignatureCanvas from 'react-signature-canvas';
 import { formatCurrency, formatCpfCnpj, capitalizeFirstLetter } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
+import BudgetCompany from '@/components/BudgetCompany'; // Import the new component
 
 const PublicBudgetSignaturePage = () => {
   const { id } = useParams();
@@ -264,7 +265,7 @@ const PublicBudgetSignaturePage = () => {
   const totalDescontoDisplay = sumOfItemDiscounts;
   const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
-  const canShowSignatureField = true; 
+  const canShowSignatureField = isPendente && !hasSignature; 
 
   // Construir o endereço da empresa usando useMemo para garantir reatividade e clareza
   const companyAddressBudget = useMemo(() => {
@@ -278,19 +279,19 @@ const PublicBudgetSignaturePage = () => {
     if (activeCompanyData.complemento) parts.push(activeCompanyData.complemento);
     if (activeCompanyData.bairro) parts.push(activeCompanyData.bairro);
     
-    // Omitindo município e UF conforme solicitado
-    // const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData.municipio))?.municipio || '';
-    // const ufSigla = activeCompanyData.uf || '';
-    // if (municipioNome && ufSigla) {
-    //     parts.push(`${municipioNome}/${ufSigla}`);
-    // } else if (municipioNome) {
-    //     parts.push(municipioNome);
-    // } else if (ufSigla) {
-    //     parts.push(ufSigla);
-    // }
+    // Descomentado: Incluindo município e UF
+    const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData.municipio))?.municipio || '';
+    const ufSigla = activeCompanyData.uf || '';
+    if (municipioNome && ufSigla) {
+        parts.push(`${municipioNome}/${ufSigla}`);
+    } else if (municipioNome) {
+        parts.push(municipioNome);
+    } else if (ufSigla) {
+        parts.push(ufSigla);
+    }
 
     return parts.filter(Boolean).join(', ');
-  }, [activeCompanyData]);
+  }, [activeCompanyData, allMunicipalities]); // Adicionado allMunicipalities à dependência
 
   if (loading) {
     return (
@@ -323,22 +324,8 @@ const PublicBudgetSignaturePage = () => {
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
       <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl p-8 rounded-xl shadow-lg border border-white space-y-6">
         <div className="flex justify-between items-start border-b pb-4 mb-4">
-          <div className="flex items-center space-x-3">
-            {activeCompanyData?.logo_documentos_url ? (
-              <img src={activeCompanyData.logo_documentos_url} alt="Company Logo" className="h-16 object-contain" />
-            ) : (
-              <div className="h-16 w-16 flex items-center justify-center bg-slate-200 rounded-md">
-                <ClipboardList className="w-8 h-8 text-slate-400" />
-              </div>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">{activeCompanyData?.razao_social || 'Sua Empresa'}</h1>
-              {activeCompanyData?.nome_fantasia && <p className="text-sm text-slate-600">{activeCompanyData.nome_fantasia}</p>}
-              <p className="text-sm text-slate-600">{activeCompanyData?.cnpj}</p>
-              <p className="text-sm text-slate-600">{companyAddressBudget}</p>
-              <p className="text-sm text-slate-600">{activeCompanyData?.telefone} | {activeCompanyData?.email}</p>
-            </div>
-          </div>
+          {/* Usando o novo componente BudgetCompany */}
+          <BudgetCompany companyData={activeCompanyData} companyAddress={companyAddressBudget} />
           <div className="text-right">
             <h2 className="text-3xl font-extrabold text-blue-600">ORÇAMENTO</h2>
             <p className="text-xl font-semibold text-slate-800">Nº {budget.numero_pedido || budget.id}</p>
