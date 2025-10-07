@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } => from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle, Eraser, Save, ArrowLeft } from 'lucide-react';
@@ -135,8 +135,6 @@ const PublicBudgetSignaturePage = () => {
           .single();
         if (companyError) {
           console.error("PublicBudgetSignaturePage: Erro ao buscar empresa para orçamento público:", companyError);
-          // Se o erro for 'PGRST116' (nenhuma linha encontrada), companyRes será null, o que é esperado.
-          // Outros erros (ex: RLS) serão logados.
         }
         console.log("PublicBudgetSignaturePage: Resultado da busca da empresa (companyRes):", companyRes);
         companyDetails = companyRes;
@@ -270,13 +268,9 @@ const PublicBudgetSignaturePage = () => {
 
   // Construir o endereço da empresa usando useMemo para garantir reatividade e clareza
   const companyAddressBudget = useMemo(() => {
-    console.log("DEBUG: Recomputing companyAddressBudget.");
     if (!activeCompanyData) {
-      console.log("DEBUG: activeCompanyData é nulo, retornando string vazia para companyAddressBudget.");
       return '';
     }
-
-    console.log("DEBUG: activeCompanyData para endereço:", activeCompanyData);
 
     const parts = [];
     if (activeCompanyData.logradouro) parts.push(activeCompanyData.logradouro);
@@ -295,10 +289,8 @@ const PublicBudgetSignaturePage = () => {
     //     parts.push(ufSigla);
     // }
 
-    const finalAddress = parts.filter(Boolean).join(', ');
-    console.log("DEBUG: Endereço final da empresa (companyAddressBudget):", finalAddress);
-    return finalAddress;
-  }, [activeCompanyData]); // allMunicipalities não é mais uma dependência direta aqui
+    return parts.filter(Boolean).join(', ');
+  }, [activeCompanyData]);
 
   if (loading) {
     return (
@@ -307,6 +299,10 @@ const PublicBudgetSignaturePage = () => {
       </div>
     );
   }
+
+  // Log the final state right before rendering
+  console.log("PublicBudgetSignaturePage: FINAL RENDER STATE - budget:", budget);
+  console.log("PublicBudgetSignaturePage: FINAL RENDER STATE - activeCompanyData:", activeCompanyData);
 
   if (!budget) {
     return (
