@@ -94,7 +94,7 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map());
+    const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Inicialização com useState(new Map())
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
     const [itemToFocusId, setItemToFocusId] = useState(null); // Novo estado para controlar o foco
@@ -682,12 +682,12 @@ const BudgetEditorPage = () => {
         setSaving(true);
         const originalCompositions = [...compositions]; // Store original state for rollback
         let updatedComp = null;
-        let originalValue = null;
+        let originalDisplayValue = null; // To store the original display value for rollback
 
         setCompositions(prev => 
             prev.map(comp => {
                 if (comp.id === compositionId) {
-                    originalValue = comp[field]; // Store original numeric value
+                    originalDisplayValue = comp[`${field}_display`]; // Store original display value
                     const displayValue = comp[`${field}_display`] || '';
                     const parsedValue = parseFormattedNumber(displayValue);
                     const numericValue = parsedValue !== null ? parsedValue : 0;
@@ -703,7 +703,7 @@ const BudgetEditorPage = () => {
         );
 
         if (updatedComp) {
-            console.log(`Attempting to save composition item ${compositionId}, field ${field}:`, {
+            console.log(`[DEBUG] Attempting to save composition item ${compositionId}, field ${field}:`, {
                 [field]: updatedComp[field],
                 updated_at: new Date().toISOString(),
             });
@@ -717,15 +717,21 @@ const BudgetEditorPage = () => {
                     .eq('id', compositionId);
 
                 if (updateError) {
-                    console.error("Error updating composition item on blur:", updateError);
+                    console.error(`[ERROR] Supabase update failed for composition item ${compositionId}, field ${field}:`, updateError);
                     throw updateError;
                 }
                 toast({ title: "Item atualizado!", description: "A composição foi salva com sucesso." });
             } catch (error) {
-                console.error("Caught error in handleCompositionInputBlur:", error);
+                console.error(`[ERROR] Caught error during composition item update for ${compositionId}, field ${field}:`, error);
                 toast({ variant: 'destructive', title: 'Erro ao atualizar item', description: error.message || 'Ocorreu um erro inesperado ao salvar o item.' });
                 // Rollback local state if save fails
-                setCompositions(originalCompositions);
+                setCompositions(prev => 
+                    prev.map(comp => 
+                        comp.id === compositionId 
+                            ? { ...comp, [`${field}_display`]: originalDisplayValue, [field]: parseFormattedNumber(originalDisplayValue) }
+                            : comp
+                    )
+                );
             } finally {
                 setSaving(false);
             }
