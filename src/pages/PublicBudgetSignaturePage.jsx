@@ -41,14 +41,7 @@ const PublicBudgetSignaturePage = () => {
   const isFaturado = budget?.status === '2';
   const hasSignature = budget?.signature_url && budget.signature_url.trim() !== '';
 
-  // Log the ID received by this component
-  useEffect(() => {
-    console.log("PublicBudgetSignaturePage: Component mounted/updated.");
-    console.log("PublicBudgetSignaturePage: ID from useParams:", id); // Log the ID here
-  }, [id]);
-
   const fetchUfsAndMunicipalities = useCallback(async () => {
-    console.log("PublicBudgetSignaturePage: fetchUfsAndMunicipalities called.");
     try {
       const { data: municipalitiesData, error: municipalitiesError } = await supabase
         .from('municipios')
@@ -56,9 +49,8 @@ const PublicBudgetSignaturePage = () => {
         .order('municipio');
       if (municipalitiesError) throw municipalitiesError;
       setAllMunicipalities(municipalitiesData);
-      console.log("PublicBudgetSignaturePage: Municipalities fetched successfully.");
     } catch (error) {
-      console.error("PublicBudgetSignaturePage: Error fetching Municipalities:", error);
+      console.error("Error fetching Municipalities:", error);
       toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar dados de localização.' });
     }
   }, [toast]);
@@ -88,9 +80,7 @@ const PublicBudgetSignaturePage = () => {
   }, [allMunicipalities]);
 
   const fetchBudgetDetails = useCallback(async () => {
-    console.log("PublicBudgetSignaturePage: fetchBudgetDetails called for ID:", id); // Log when fetch starts
     if (!id) {
-      console.log("PublicBudgetSignaturePage: ID is null or undefined, skipping fetch.");
       setLoading(false);
       return;
     }
@@ -104,14 +94,11 @@ const PublicBudgetSignaturePage = () => {
         .single();
 
       if (budgetError) {
-        console.error("PublicBudgetSignaturePage: Supabase error fetching budget:", budgetError); // More specific error log
         throw new Error(`Orçamento não encontrado ou você não tem permissão para acessá-lo. Detalhes: ${budgetError.message}`);
       }
       if (!budgetData) {
-        console.log("PublicBudgetSignaturePage: No budget data returned for ID:", id); // Log if no data
         throw new Error("Orçamento não encontrado.");
       }
-      console.log("PublicBudgetSignaturePage: Budget data fetched:", budgetData);
 
       // Fetch client details
       let clientDetails = null;
@@ -121,24 +108,22 @@ const PublicBudgetSignaturePage = () => {
           .select('*')
           .eq('cpf_cnpj', budgetData.cliente_id)
           .single();
-        if (clientError) console.error("PublicBudgetSignaturePage: Error fetching client for public budget:", clientError);
+        if (clientError) console.error("Error fetching client for public budget:", clientError);
         clientDetails = clientData;
       }
-      console.log("PublicBudgetSignaturePage: Client data fetched:", clientDetails);
 
       // Fetch active company details for display
       let companyDetails = null;
       if (budgetData.cnpj_empresa) {
         const { data: companyRes, error: companyError } = await supabase
           .from('emitente')
-          .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url, logo_documentos_url, logradouro, numero, complemento, bairro, municipio, uf') // Adicionado mais campos
+          .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url, logo_documentos_url, logradouro, numero, complemento, bairro, municipio, uf')
           .eq('cnpj', budgetData.cnpj_empresa)
           .single();
-        if (companyError) console.error("PublicBudgetSignaturePage: Error fetching company for public budget:", companyError);
+        if (companyError) console.error("Error fetching company for public budget:", companyError);
         companyDetails = companyRes;
       }
       setActiveCompanyData(companyDetails);
-      console.log("PublicBudgetSignaturePage: Company data fetched:", companyDetails);
 
       const enrichedBudgetData = {
         ...budgetData,
@@ -146,7 +131,6 @@ const PublicBudgetSignaturePage = () => {
         previsao_entrega: budgetData.previsao_entrega ? new Date(budgetData.previsao_entrega).toLocaleDateString('pt-BR') : '',
         nome_cliente: clientDetails ? (clientDetails.nome_fantasia && clientDetails.razao_social ? `${clientDetails.nome_fantasia} - ${clientDetails.razao_social}` : clientDetails.razao_social || clientDetails.nome_fantasia) : 'Cliente Não Informado',
         cliente_endereco_completo: clientDetails ? buildClientAddressString(clientDetails) : '',
-        // Ensure signature_url is truly null if it's empty or whitespace
         signature_url: (budgetData.signature_url && budgetData.signature_url.trim() !== '') ? budgetData.signature_url : null,
       };
       setBudget(enrichedBudgetData);
@@ -158,7 +142,6 @@ const PublicBudgetSignaturePage = () => {
         .eq('orcamento_id', parseInt(id, 10));
       if (compError) throw compError;
       setCompositions(compData);
-      console.log("PublicBudgetSignaturePage: Compositions data fetched:", compData);
 
       // Fetch units
       const { data: unitsData, error: unitsError } = await supabase
@@ -168,17 +151,15 @@ const PublicBudgetSignaturePage = () => {
       if (unitsError) throw unitsError;
       const map = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
       setUnitsMap(map);
-      console.log("PublicBudgetSignaturePage: Units data fetched.");
 
     } catch (error) {
-      console.error("PublicBudgetSignaturePage: Caught error in fetchBudgetDetails:", error); // Log caught error
+      console.error("Caught error in fetchBudgetDetails:", error);
       toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message || 'Ocorreu um erro inesperado ao carregar o orçamento.' });
-      setBudget(null); // Ensure budget is null on error
+      setBudget(null);
     } finally {
       setLoading(false);
-      // console.log("PublicBudgetSignaturePage: fetchBudgetDetails finished. Budget state (after setBudget):", budget); // Removed this log as it would show stale state
     }
-  }, [id, toast, buildClientAddressString, allMunicipalities]); // Removed 'budget' from dependencies
+  }, [id, toast, buildClientAddressString, allMunicipalities]);
 
   useEffect(() => {
     fetchUfsAndMunicipalities();
@@ -206,11 +187,10 @@ const PublicBudgetSignaturePage = () => {
 
     setSavingSignature(true);
     try {
-      // Use getCanvas() instead of getTrimmedCanvas() to avoid internal module error
       const dataUrl = sigCanvas.current.getCanvas().toDataURL('image/png');
       const fileExt = 'png';
       const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `public/${budget.id}/${fileName}`; // Store in a public subfolder
+      const filePath = `public/${budget.id}/${fileName}`;
 
       const response = await fetch(dataUrl);
       const blob = await response.blob();
@@ -229,13 +209,12 @@ const PublicBudgetSignaturePage = () => {
         .from('budget_signatures')
         .getPublicUrl(filePath);
       
-      // Update budget status to '1' (Aprovado) and save signature URL
       const { error: updateError } = await supabase
         .from('orcamento')
         .update({ status: '1', signature_url: publicUrl, updated_at: new Date().toISOString() })
         .eq('id', budget.id)
-        .or('status.eq.0,signature_url.is.null,signature_url.eq.') // Only update if still '0' (Pendente) or no signature yet
-        .select(); // Select the updated data to refresh state
+        .or('status.eq.0,signature_url.is.null,signature_url.eq.')
+        .select();
 
       if (updateError) throw updateError;
 
@@ -265,20 +244,13 @@ const PublicBudgetSignaturePage = () => {
   const totalDescontoDisplay = sumOfItemDiscounts;
   const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
-  // Para fins de teste, o campo de assinatura aparecerá SEMPRE.
-  // Depois de confirmar que funciona, podemos reintroduzir as regras de status.
   const canShowSignatureField = true; 
 
   // Construir o endereço da empresa usando useMemo para garantir reatividade e clareza
   const companyAddressBudget = useMemo(() => {
-    console.log("DEBUG: Recomputing companyAddressBudget");
-    if (!activeCompanyData || allMunicipalities.length === 0) { // Adicionado allMunicipalities.length === 0
-      console.log("DEBUG: activeCompanyData or allMunicipalities not ready, returning empty string for companyAddressBudget.");
+    if (!activeCompanyData) {
       return '';
     }
-
-    console.log("DEBUG: activeCompanyData for address:", activeCompanyData);
-    console.log("DEBUG: allMunicipalities for address lookup:", allMunicipalities);
 
     const parts = [];
     if (activeCompanyData.logradouro) parts.push(activeCompanyData.logradouro);
@@ -286,24 +258,19 @@ const PublicBudgetSignaturePage = () => {
     if (activeCompanyData.complemento) parts.push(activeCompanyData.complemento);
     if (activeCompanyData.bairro) parts.push(activeCompanyData.bairro);
     
-    const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData.municipio))?.municipio || '';
-    const ufSigla = activeCompanyData.uf || '';
+    // Omitindo município e UF conforme solicitado
+    // const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData.municipio))?.municipio || '';
+    // const ufSigla = activeCompanyData.uf || '';
+    // if (municipioNome && ufSigla) {
+    //     parts.push(`${municipioNome}/${ufSigla}`);
+    // } else if (municipioNome) {
+    //     parts.push(municipioNome);
+    // } else if (ufSigla) {
+    //     parts.push(ufSigla);
+    // }
 
-    console.log("DEBUG: municipioNome resolved:", municipioNome);
-    console.log("DEBUG: ufSigla:", ufSigla);
-
-    if (municipioNome && ufSigla) {
-        parts.push(`${municipioNome}/${ufSigla}`);
-    } else if (municipioNome) {
-        parts.push(municipioNome);
-    } else if (ufSigla) {
-        parts.push(ufSigla);
-    }
-
-    const finalAddress = parts.filter(Boolean).join(', ');
-    console.log("DEBUG: Final companyAddressBudget:", finalAddress);
-    return finalAddress;
-  }, [activeCompanyData, allMunicipalities]); // Depend on allMunicipalities
+    return parts.filter(Boolean).join(', ');
+  }, [activeCompanyData]); // allMunicipalities não é mais uma dependência direta aqui
 
   if (loading) {
     return (
@@ -312,9 +279,6 @@ const PublicBudgetSignaturePage = () => {
       </div>
     );
   }
-
-  // Log the budget state right before the conditional render
-  console.log("PublicBudgetSignaturePage: Rendering. Current budget state:", budget);
 
   if (!budget) {
     return (
@@ -336,7 +300,7 @@ const PublicBudgetSignaturePage = () => {
       <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl p-8 rounded-xl shadow-lg border border-white space-y-6">
         <div className="flex justify-between items-start border-b pb-4 mb-4">
           <div className="flex items-center space-x-3">
-            {activeCompanyData?.logo_documentos_url ? ( // Usar logo_documentos_url
+            {activeCompanyData?.logo_documentos_url ? (
               <img src={activeCompanyData.logo_documentos_url} alt="Company Logo" className="h-16 object-contain" />
             ) : (
               <div className="h-16 w-16 flex items-center justify-center bg-slate-200 rounded-md">
@@ -347,7 +311,7 @@ const PublicBudgetSignaturePage = () => {
               <h1 className="text-2xl font-bold text-slate-800">{activeCompanyData?.razao_social || 'Sua Empresa'}</h1>
               {activeCompanyData?.nome_fantasia && <p className="text-sm text-slate-600">{activeCompanyData.nome_fantasia}</p>}
               <p className="text-sm text-slate-600">{activeCompanyData?.cnpj}</p>
-              <p className="text-sm text-slate-600">{companyAddressBudget}</p> {/* Usando a nova variável */}
+              <p className="text-sm text-slate-600">{companyAddressBudget}</p>
               <p className="text-sm text-slate-600">{activeCompanyData?.telefone} | {activeCompanyData?.email}</p>
             </div>
           </div>
