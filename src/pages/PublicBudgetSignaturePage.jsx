@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'; // Linha corrigida
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle, Eraser, Save, ArrowLeft } from 'lucide-react';
+import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle, Eraser, Save, ArrowLeft, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SignatureCanvas from 'react-signature-canvas'; // Importar SignatureCanvas
 import { formatCurrency, formatCpfCnpj, capitalizeFirstLetter } from '@/lib/utils';
@@ -18,7 +18,7 @@ const PublicBudgetSignaturePage = () => {
   const [budget, setBudget] = useState(null);
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [unitsMap, setUnitsMap] = useState(new Map());
+  const [unitsMap, setUnitsMap] = new Map(); // CORRIGIDO: Inicialização com new Map()
   const [allMunicipalities, setAllMunicipalities] = useState([]);
   const [activeCompanyData, setActiveCompanyData] = useState(null);
 
@@ -345,6 +345,21 @@ const PublicBudgetSignaturePage = () => {
             <p className="text-sm text-slate-600">Data: {budget.data_orcamento}</p>
           </div>
         </div>
+
+        {/* PDF Viewer */}
+        {budget.pdf_url && (
+            <div className="mt-6">
+                <h3 className="font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Visualização do Orçamento (PDF)
+                </h3>
+                <div className="border border-slate-300 rounded-md overflow-hidden bg-slate-50" style={{ height: '600px' }}>
+                    <iframe src={budget.pdf_url} width="100%" height="100%" title="Orçamento PDF" />
+                </div>
+                <p className="text-sm text-slate-500 mt-2">
+                    Se o PDF não carregar, verifique se o seu navegador permite a visualização de PDFs incorporados.
+                </p>
+            </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>

@@ -3,7 +3,7 @@ import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, PencilLine, Copy } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, ClipboardList, User, Building2, Package, PlusCircle, Trash2, Search, CalendarDays, Edit, Percent, Share2, PencilLine, Copy, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,6 +76,7 @@ const initialBudgetState = {
     previsao_entrega: getDatePlusDays(10),
     cliente_endereco_completo: '',
     signature_url: null,
+    pdf_url: null, // New field for PDF URL
 };
 
 const BudgetEditorPage = () => {
@@ -939,6 +940,29 @@ const BudgetEditorPage = () => {
         window.open(link, '_blank'); 
     };
 
+    const handleGeneratePdf = async () => {
+        if (!id) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Salve o orçamento primeiro para gerar o PDF.' });
+            return;
+        }
+        setSaving(true);
+        try {
+            const { data, error } = await supabase.functions.invoke('generate-budget-pdf', {
+                body: { budget_id: parseInt(id, 10) },
+            });
+
+            if (error) throw error;
+
+            setBudget(prev => ({ ...prev, pdf_url: data.pdf_url }));
+            toast({ title: 'PDF Gerado!', description: 'O PDF do orçamento foi gerado e o link salvo.' });
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            toast({ variant: 'destructive', title: 'Erro ao gerar PDF', description: error.message || 'Ocorreu um erro inesperado ao gerar o PDF.' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const displayTipo = useMemo(() => {
         if (budget.status === '2') return 'Pedido';
         if (budget.status === '1') return 'Orçamento Aprovado';
@@ -1253,6 +1277,15 @@ const BudgetEditorPage = () => {
                             className="bg-green-500 hover:bg-green-600 text-white"
                         >
                             <Share2 className="w-4 h-4 mr-2" /> Compartilhar Orçamento
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={handleGeneratePdf}
+                            disabled={!id || isFaturado || saving}
+                            className="bg-blue-500 hover:bg-blue-600 text-white"
+                        >
+                            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <FileText className="w-4 h-4 mr-2" /> Gerar PDF
                         </Button>
                         <Button onClick={() => handleSave()} className="save-button" disabled={saving || isFaturado}>
                             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
