@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString, capitalizeFirstLetter, formatDecimal } from '@/lib/utils';
+import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString, capitalizeFirstLetter, formatDecimal, parseFormattedNumber } from '@/lib/utils';
 import SelectSearchClient from '@/components/SelectSearchClient';
 import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
@@ -606,31 +606,34 @@ const BudgetEditorPage = () => {
         handleSelectProduct(product);
     };
 
-    const handleQuantityChange = (compositionId, newQuantity) => {
+    const handleQuantityChange = (compositionId, newQuantityString) => {
+        const parsedQuantity = parseFormattedNumber(newQuantityString);
         setCompositions(prev => 
             prev.map(comp => 
                 comp.id === compositionId 
-                    ? { ...comp, quantidade: parseFloat(newQuantity) || 0 }
+                    ? { ...comp, quantidade: parsedQuantity !== null ? parsedQuantity : 0 }
                     : comp
             )
         );
     };
 
-    const handleValueChange = (compositionId, newValue) => {
+    const handleValueChange = (compositionId, newValueString) => {
+        const parsedValue = parseFormattedNumber(newValueString);
         setCompositions(prev => 
             prev.map(comp => 
                 comp.id === compositionId 
-                    ? { ...comp, valor_venda: parseFloat(newValue) || 0 }
+                    ? { ...comp, valor_venda: parsedValue !== null ? parsedValue : 0 }
                     : comp
             )
         );
     };
 
-    const handleDiscountChange = (compositionId, newDiscount) => {
+    const handleDiscountChange = (compositionId, newDiscountString) => {
+        const parsedDiscount = parseFormattedNumber(newDiscountString);
         setCompositions(prev => 
             prev.map(comp => 
                 comp.id === compositionId 
-                    ? { ...comp, desconto_total: parseFloat(newDiscount) || 0 }
+                    ? { ...comp, desconto_total: parsedDiscount !== null ? parsedDiscount : 0 }
                     : comp
             )
         );
@@ -1005,10 +1008,8 @@ const BudgetEditorPage = () => {
                                         <TableCell>{unitsMap.get(comp.produtos?.prod_uCOM) || 'N/A'}</TableCell>
                                         <TableCell>
                                             <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.quantidade}
+                                                type="text"
+                                                value={formatDecimal(comp.quantidade)}
                                                 onChange={(e) => handleQuantityChange(comp.id, e.target.value)}
                                                 className="w-20 text-right"
                                                 disabled={isFaturado}
@@ -1016,10 +1017,8 @@ const BudgetEditorPage = () => {
                                         </TableCell>
                                         <TableCell>
                                             <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.valor_venda}
+                                                type="text"
+                                                value={formatDecimal(comp.valor_venda)}
                                                 onChange={(e) => handleValueChange(comp.id, e.target.value)}
                                                 className="w-28 text-right"
                                                 disabled={isFaturado}
@@ -1030,10 +1029,8 @@ const BudgetEditorPage = () => {
                                         </TableCell>
                                         <TableCell>
                                             <Input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                value={comp.desconto_total || 0}
+                                                type="text"
+                                                value={formatDecimal(comp.desconto_total || 0)}
                                                 onChange={(e) => handleDiscountChange(comp.id, e.target.value)}
                                                 className="w-24 text-right"
                                                 disabled={isFaturado}

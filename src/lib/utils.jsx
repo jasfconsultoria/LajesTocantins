@@ -100,6 +100,15 @@ export const formatDecimal = (value, decimals = 2) => {
   }).format(value);
 };
 
+// Nova função para parsear números no formato brasileiro (1.000,00 -> 1000.00)
+export const parseFormattedNumber = (value) => {
+  if (typeof value !== 'string' || value.trim() === '') return null;
+  // Remove pontos de milhar e substitui vírgula por ponto decimal
+  const cleaned = value.replace(/\./g, '').replace(',', '.');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? null : parsed;
+};
+
 export const normalizeString = (str) => {
     if (typeof str !== 'string') return '';
     return str
