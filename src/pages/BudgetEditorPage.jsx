@@ -680,32 +680,38 @@ const BudgetEditorPage = () => {
 
     const handleCompositionInputBlur = async (compositionId, field) => {
         setSaving(true);
-        try {
-            let updatedComp = null;
-            setCompositions(prev => 
-                prev.map(comp => {
-                    if (comp.id === compositionId) {
-                        const displayValue = comp[`${field}_display`] || '';
-                        const parsedValue = parseFormattedNumber(displayValue);
-                        const numericValue = parsedValue !== null ? parsedValue : 0;
-                        updatedComp = { 
-                            ...comp, 
-                            [field]: numericValue,
-                            [`${field}_display`]: formatDecimal(numericValue)
-                        };
-                        return updatedComp;
-                    }
-                    return comp;
-                })
-            );
+        const originalCompositions = [...compositions]; // Store original state for rollback
+        let updatedComp = null;
+        let originalValue = null;
 
-            if (updatedComp) {
+        setCompositions(prev => 
+            prev.map(comp => {
+                if (comp.id === compositionId) {
+                    originalValue = comp[field]; // Store original numeric value
+                    const displayValue = comp[`${field}_display`] || '';
+                    const parsedValue = parseFormattedNumber(displayValue);
+                    const numericValue = parsedValue !== null ? parsedValue : 0;
+                    updatedComp = { 
+                        ...comp, 
+                        [field]: numericValue,
+                        [`${field}_display`]: formatDecimal(numericValue)
+                    };
+                    return updatedComp;
+                }
+                return comp;
+            })
+        );
+
+        if (updatedComp) {
+            console.log(`Attempting to save composition item ${compositionId}, field ${field}:`, {
+                [field]: updatedComp[field],
+                updated_at: new Date().toISOString(),
+            });
+            try {
                 const { error: updateError } = await supabase
                     .from('orcamento_composicao')
                     .update({
-                        quantidade: updatedComp.quantidade,
-                        valor_venda: updatedComp.valor_venda,
-                        desconto_total: updatedComp.desconto_total,
+                        [field]: updatedComp[field], // Only update the specific field
                         updated_at: new Date().toISOString(),
                     })
                     .eq('id', compositionId);
@@ -715,12 +721,16 @@ const BudgetEditorPage = () => {
                     throw updateError;
                 }
                 toast({ title: "Item atualizado!", description: "A composição foi salva com sucesso." });
+            } catch (error) {
+                console.error("Caught error in handleCompositionInputBlur:", error);
+                toast({ variant: 'destructive', title: 'Erro ao atualizar item', description: error.message || 'Ocorreu um erro inesperado ao salvar o item.' });
+                // Rollback local state if save fails
+                setCompositions(originalCompositions);
+            } finally {
+                setSaving(false);
             }
-        } catch (error) {
-            console.error("Caught error in handleCompositionInputBlur:", error);
-            toast({ variant: 'destructive', title: 'Erro ao atualizar item', description: error.message || 'Ocorreu um erro inesperado ao salvar o item.' });
-        } finally {
-            setSaving(false);
+        } else {
+            setSaving(false); // Ensure saving state is reset even if updatedComp is null
         }
     };
 
