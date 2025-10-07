@@ -469,7 +469,7 @@ const BudgetEditorPage = () => {
                 natureza: '',
             }));
         }
-        await handleSave(null, null, false);
+        // Removed automatic save here
     };
 
     const handleSelectClient = async (person) => {
@@ -636,7 +636,7 @@ const BudgetEditorPage = () => {
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
-        await handleSave(null, null, false);
+        // Removed automatic save here
     };
 
     const handleSelectProductFromSearch = (product) => {
@@ -710,7 +710,7 @@ const BudgetEditorPage = () => {
 
         setCompositions(updatedCompositions);
         toast({ title: "Desconto Aplicado!", description: `Desconto de ${formatCurrency(finalDiscountToApply)} aplicado aos itens.` });
-        await handleSave(null, null, false);
+        // Removed automatic save here
     }, [compositions, toast]);
 
     const handleSave = async (newStatus = null, signatureUrl = null, shouldNavigate = true) => {
