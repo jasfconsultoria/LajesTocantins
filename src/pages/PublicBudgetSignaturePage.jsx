@@ -131,7 +131,7 @@ const PublicBudgetSignaturePage = () => {
       if (budgetData.cnpj_empresa) {
         const { data: companyRes, error: companyError } = await supabase
           .from('emitente')
-          .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url')
+          .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url, logo_documentos_url') // Adicionado logo_documentos_url
           .eq('cnpj', budgetData.cnpj_empresa)
           .single();
         if (companyError) console.error("PublicBudgetSignaturePage: Error fetching company for public budget:", companyError);
@@ -300,8 +300,12 @@ const PublicBudgetSignaturePage = () => {
       <div className="w-full max-w-4xl bg-white/80 backdrop-blur-xl p-8 rounded-xl shadow-lg border border-white space-y-6">
         <div className="flex justify-between items-start border-b pb-4 mb-4">
           <div className="flex items-center space-x-3">
-            {activeCompanyData?.logo_sistema_url && (
-              <img src={activeCompanyData.logo_sistema_url} alt="Company Logo" className="h-16 object-contain" />
+            {activeCompanyData?.logo_documentos_url ? ( // Usar logo_documentos_url
+              <img src={activeCompanyData.logo_documentos_url} alt="Company Logo" className="h-16 object-contain" />
+            ) : (
+              <div className="h-16 w-16 flex items-center justify-center bg-slate-200 rounded-md">
+                <ClipboardList className="w-8 h-8 text-slate-400" />
+              </div>
             )}
             <div>
               <h1 className="text-2xl font-bold text-slate-800">{activeCompanyData?.razao_social || 'Sua Empresa'}</h1>
