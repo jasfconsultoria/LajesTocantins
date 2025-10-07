@@ -1100,12 +1100,12 @@ const BudgetEditorPage = () => {
                     </Table>
                 </div>
 
-                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2">
+                <div className="mt-8 pt-6 border-t border-slate-200 grid grid-cols-1 lg:grid-cols-5 gap-8">
+                    <div className="lg:col-span-3">
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input text-right" value={baseIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
-                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input text-right" value={totalIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
+                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input text-right w-40" value={baseIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
+                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input text-right w-40" value={totalIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
                         </div>
 
                         <h3 className="config-title mt-8 mb-4">Condições</h3>
@@ -1143,7 +1143,7 @@ const BudgetEditorPage = () => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-1 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="lg:col-span-2 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-800"><span>Total dos Produtos R$</span><span>{formatCurrency(totalProdutosBruto)}</span></div>
                         <div className="flex justify-between text-slate-800"><span>Total dos Serviços R$</span><span>{formatCurrency(totalServicosBruto)}</span></div>
