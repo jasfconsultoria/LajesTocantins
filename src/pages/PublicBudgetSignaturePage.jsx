@@ -295,17 +295,41 @@ const PublicBudgetSignaturePage = () => {
     );
   }
 
-  // Construir o endereço da empresa usando o nome do município
-  const companyMunicipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData?.municipio))?.municipio || '';
-  const companyAddressParts = [
-    activeCompanyData?.logradouro,
-    activeCompanyData?.numero,
-    activeCompanyData?.complemento,
-    activeCompanyData?.bairro,
-    companyMunicipioNome,
-    activeCompanyData?.uf
-  ].filter(Boolean);
-  const companyAddress = companyAddressParts.join(', ');
+  // Construir o endereço da empresa usando useMemo para garantir reatividade e clareza
+  const companyAddressBudget = useMemo(() => {
+    console.log("DEBUG: Recomputing companyAddressBudget");
+    if (!activeCompanyData) {
+      console.log("DEBUG: activeCompanyData is null, returning empty string for companyAddressBudget.");
+      return '';
+    }
+
+    console.log("DEBUG: activeCompanyData for address:", activeCompanyData);
+    console.log("DEBUG: allMunicipalities for address lookup:", allMunicipalities);
+
+    const parts = [];
+    if (activeCompanyData.logradouro) parts.push(activeCompanyData.logradouro);
+    if (activeCompanyData.numero) parts.push(activeCompanyData.numero);
+    if (activeCompanyData.complemento) parts.push(activeCompanyData.complemento);
+    if (activeCompanyData.bairro) parts.push(activeCompanyData.bairro);
+    
+    const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData.municipio))?.municipio || '';
+    const ufSigla = activeCompanyData.uf || '';
+
+    console.log("DEBUG: municipioNome resolved:", municipioNome);
+    console.log("DEBUG: ufSigla:", ufSigla);
+
+    if (municipioNome && ufSigla) {
+        parts.push(`${municipioNome}/${ufSigla}`);
+    } else if (municipioNome) {
+        parts.push(municipioNome);
+    } else if (ufSigla) {
+        parts.push(ufSigla);
+    }
+
+    const finalAddress = parts.filter(Boolean).join(', ');
+    console.log("DEBUG: Final companyAddressBudget:", finalAddress);
+    return finalAddress;
+  }, [activeCompanyData, allMunicipalities]);
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
@@ -323,7 +347,7 @@ const PublicBudgetSignaturePage = () => {
               <h1 className="text-2xl font-bold text-slate-800">{activeCompanyData?.razao_social || 'Sua Empresa'}</h1>
               {activeCompanyData?.nome_fantasia && <p className="text-sm text-slate-600">{activeCompanyData.nome_fantasia}</p>}
               <p className="text-sm text-slate-600">{activeCompanyData?.cnpj}</p>
-              <p className="text-sm text-slate-600">{companyAddress}</p>
+              <p className="text-sm text-slate-600">{companyAddressBudget}</p> {/* Usando a nova variável */}
               <p className="text-sm text-slate-600">{activeCompanyData?.telefone} | {activeCompanyData?.email}</p>
             </div>
           </div>
