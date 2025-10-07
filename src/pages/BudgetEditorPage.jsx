@@ -96,14 +96,13 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false);
     const [shareLink, setShareLink] = useState('');
-    const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Usando useState
+    const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
     const [baseIcmsTotal, setBaseIcmsTotal] = useState(0);
     const [totalIcmsTotal, setTotalIcmsTotal] = useState(0);
 
-    // Updated to use the new numeric status values
     const isFaturado = budget.status === '2';
     const isAprovado = budget.status === '1';
 
@@ -325,7 +324,14 @@ const BudgetEditorPage = () => {
                         console.error(`Error fetching base_calculo for product ${comp.produto_id}:`, baseCalculoError);
                         return { ...comp, base_calculo_entries: [] };
                     }
-                    return { ...comp, base_calculo_entries: baseCalculoData || [] };
+                    return { 
+                        ...comp, 
+                        base_calculo_entries: baseCalculoData || [],
+                        // Initialize display fields
+                        quantidade_display: formatDecimal(comp.quantidade),
+                        valor_venda_display: formatDecimal(comp.valor_venda),
+                        desconto_total_display: formatDecimal(comp.desconto_total || 0),
+                    };
                 }));
                 setCompositions(compositionsWithBaseCalculo);
             }
@@ -457,7 +463,6 @@ const BudgetEditorPage = () => {
                 natureza: '',
             }));
         }
-        // Save budget after nature change, without navigating
         await handleSave(null, null, false);
     };
 
@@ -595,10 +600,13 @@ const BudgetEditorPage = () => {
             },
             isNew: true,
             base_calculo_entries: baseCalculoData || [],
+            // Initialize display fields for new item
+            quantidade_display: formatDecimal(1),
+            valor_venda_display: formatDecimal(product.prod_vUnCOM || 0),
+            desconto_total_display: formatDecimal(0),
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
-        // Save budget after product insertion, without navigating
         await handleSave(null, null, false);
     };
 
@@ -606,36 +614,31 @@ const BudgetEditorPage = () => {
         handleSelectProduct(product);
     };
 
-    const handleQuantityChange = (compositionId, newQuantityString) => {
-        const parsedQuantity = parseFormattedNumber(newQuantityString);
+    const handleCompositionInputChange = (compositionId, field, value) => {
         setCompositions(prev => 
             prev.map(comp => 
                 comp.id === compositionId 
-                    ? { ...comp, quantidade: parsedQuantity !== null ? parsedQuantity : 0 }
+                    ? { ...comp, [`${field}_display`]: value }
                     : comp
             )
         );
     };
 
-    const handleValueChange = (compositionId, newValueString) => {
-        const parsedValue = parseFormattedNumber(newValueString);
+    const handleCompositionInputBlur = (compositionId, field) => {
         setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, valor_venda: parsedValue !== null ? parsedValue : 0 }
-                    : comp
-            )
-        );
-    };
-
-    const handleDiscountChange = (compositionId, newDiscountString) => {
-        const parsedDiscount = parseFormattedNumber(newDiscountString);
-        setCompositions(prev => 
-            prev.map(comp => 
-                comp.id === compositionId 
-                    ? { ...comp, desconto_total: parsedDiscount !== null ? parsedDiscount : 0 }
-                    : comp
-            )
+            prev.map(comp => {
+                if (comp.id === compositionId) {
+                    const displayValue = comp[`${field}_display`] || '';
+                    const parsedValue = parseFormattedNumber(displayValue);
+                    const numericValue = parsedValue !== null ? parsedValue : 0;
+                    return { 
+                        ...comp, 
+                        [field]: numericValue,
+                        [`${field}_display`]: formatDecimal(numericValue)
+                    };
+                }
+                return comp;
+            })
         );
     };
 
@@ -666,15 +669,18 @@ const BudgetEditorPage = () => {
         const updatedCompositions = compositions.map(comp => {
             const itemValue = comp.quantidade * comp.valor_venda;
             if (itemValue === 0) {
-                return { ...comp, desconto_total: 0 };
+                return { ...comp, desconto_total: 0, desconto_total_display: formatDecimal(0) };
             }
             const proportionalDiscount = (itemValue / currentTotalItemsValue) * finalDiscountToApply;
-            return { ...comp, desconto_total: proportionalDiscount };
+            return { 
+                ...comp, 
+                desconto_total: proportionalDiscount,
+                desconto_total_display: formatDecimal(proportionalDiscount)
+            };
         });
 
         setCompositions(updatedCompositions);
         toast({ title: "Desconto Aplicado!", description: `Desconto de ${formatCurrency(finalDiscountToApply)} aplicado aos itens.` });
-        // Save budget after discount application, without navigating
         await handleSave(null, null, false);
     }, [compositions, toast]);
 
@@ -699,7 +705,7 @@ const BudgetEditorPage = () => {
                 data_venda: budget.data_venda ? new Date(budget.data_venda).toISOString() : null,
                 previsao_entrega: budget.previsao_entrega ? new Date(budget.previsao_entrega).toISOString() : null,
                 updated_at: new Date().toISOString(),
-                status: newStatus || budget.status, // Use newStatus if provided - Changed from status_orcamento
+                status: newStatus || budget.status,
                 signature_url: signatureUrl || budget.signature_url,
             };
 
@@ -819,8 +825,6 @@ const BudgetEditorPage = () => {
             toast({ variant: 'destructive', title: 'Erro', description: 'Salve o orçamento primeiro para gerar o link de compartilhamento.' });
             return;
         }
-        // Assuming your app is hosted at a base URL, e.g., 'https://your-app.com'
-        // You might need to configure this base URL in an environment variable
         const baseUrl = window.location.origin; 
         const link = `${baseUrl}/public/budgets/${id}/sign`;
         setShareLink(link);
@@ -838,10 +842,9 @@ const BudgetEditorPage = () => {
     };
 
     const displayTipo = useMemo(() => {
-        // Updated to use the new numeric status values
-        if (budget.status === '2') return 'Pedido'; // Faturado
-        if (budget.status === '1') return 'Orçamento Aprovado'; // Aprovado
-        return 'Orçamento'; // Pendente, Alterado, NF-e Emitida
+        if (budget.status === '2') return 'Pedido';
+        if (budget.status === '1') return 'Orçamento Aprovado';
+        return 'Orçamento';
     }, [budget.status]);
 
     const pageTitle = id ? `Editar ${displayTipo}` : `Novo ${displayTipo}`;
@@ -1009,8 +1012,9 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={formatDecimal(comp.quantidade)}
-                                                onChange={(e) => handleQuantityChange(comp.id, e.target.value)}
+                                                value={comp.quantidade_display}
+                                                onChange={(e) => handleCompositionInputChange(comp.id, 'quantidade', e.target.value)}
+                                                onBlur={() => handleCompositionInputBlur(comp.id, 'quantidade')}
                                                 className="w-20 text-right"
                                                 disabled={isFaturado}
                                             />
@@ -1018,8 +1022,9 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={formatDecimal(comp.valor_venda)}
-                                                onChange={(e) => handleValueChange(comp.id, e.target.value)}
+                                                value={comp.valor_venda_display}
+                                                onChange={(e) => handleCompositionInputChange(comp.id, 'valor_venda', e.target.value)}
+                                                onBlur={() => handleCompositionInputBlur(comp.id, 'valor_venda')}
                                                 className="w-28 text-right"
                                                 disabled={isFaturado}
                                             />
@@ -1030,8 +1035,9 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={formatDecimal(comp.desconto_total || 0)}
-                                                onChange={(e) => handleDiscountChange(comp.id, e.target.value)}
+                                                value={comp.desconto_total_display}
+                                                onChange={(e) => handleCompositionInputChange(comp.id, 'desconto_total', e.target.value)}
+                                                onBlur={() => handleCompositionInputBlur(comp.id, 'desconto_total')}
                                                 className="w-24 text-right"
                                                 disabled={isFaturado}
                                             />
