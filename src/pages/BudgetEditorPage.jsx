@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { logAction } from '@/lib/log';
-import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString, capitalizeFirstLetter } from '@/lib/utils';
+import { normalizeCnpj, formatCpfCnpj, formatCurrency, normalizeString, capitalizeFirstLetter, formatDecimal } from '@/lib/utils';
 import SelectSearchClient from '@/components/SelectSearchClient';
 import SelectSearchProduct from '@/components/SelectSearchProduct';
 import ProductSearchDialog from '@/components/ProductSearchDialog';
@@ -443,7 +443,7 @@ const BudgetEditorPage = () => {
         setBudget(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleSelectNatureza = (selectedCfop) => {
+    const handleSelectNatureza = async (selectedCfop) => {
         if (selectedCfop) {
             setBudget(prev => ({
                 ...prev,
@@ -457,6 +457,8 @@ const BudgetEditorPage = () => {
                 natureza: '',
             }));
         }
+        // Save budget after nature change, without navigating
+        await handleSave(null, null, false);
     };
 
     const handleSelectClient = async (person) => {
@@ -596,6 +598,8 @@ const BudgetEditorPage = () => {
         };
         setCompositions(prev => [...prev, newCompositionItem]);
         toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
+        // Save budget after product insertion, without navigating
+        await handleSave(null, null, false);
     };
 
     const handleSelectProductFromSearch = (product) => {
@@ -667,9 +671,11 @@ const BudgetEditorPage = () => {
 
         setCompositions(updatedCompositions);
         toast({ title: "Desconto Aplicado!", description: `Desconto de ${formatCurrency(finalDiscountToApply)} aplicado aos itens.` });
+        // Save budget after discount application, without navigating
+        await handleSave(null, null, false);
     }, [compositions, toast]);
 
-    const handleSave = async (newStatus = null, signatureUrl = null) => {
+    const handleSave = async (newStatus = null, signatureUrl = null, shouldNavigate = true) => {
         if (!activeCompanyId) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Nenhuma empresa ativa selecionada para salvar o orçamento.' });
             return;
@@ -755,7 +761,9 @@ const BudgetEditorPage = () => {
             }
 
             toast({ title: 'Sucesso!', description: `Orçamento ${id ? 'atualizado' : 'criado'} com sucesso.` });
-            navigate('/app/budgets');
+            if (shouldNavigate) {
+                navigate('/app/budgets');
+            }
         } catch (error) {
             console.error("Caught error in handleSave (BudgetEditorPage):", error);
             toast({ variant: 'destructive', title: 'Erro ao salvar', description: error.message || 'Ocorreu um erro inesperado ao salvar o orçamento.' });
@@ -1018,7 +1026,7 @@ const BudgetEditorPage = () => {
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
-                                            {formatCurrency(comp.quantidade * comp.valor_venda)}
+                                            {formatDecimal(comp.quantidade * comp.valor_venda)}
                                         </TableCell>
                                         <TableCell>
                                             <Input
@@ -1032,7 +1040,7 @@ const BudgetEditorPage = () => {
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-bold">
-                                            {formatCurrency((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}
+                                            {formatDecimal((comp.quantidade * comp.valor_venda) - (comp.desconto_total || 0))}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">

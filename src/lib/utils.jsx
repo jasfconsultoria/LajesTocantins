@@ -90,6 +90,16 @@ export const formatCurrency = (value) => {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 };
 
+// Nova função para formatar números com 2 casas decimais, sem símbolo de moeda
+export const formatDecimal = (value, decimals = 2) => {
+  if (value === null || value === undefined) return '';
+  return new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+    useGrouping: true,
+  }).format(value);
+};
+
 export const normalizeString = (str) => {
     if (typeof str !== 'string') return '';
     return str
