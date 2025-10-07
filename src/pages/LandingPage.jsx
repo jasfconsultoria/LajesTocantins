@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
@@ -23,7 +25,7 @@ const LandingPage = () => {
       </header>
 
       <main>
-        <section className="relative py-32 text-center bg-white overflow-hidden">
+        <section className="relative py-64 text-center bg-white overflow-hidden">
             <div className="absolute inset-0 bg-grid-slate-200 [mask-image:linear-gradient(to_bottom,white,transparent)]"></div>
             <div className="container mx-auto px-6 relative">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
@@ -33,18 +35,14 @@ const LandingPage = () => {
                     <p className="mt-6 max-w-2xl mx-auto text-lg text-slate-600">
                         Gerencie suas operações de forma eficiente e integrada. Acesse o painel para começar.
                     </p>
-                    <div className="mt-10 flex justify-center gap-4">
-                        <Link to="/app" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-8 py-4 rounded-lg shadow-xl hover:shadow-2xl transition-shadow transform hover:scale-105 text-lg">
-                            Acessar Painel
-                        </Link>
-                    </div>
+                    {/* O botão "Acessar Painel" foi removido daqui */}
                 </motion.div>
             </div>
         </section>
       </main>
       
       <footer className="bg-slate-900 text-white">
-          <div className="container mx-auto px-6 py-16">
+          <div className="container mx-auto px-6 py-8">
               <div className="mt-16 pt-8 border-t border-slate-800 text-center text-slate-500 text-sm">
                   <p>&copy; {new Date().getFullYear()} Lajes Tocantins. Todos os direitos reservados.</p>
               </div>
