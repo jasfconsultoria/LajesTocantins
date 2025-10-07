@@ -18,7 +18,7 @@ const PublicBudgetSignaturePage = () => {
   const [budget, setBudget] = useState(null);
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [unitsMap, setUnitsMap] = new Map(); // CORRIGIDO: Inicialização com useState(new Map())
+  const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Inicialização com useState(new Map())
   const [allMunicipalities, setAllMunicipalities] = useState([]);
   const [activeCompanyData, setActiveCompanyData] = useState(null);
 
@@ -300,7 +300,7 @@ const PublicBudgetSignaturePage = () => {
     activeCompanyData?.numero,
     activeCompanyData?.complemento,
     activeCompanyData?.bairro,
-    activeCompanyData?.municipio,
+    allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData?.municipio))?.municipio, // Get municipality name
     activeCompanyData?.uf
   ].filter(Boolean).join(', ');
 
