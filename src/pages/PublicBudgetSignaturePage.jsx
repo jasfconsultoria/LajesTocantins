@@ -18,7 +18,7 @@ const PublicBudgetSignaturePage = () => {
   const [budget, setBudget] = useState(null);
   const [compositions, setCompositions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Inicialização com useState(new Map())
+  const [unitsMap, setUnitsMap] = useState(new Map());
   const [allMunicipalities, setAllMunicipalities] = useState([]);
   const [activeCompanyData, setActiveCompanyData] = useState(null);
 
@@ -295,14 +295,17 @@ const PublicBudgetSignaturePage = () => {
     );
   }
 
-  const companyAddress = [
+  // Construir o endereço da empresa usando o nome do município
+  const companyMunicipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData?.municipio))?.municipio || '';
+  const companyAddressParts = [
     activeCompanyData?.logradouro,
     activeCompanyData?.numero,
     activeCompanyData?.complemento,
     activeCompanyData?.bairro,
-    allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData?.municipio))?.municipio, // Get municipality name
+    companyMunicipioNome,
     activeCompanyData?.uf
-  ].filter(Boolean).join(', ');
+  ].filter(Boolean);
+  const companyAddress = companyAddressParts.join(', ');
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
