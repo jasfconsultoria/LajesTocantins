@@ -96,7 +96,7 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     // const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // Removed
     // const [shareLink, setShareLink] = useState(''); // Removed
-    const [unitsMap, setUnitsMap] = new Map(); // Changed to new Map() directly
+    const [unitsMap, setUnitsMap] = useState(new Map()); // Corrected: using useState
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
