@@ -94,8 +94,8 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false);
-    const [shareLink, setShareLink] = useState('');
+    // const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // Removed
+    // const [shareLink, setShareLink] = useState(''); // Removed
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
@@ -820,25 +820,14 @@ const BudgetEditorPage = () => {
         }
     };
 
-    const handleGenerateShareLink = () => {
+    const handleShareBudgetDirectly = () => {
         if (!id) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Salve o orçamento primeiro para gerar o link de compartilhamento.' });
             return;
         }
         const baseUrl = window.location.origin; 
         const link = `${baseUrl}/public/budgets/${id}/sign`;
-        setShareLink(link);
-        setIsShareLinkDialogOpen(true);
-    };
-
-    const handleCopyLink = async () => {
-        try {
-            await navigator.clipboard.writeText(shareLink);
-            toast({ title: 'Link Copiado!', description: 'O link de compartilhamento foi copiado para a área de transferência.' });
-        } catch (err) {
-            console.error('Failed to copy: ', err);
-            toast({ variant: 'destructive', title: 'Erro ao Copiar', description: 'Não foi possível copiar o link. Tente manualmente.' });
-        }
+        navigate(link); // Directly navigate to the public signature page
     };
 
     const displayTipo = useMemo(() => {
@@ -1012,7 +1001,7 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={comp.quantidade_display}
+                                                value={formatDecimal(comp.quantidade)}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'quantidade', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'quantidade')}
                                                 className="w-20 text-right"
@@ -1022,7 +1011,7 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={comp.valor_venda_display}
+                                                value={formatDecimal(comp.valor_venda)}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'valor_venda', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'valor_venda')}
                                                 className="w-28 text-right"
@@ -1035,7 +1024,7 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={comp.desconto_total_display}
+                                                value={formatDecimal(comp.desconto_total || 0)}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'desconto_total', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'desconto_total')}
                                                 className="w-24 text-right"
@@ -1132,7 +1121,7 @@ const BudgetEditorPage = () => {
                         </Button>
                         <Button 
                             variant="outline" 
-                            onClick={handleGenerateShareLink} 
+                            onClick={handleShareBudgetDirectly} // Changed to direct navigation
                             disabled={!id || isFaturado}
                             className="bg-green-500 hover:bg-green-600 text-white"
                         >
@@ -1181,7 +1170,8 @@ const BudgetEditorPage = () => {
                 isFaturado={isFaturado}
             />
 
-            {/* Share Link Dialog */}
+            {/* Share Link Dialog (Removed from this page, but keeping the component definition for clarity if needed elsewhere) */}
+            {/*
             <Dialog open={isShareLinkDialogOpen} onOpenChange={setIsShareLinkDialogOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
@@ -1217,6 +1207,7 @@ const BudgetEditorPage = () => {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            */}
         </div>
     );
 };
