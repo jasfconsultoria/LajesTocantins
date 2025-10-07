@@ -629,7 +629,7 @@ const BudgetEditorPage = () => {
             },
             isNew: true, // Flag para identificar novo item
             base_calculo_entries: baseCalculoData || [],
-            // Initialize display fields for new item
+            // Initialize display fields
             quantidade_display: formatDecimal(1),
             valor_venda_display: formatDecimal(product.prod_vUnCOM || 0),
             desconto_total_display: formatDecimal(0),
@@ -1104,8 +1104,8 @@ const BudgetEditorPage = () => {
                     <div className="lg:col-span-2">
                         <h3 className="config-title mb-4">Informações Tributárias ICMS</h3>
                         <div className="form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input" value={baseIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
-                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input" value={totalIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
+                            <div className="form-group"><Label htmlFor="base_icms" className="form-label">Base de Cálculo ICMS R$</Label><Input id="base_icms" type="number" step="0.01" className="form-input text-right" value={baseIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
+                            <div className="form-group"><Label htmlFor="total_icms" className="form-label">Total ICMS R$</Label><Input id="total_icms" type="number" step="0.01" className="form-input text-right" value={totalIcmsTotal.toFixed(2)} readOnly disabled={true} /></div>
                         </div>
 
                         <h3 className="config-title mt-8 mb-4">Condições</h3>
