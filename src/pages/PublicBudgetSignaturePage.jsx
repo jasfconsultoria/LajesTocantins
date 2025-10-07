@@ -27,6 +27,11 @@ const PublicBudgetSignaturePage = () => {
   const [isSignatureEmpty, setIsSignatureEmpty] = useState(true);
   const [savingSignature, setSavingSignature] = useState(false);
 
+  // Log the ID received by this component
+  useEffect(() => {
+    console.log("PublicBudgetSignaturePage: Received ID from useParams:", id);
+  }, [id]);
+
   // Map numeric status to display string
   const statusMapDisplay = {
       '0': 'Pendente',

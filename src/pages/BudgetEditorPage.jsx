@@ -106,6 +106,11 @@ const BudgetEditorPage = () => {
     const isFaturado = budget.status === '2';
     const isAprovado = budget.status === '1';
 
+    // Log the ID when the component renders or updates
+    useEffect(() => {
+        console.log("BudgetEditorPage mounted/updated. Current ID from useParams:", id);
+    }, [id]);
+
     const fetchUfsAndMunicipalities = useCallback(async () => {
         try {
             const { data: ufsData, error: ufsError } = await supabase
@@ -821,12 +826,14 @@ const BudgetEditorPage = () => {
     };
 
     const handleShareBudgetDirectly = () => {
+        console.log("handleShareBudgetDirectly called. Current ID:", id);
         if (!id) {
             toast({ variant: 'destructive', title: 'Erro', description: 'Salve o orçamento primeiro para gerar o link de compartilhamento.' });
             return;
         }
         const baseUrl = window.location.origin; 
         const link = `${baseUrl}/public/budgets/${id}/sign`;
+        console.log("Generated share link:", link);
         navigate(link); // Directly navigate to the public signature page
     };
 
