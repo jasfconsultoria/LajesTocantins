@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // Linha corrigida
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, ClipboardList, PencilLine, CheckCircle, XCircle, Eraser, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import SignatureCanvas from 'react-signature-canvas'; // Importar SignatureCanvas
+import SignatureCanvas from 'react-signature-canvas';
 import { formatCurrency, formatCpfCnpj, capitalizeFirstLetter } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -264,7 +264,7 @@ const PublicBudgetSignaturePage = () => {
   const totalDescontoDisplay = sumOfItemDiscounts;
   const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
-  const canShowSignatureField = true; 
+  const canShowSignatureField = isPendente && !hasSignature; 
 
   // Construir o endereço da empresa usando useMemo para garantir reatividade e clareza
   const companyAddressBudget = useMemo(() => {
@@ -278,19 +278,19 @@ const PublicBudgetSignaturePage = () => {
     if (activeCompanyData.complemento) parts.push(activeCompanyData.complemento);
     if (activeCompanyData.bairro) parts.push(activeCompanyData.bairro);
     
-    // Omitindo município e UF conforme solicitado
-    // const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData.municipio))?.municipio || '';
-    // const ufSigla = activeCompanyData.uf || '';
-    // if (municipioNome && ufSigla) {
-    //     parts.push(`${municipioNome}/${ufSigla}`);
-    // } else if (municipioNome) {
-    //     parts.push(municipioNome);
-    // } else if (ufSigla) {
-    //     parts.push(ufSigla);
-    // }
+    // Descomentado: Incluir município e UF
+    const municipioNome = allMunicipalities.find(m => String(m.codigo) === String(activeCompanyData.municipio))?.municipio || '';
+    const ufSigla = activeCompanyData.uf || '';
+    if (municipioNome && ufSigla) {
+        parts.push(`${municipioNome}/${ufSigla}`);
+    } else if (municipioNome) {
+        parts.push(municipioNome);
+    } else if (ufSigla) {
+        parts.push(ufSigla);
+    }
 
     return parts.filter(Boolean).join(', ');
-  }, [activeCompanyData]);
+  }, [activeCompanyData, allMunicipalities]); // Adicionado allMunicipalities como dependência
 
   if (loading) {
     return (
