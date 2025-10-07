@@ -94,9 +94,10 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Inicialização com useState(new Map())
+    const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
+    const [itemToFocusId, setItemToFocusId] = useState(null); // Novo estado para controlar o foco
 
     const [baseIcmsTotal, setBaseIcmsTotal] = useState(0);
     const [totalIcmsTotal, setTotalIcmsTotal] = useState(0);
@@ -653,6 +654,7 @@ const BudgetEditorPage = () => {
             };
 
             setCompositions(prev => [...prev, newCompositionItem]);
+            setItemToFocusId(newCompositionItem.id); // Define o ID do novo item para focar
             toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
         } catch (error) {
             console.error("Caught error in handleSelectProduct:", error);
@@ -832,48 +834,6 @@ const BudgetEditorPage = () => {
                 throw error;
             }
 
-            // Compositions are now saved individually on blur or when added.
-            // This block is no longer needed for new/updated compositions.
-            // It would only be needed if there were pending local changes not yet blurred.
-            // For simplicity, we assume blur handles saves.
-            /*
-            if (budgetId) {
-                for (const comp of compositions) {
-                    if (comp.isNew) {
-                        const { error: compInsertError } = await supabase
-                            .from('orcamento_composicao')
-                            .insert({
-                                orcamento_id: budgetId,
-                                produto_id: comp.produto_id,
-                                quantidade: comp.quantidade,
-                                valor_venda: comp.valor_venda,
-                                desconto_total: comp.desconto_total,
-                                created_at: new Date().toISOString(),
-                                updated_at: new Date().toISOString(),
-                            });
-                        if (compInsertError) {
-                            console.error("Error inserting composition item (BudgetEditorPage):", compInsertError);
-                            throw compInsertError;
-                        }
-                    } else {
-                        const { error: compUpdateError } = await supabase
-                            .from('orcamento_composicao')
-                            .update({
-                                quantidade: comp.quantidade,
-                                valor_venda: comp.valor_venda,
-                                desconto_total: comp.desconto_total,
-                                updated_at: new Date().toISOString(),
-                            })
-                            .eq('id', comp.id);
-                        if (compUpdateError) {
-                            console.error("Error updating composition item (BudgetEditorPage):", compUpdateError);
-                            throw compUpdateError;
-                        }
-                    }
-                }
-            }
-            */
-
             if (user) {
                 await logAction(user.id, actionType, description, activeCompanyId, null);
             }
@@ -889,8 +849,6 @@ const BudgetEditorPage = () => {
             setSaving(false);
         }
     };
-
-    // Removed handleEditComposition as editing is now inline
 
     const handleDeleteComposition = async (compositionId, productName) => {
         if (!window.confirm(`Tem certeza que deseja remover "${productName}" da composição?`)) {
@@ -960,21 +918,16 @@ const BudgetEditorPage = () => {
 
     // Efeito para focar no campo de quantidade do último item adicionado
     useEffect(() => {
-        if (compositions.length > 0) {
-            const lastItem = compositions[compositions.length - 1];
-            // Apenas foca se for um item recém-adicionado (não carregado do banco de dados)
-            // A flag isNew agora é definida apenas no momento da adição e removida após o save.
-            // Se o item ainda tiver isNew, significa que acabou de ser adicionado e precisa de foco.
-            if (lastItem && lastItem.isNew) { 
-                const inputElement = itemQuantityInputRefs.current.get(lastItem.id);
-                if (inputElement) {
-                    inputElement.focus();
-                    inputElement.select(); // Adicionado .select() aqui
-                    inputElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
+        if (itemToFocusId) {
+            const inputElement = itemQuantityInputRefs.current.get(itemToFocusId);
+            if (inputElement) {
+                inputElement.focus();
+                inputElement.select();
+                inputElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                setItemToFocusId(null); // Reset the ID after focusing
             }
         }
-    }, [compositions]);
+    }, [itemToFocusId, compositions]); // Depend on itemToFocusId and compositions
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
