@@ -5,7 +5,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock, ArrowUp, ArrowDown, FileText, CheckSquare, XCircle } from 'lucide-react'; // Added XCircle for Cancelado
+import { Loader2, Search, PlusCircle, Edit, Trash2, ClipboardList, ChevronLeft, ChevronRight, CheckCircle, Clock, ArrowUp, ArrowDown, FileText, CheckSquare, XCircle, Share2 } from 'lucide-react'; // Added Share2
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { logAction } from '@/lib/log';
 import { normalizeCnpj, normalizeString, capitalizeFirstLetter } from '@/lib/utils';
+import ShareLinkDialog from '@/components/ShareLinkDialog'; // Import the new dialog
 
 const BudgetList = () => {
     const { handleNotImplemented } = useOutletContext();
@@ -30,6 +31,9 @@ const BudgetList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [sortColumn, setSortColumn] = useState('data_orcamento');
     const [sortDirection, setSortDirection] = useState('desc');
+    const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // New state
+    const [shareLink, setShareLink] = useState(''); // New state
+    const [selectedBudgetNumber, setSelectedBudgetNumber] = useState(''); // New state for dialog title
 
     const ITEMS_PER_PAGE = 10;
 
@@ -46,7 +50,6 @@ const BudgetList = () => {
             const limit = 1000;
 
             while (true) {
-                // Assuming orcamento_summary_view now selects 'status' instead of 'status_orcamento'
                 const { data, error } = await supabase
                     .from('orcamento_summary_view')
                     .select('*')
@@ -109,7 +112,6 @@ const BudgetList = () => {
                 const normalizedNomeCliente = normalizeString(b.nome_cliente);
                 const normalizedNumeroPedido = normalizeString(b.numero_pedido);
                 const normalizedVendedor = normalizeString(b.vendedor);
-                // Map numeric status to string for search
                 const statusText = {
                     '0': 'Pendente',
                     '1': 'Aprovado',
@@ -138,8 +140,8 @@ const BudgetList = () => {
                     aValue = normalizeString(a[sortColumn] || '');
                     bValue = normalizeString(b[sortColumn] || '');
                     break;
-                case 'status': // Sort by new status field
-                    aValue = a.status || '0'; // Default to '0' for sorting
+                case 'status':
+                    aValue = a.status || '0';
                     bValue = b.status || '0';
                     break;
                 case 'data_orcamento':
@@ -251,6 +253,14 @@ const BudgetList = () => {
         }
     };
 
+    const handleGenerateShareLink = (budgetId, budgetNumber) => {
+        const baseUrl = window.location.origin; 
+        const link = `${baseUrl}/public/budgets/${budgetId}/sign`;
+        setShareLink(link);
+        setSelectedBudgetNumber(budgetNumber);
+        setIsShareLinkDialogOpen(true);
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -342,6 +352,9 @@ const BudgetList = () => {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
+                                                <Button variant="ghost" size="icon" onClick={() => handleGenerateShareLink(b.id, b.numero_pedido || b.id)}>
+                                                    <Share2 className="w-4 h-4" />
+                                                </Button>
                                                 <Button variant="ghost" size="icon" onClick={() => navigate(`/app/budgets/${b.id}/edit`)}>
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
@@ -375,6 +388,12 @@ const BudgetList = () => {
                     </div>
                 </>
             )}
+            <ShareLinkDialog
+                isOpen={isShareLinkDialogOpen}
+                setIsOpen={setIsShareLinkDialogOpen}
+                shareLink={shareLink}
+                budgetNumber={selectedBudgetNumber}
+            />
         </div>
     );
 };
