@@ -215,7 +215,8 @@ const BudgetEditorPage = () => {
             let currentUnitsMap = new Map();
             const { data: unitsData, error: unitsError } = await supabase
                 .from('unidade')
-                .select('codigo, unidade');
+                .select('codigo, unidade')
+                .order('unidade', { ascending: true });
 
             if (unitsError) {
                 console.error("Error fetching units (BudgetEditorPage - Products):", unitsError);
@@ -610,33 +611,55 @@ const BudgetEditorPage = () => {
     };
 
     const handleSelectProduct = async (product) => {
-        const { data: baseCalculoData, error: baseCalculoError } = await supabase.rpc('get_base_calculo_details', { p_product_id: product.id });
-        if (baseCalculoError) {
-            console.error("Error fetching base_calculo for product:", baseCalculoError);
-            toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as bases de cálculo para o produto.' });
+        if (!id) {
+            toast({ variant: 'destructive', title: 'Erro', description: 'Salve o orçamento primeiro para adicionar itens.' });
+            return;
         }
+        setSaving(true);
+        try {
+            const { data: baseCalculoData, error: baseCalculoError } = await supabase.rpc('get_base_calculo_details', { p_product_id: product.id });
+            if (baseCalculoError) {
+                console.error("Error fetching base_calculo for product:", baseCalculoError);
+                toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível carregar as bases de cálculo para o produto.' });
+            }
 
-        const newCompositionItem = {
-            id: uuidv4(),
-            orcamento_id: id ? parseInt(id, 10) : null,
-            produto_id: product.id,
-            quantidade: 1,
-            valor_venda: product.prod_vUnCOM || 0,
-            desconto_total: 0,
-            produtos: {
-                prod_xProd: product.prod_xProd,
-                prod_uCOM: product.prod_uCOM,
-            },
-            isNew: true, // Flag para identificar novo item
-            base_calculo_entries: baseCalculoData || [],
-            // Initialize display fields
-            quantidade_display: formatDecimal(1),
-            valor_venda_display: formatDecimal(product.prod_vUnCOM || 0),
-            desconto_total_display: formatDecimal(0),
-        };
-        setCompositions(prev => [...prev, newCompositionItem]);
-        toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
-        // Removed automatic save here
+            const newCompositionItemData = {
+                orcamento_id: parseInt(id, 10),
+                produto_id: product.id,
+                quantidade: 1,
+                valor_venda: product.prod_vUnCOM || 0,
+                desconto_total: 0,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+
+            const { data: insertedItem, error: insertError } = await supabase
+                .from('orcamento_composicao')
+                .insert([newCompositionItemData])
+                .select('*, produtos!produto_id(prod_xProd, prod_uCOM)')
+                .single();
+
+            if (insertError) {
+                console.error("Error inserting new composition item:", insertError);
+                throw insertError;
+            }
+
+            const newCompositionItem = {
+                ...insertedItem,
+                base_calculo_entries: baseCalculoData || [],
+                quantidade_display: formatDecimal(insertedItem.quantidade),
+                valor_venda_display: formatDecimal(insertedItem.valor_venda),
+                desconto_total_display: formatDecimal(insertedItem.desconto_total || 0),
+            };
+
+            setCompositions(prev => [...prev, newCompositionItem]);
+            toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
+        } catch (error) {
+            console.error("Caught error in handleSelectProduct:", error);
+            toast({ variant: 'destructive', title: 'Erro ao adicionar item', description: error.message || 'Ocorreu um erro inesperado ao adicionar o item.' });
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleSelectProductFromSearch = (product) => {
@@ -653,22 +676,50 @@ const BudgetEditorPage = () => {
         );
     };
 
-    const handleCompositionInputBlur = (compositionId, field) => {
-        setCompositions(prev => 
-            prev.map(comp => {
-                if (comp.id === compositionId) {
-                    const displayValue = comp[`${field}_display`] || '';
-                    const parsedValue = parseFormattedNumber(displayValue);
-                    const numericValue = parsedValue !== null ? parsedValue : 0;
-                    return { 
-                        ...comp, 
-                        [field]: numericValue,
-                        [`${field}_display`]: formatDecimal(numericValue)
-                    };
+    const handleCompositionInputBlur = async (compositionId, field) => {
+        setSaving(true);
+        try {
+            let updatedComp = null;
+            setCompositions(prev => 
+                prev.map(comp => {
+                    if (comp.id === compositionId) {
+                        const displayValue = comp[`${field}_display`] || '';
+                        const parsedValue = parseFormattedNumber(displayValue);
+                        const numericValue = parsedValue !== null ? parsedValue : 0;
+                        updatedComp = { 
+                            ...comp, 
+                            [field]: numericValue,
+                            [`${field}_display`]: formatDecimal(numericValue)
+                        };
+                        return updatedComp;
+                    }
+                    return comp;
+                })
+            );
+
+            if (updatedComp) {
+                const { error: updateError } = await supabase
+                    .from('orcamento_composicao')
+                    .update({
+                        quantidade: updatedComp.quantidade,
+                        valor_venda: updatedComp.valor_venda,
+                        desconto_total: updatedComp.desconto_total,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq('id', compositionId);
+
+                if (updateError) {
+                    console.error("Error updating composition item on blur:", updateError);
+                    throw updateError;
                 }
-                return comp;
-            })
-        );
+                toast({ title: "Item atualizado!", description: "A composição foi salva com sucesso." });
+            }
+        } catch (error) {
+            console.error("Caught error in handleCompositionInputBlur:", error);
+            toast({ variant: 'destructive', title: 'Erro ao atualizar item', description: error.message || 'Ocorreu um erro inesperado ao salvar o item.' });
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleApplyDiscount = useCallback(async (totalDiscountAmount, totalDiscountPercentage) => {
@@ -695,22 +746,45 @@ const BudgetEditorPage = () => {
             return;
         }
 
-        const updatedCompositions = compositions.map(comp => {
-            const itemValue = comp.quantidade * comp.valor_venda;
-            if (itemValue === 0) {
-                return { ...comp, desconto_total: 0, desconto_total_display: formatDecimal(0) };
-            }
-            const proportionalDiscount = (itemValue / currentTotalItemsValue) * finalDiscountToApply;
-            return { 
-                ...comp, 
-                desconto_total: proportionalDiscount,
-                desconto_total_display: formatDecimal(proportionalDiscount)
-            };
-        });
+        setSaving(true);
+        try {
+            const updatedCompositions = await Promise.all(compositions.map(async (comp) => {
+                const itemValue = comp.quantidade * comp.valor_venda;
+                let newDiscount = 0;
+                if (itemValue > 0) {
+                    newDiscount = (itemValue / currentTotalItemsValue) * finalDiscountToApply;
+                }
+                
+                const updatedCompData = { 
+                    desconto_total: newDiscount,
+                    updated_at: new Date().toISOString(),
+                };
 
-        setCompositions(updatedCompositions);
-        toast({ title: "Desconto Aplicado!", description: `Desconto de ${formatCurrency(finalDiscountToApply)} aplicado aos itens.` });
-        // Removed automatic save here
+                const { error: updateError } = await supabase
+                    .from('orcamento_composicao')
+                    .update(updatedCompData)
+                    .eq('id', comp.id);
+
+                if (updateError) {
+                    console.error("Error updating composition item with discount:", updateError);
+                    throw updateError;
+                }
+
+                return { 
+                    ...comp, 
+                    desconto_total: newDiscount,
+                    desconto_total_display: formatDecimal(newDiscount)
+                };
+            }));
+
+            setCompositions(updatedCompositions);
+            toast({ title: "Desconto Aplicado!", description: `Desconto de ${formatCurrency(finalDiscountToApply)} aplicado aos itens.` });
+        } catch (error) {
+            console.error("Caught error in handleApplyDiscount:", error);
+            toast({ variant: 'destructive', title: 'Erro ao aplicar desconto', description: error.message || 'Ocorreu um erro inesperado ao aplicar o desconto.' });
+        } finally {
+            setSaving(false);
+        }
     }, [compositions, toast]);
 
     const handleSave = async (newStatus = null, signatureUrl = null, shouldNavigate = true) => {
@@ -758,6 +832,11 @@ const BudgetEditorPage = () => {
                 throw error;
             }
 
+            // Compositions are now saved individually on blur or when added.
+            // This block is no longer needed for new/updated compositions.
+            // It would only be needed if there were pending local changes not yet blurred.
+            // For simplicity, we assume blur handles saves.
+            /*
             if (budgetId) {
                 for (const comp of compositions) {
                     if (comp.isNew) {
@@ -793,6 +872,7 @@ const BudgetEditorPage = () => {
                     }
                 }
             }
+            */
 
             if (user) {
                 await logAction(user.id, actionType, description, activeCompanyId, null);
@@ -810,9 +890,7 @@ const BudgetEditorPage = () => {
         }
     };
 
-    const handleEditComposition = (compositionId) => {
-        toast({ title: "Em desenvolvimento", description: "A funcionalidade de editar itens de composição será adicionada em breve!" });
-    };
+    // Removed handleEditComposition as editing is now inline
 
     const handleDeleteComposition = async (compositionId, productName) => {
         if (!window.confirm(`Tem certeza que deseja remover "${productName}" da composição?`)) {
@@ -821,7 +899,8 @@ const BudgetEditorPage = () => {
         setSaving(true);
         try {
             const itemToDelete = compositions.find(c => c.id === compositionId);
-            if (itemToDelete && itemToDelete.isNew) {
+            // If it's a new item not yet saved to DB, just remove from state
+            if (itemToDelete && itemToDelete.isNew) { // This case should be rare now with auto-save on add
                 setCompositions(prev => prev.filter(c => c.id !== compositionId));
                 toast({ title: "Item removido!", description: `"${productName}" foi removido da lista.` });
             } else {
@@ -884,7 +963,9 @@ const BudgetEditorPage = () => {
         if (compositions.length > 0) {
             const lastItem = compositions[compositions.length - 1];
             // Apenas foca se for um item recém-adicionado (não carregado do banco de dados)
-            if (lastItem && lastItem.isNew) {
+            // A flag isNew agora é definida apenas no momento da adição e removida após o save.
+            // Se o item ainda tiver isNew, significa que acabou de ser adicionado e precisa de foco.
+            if (lastItem && lastItem.isNew) { 
                 const inputElement = itemQuantityInputRefs.current.get(lastItem.id);
                 if (inputElement) {
                     inputElement.focus();
@@ -1056,6 +1137,7 @@ const BudgetEditorPage = () => {
                                                 inputMode="decimal"
                                                 pattern="[0-9,.]*"
                                                 ref={(el) => itemQuantityInputRefs.current.set(comp.id, el)}
+                                                disabled={isFaturado}
                                             />
                                         </TableCell>
                                         <TableCell>
@@ -1067,6 +1149,7 @@ const BudgetEditorPage = () => {
                                                 className="w-28 text-right"
                                                 inputMode="decimal"
                                                 pattern="[0-9,.]*"
+                                                disabled={isFaturado}
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
@@ -1081,6 +1164,7 @@ const BudgetEditorPage = () => {
                                                 className="w-24 text-right"
                                                 inputMode="decimal"
                                                 pattern="[0-9,.]*"
+                                                disabled={isFaturado}
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-bold">
