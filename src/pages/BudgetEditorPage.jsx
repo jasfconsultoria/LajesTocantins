@@ -96,7 +96,7 @@ const BudgetEditorPage = () => {
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
     // const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // Removed
     // const [shareLink, setShareLink] = useState(''); // Removed
-    const [unitsMap, setUnitsMap] = useState(new Map()); // Corrected: using useState
+    const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
 
@@ -490,6 +490,27 @@ const BudgetEditorPage = () => {
             ? `${person.nome_fantasia} - ${person.razao_social}` 
             : person.razao_social || person.nome_fantasia;
         
+        let newNatureza = '';
+        let newCfop = '';
+
+        if (activeCompany?.uf === 'TO') { // Assuming 'TO' is the UF for Tocantins
+            if (person.uf === 'TO') {
+                newNatureza = "Venda Merc Adq ou Receb Terceiro";
+                newCfop = "5102";
+            } else {
+                newNatureza = "Venda de mercadoria adquirida ou recebida de terceiros";
+                newCfop = "6102";
+            }
+        } else { // If company is not in Tocantins, default to inter-state for any client
+            if (person.uf === activeCompany?.uf) {
+                newNatureza = "Venda Merc Adq ou Receb Terceiro"; // Intra-state for other UFs
+                newCfop = "5102";
+            } else {
+                newNatureza = "Venda de mercadoria adquirida ou recebida de terceiros"; // Inter-state for other UFs
+                newCfop = "6102";
+            }
+        }
+
         if (!id) {
             setSaving(true);
             try {
@@ -501,6 +522,8 @@ const BudgetEditorPage = () => {
                     vendedor: user?.user_metadata?.full_name || user?.email || '',
                     cliente_id: person.cpf_cnpj,
                     nome_cliente: clientName,
+                    natureza: newNatureza, // Set new nature
+                    cfop: newCfop,       // Set new CFOP
                 };
 
                 delete defaultBudget.cliente_endereco_completo;
@@ -579,8 +602,8 @@ const BudgetEditorPage = () => {
                 cliente_id: person.cpf_cnpj,
                 nome_cliente: clientName,
                 cliente_endereco_completo: buildClientAddressString(person),
-                cfop: '',
-                natureza: '',
+                natureza: newNatureza, // Set new nature
+                cfop: newCfop,       // Set new CFOP
             }));
         }
     };
@@ -1044,9 +1067,7 @@ const BudgetEditorPage = () => {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                <Button variant="ghost" size="icon" onClick={() => handleEditComposition(comp.id)} disabled={isFaturado}>
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
+                                                {/* Botão de edição removido conforme solicitado */}
                                                 <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" 
                                                     onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}
                                                     disabled={isFaturado}>
