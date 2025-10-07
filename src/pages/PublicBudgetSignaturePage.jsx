@@ -269,37 +269,11 @@ const PublicBudgetSignaturePage = () => {
   // Depois de confirmar que funciona, podemos reintroduzir as regras de status.
   const canShowSignatureField = true; 
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
-        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-      </div>
-    );
-  }
-
-  // Log the budget state right before the conditional render
-  console.log("PublicBudgetSignaturePage: Rendering. Current budget state:", budget);
-
-  if (!budget) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 text-center">
-        <XCircle className="w-16 h-16 text-red-500 mb-4" />
-        <h2 className="text-2xl font-bold text-slate-800">Orçamento Não Encontrado</h2>
-        <p className="text-slate-600">
-          Verifique o link e tente novamente. Se o problema persistir, pode ser um problema de permissões.
-          Certifique-se de que as políticas de RLS (Row Level Security) para as tabelas `orcamento`, `pessoas`, `emitente`, `municipios` e `unidade`
-          permitam acesso de leitura para o papel `anon` (usuários não autenticados).
-        </p>
-        <Button onClick={() => navigate('/')} className="mt-6">Voltar para o Início</Button>
-      </div>
-    );
-  }
-
   // Construir o endereço da empresa usando useMemo para garantir reatividade e clareza
   const companyAddressBudget = useMemo(() => {
     console.log("DEBUG: Recomputing companyAddressBudget");
-    if (!activeCompanyData) {
-      console.log("DEBUG: activeCompanyData is null, returning empty string for companyAddressBudget.");
+    if (!activeCompanyData || allMunicipalities.length === 0) { // Adicionado allMunicipalities.length === 0
+      console.log("DEBUG: activeCompanyData or allMunicipalities not ready, returning empty string for companyAddressBudget.");
       return '';
     }
 
@@ -329,7 +303,33 @@ const PublicBudgetSignaturePage = () => {
     const finalAddress = parts.filter(Boolean).join(', ');
     console.log("DEBUG: Final companyAddressBudget:", finalAddress);
     return finalAddress;
-  }, [activeCompanyData, allMunicipalities]);
+  }, [activeCompanyData, allMunicipalities]); // Depend on allMunicipalities
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  // Log the budget state right before the conditional render
+  console.log("PublicBudgetSignaturePage: Rendering. Current budget state:", budget);
+
+  if (!budget) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4 text-center">
+        <XCircle className="w-16 h-16 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-slate-800">Orçamento Não Encontrado</h2>
+        <p className="text-slate-600">
+          Verifique o link e tente novamente. Se o problema persistir, pode ser um problema de permissões.
+          Certifique-se de que as políticas de RLS (Row Level Security) para as tabelas `orcamento`, `pessoas`, `emitente`, `municipios` e `unidade`
+          permitam acesso de leitura para o papel `anon` (usuários não autenticados).
+        </p>
+        <Button onClick={() => navigate('/')} className="mt-6">Voltar para o Início</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 p-4">
