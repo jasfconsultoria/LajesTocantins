@@ -95,10 +95,10 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    const [unitsMap, setUnitsMap] = useState(new Map()); // CORRIGIDO: Inicialização com useState(new Map())
+    const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
-    const [itemToFocusId, setItemToFocusId] = useState(null); // Novo estado para controlar o foco
+    const [itemToFocusId, setItemToFocusId] = useState(null);
 
     const [baseIcmsTotal, setBaseIcmsTotal] = useState(0);
     const [totalIcmsTotal, setTotalIcmsTotal] = useState(0);
@@ -106,10 +106,8 @@ const BudgetEditorPage = () => {
     const isFaturado = budget.status === '2';
     const isAprovado = budget.status === '1';
 
-    // Ref para armazenar as referências dos campos de quantidade dos itens de composição
     const itemQuantityInputRefs = useRef(new Map());
 
-    // Log the ID when the component renders or updates
     useEffect(() => {
         console.log("BudgetEditorPage mounted/updated. Current ID from useParams:", id);
     }, [id]);
@@ -132,6 +130,8 @@ const BudgetEditorPage = () => {
         } catch (error) {
             console.error("Error fetching UFs or Municipalities:", error);
             toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar dados de localização.' });
+            setAllUfs([]); // Clear state on error
+            setAllMunicipalities([]); // Clear state on error
         }
     }, [toast]);
 
@@ -193,6 +193,7 @@ const BudgetEditorPage = () => {
         } catch (error) {
             console.error("Error fetching people:", error);
             toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar a lista de pessoas.' });
+            setPeople([]); // Clear state on error
         }
     }, [toast, allMunicipalities, allUfs]);
 
@@ -265,7 +266,6 @@ const BudgetEditorPage = () => {
 
     const fetchBudget = useCallback(async () => {
         if (!id) {
-            setLoading(false);
             setBudget(prev => ({
                 ...initialBudgetState,
                 cnpj_empresa: activeCompany?.cnpj || '',
@@ -275,7 +275,6 @@ const BudgetEditorPage = () => {
             }));
             return;
         }
-        setLoading(true);
         try {
             const { data, error } = await supabase
                 .from('orcamento')
@@ -336,7 +335,6 @@ const BudgetEditorPage = () => {
                     return { 
                         ...comp, 
                         base_calculo_entries: baseCalculoData || [],
-                        // Initialize display fields
                         quantidade_display: formatDecimal(comp.quantidade),
                         valor_venda_display: formatDecimal(comp.valor_venda),
                         desconto_total_display: formatDecimal(comp.desconto_total || 0),
@@ -348,8 +346,8 @@ const BudgetEditorPage = () => {
         } catch (error) {
             console.error("Caught error fetching budget (BudgetEditorPage):", error);
             toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message || 'Ocorreu um erro inesperado ao carregar o orçamento.' });
-        } finally {
-            setLoading(false);
+            setBudget(initialBudgetState); // Reset budget on error
+            setCompositions([]); // Clear compositions on error
         }
     }, [id, user, activeCompany, toast, buildClientAddressString, allMunicipalities]);
 
@@ -377,31 +375,46 @@ const BudgetEditorPage = () => {
     }, [toast]);
 
     useEffect(() => {
-        fetchUfsAndMunicipalities();
-        fetchUnits();
-    }, [fetchUfsAndMunicipalities, fetchUnits]);
+        const initializeData = async () => {
+            setLoading(true); // Start loading for the whole initialization process
+            try {
+                await fetchUfsAndMunicipalities(); // This will set allUfs and allMunicipalities
 
-    useEffect(() => {
+                if (id) { // If editing an existing budget
+                    await fetchBudget(); // This will fetch budget and compositions
+                } else { // If creating a new budget
+                    setBudget(prev => ({
+                        ...initialBudgetState,
+                        cnpj_empresa: activeCompany?.cnpj || '',
+                        usuario_id: user?.id || null,
+                        vendedor: user?.user_metadata?.full_name || user?.email || '',
+                        numero_pedido: '',
+                    }));
+                }
+                await fetchPeople(); // Always fetch people for client selection
+                await fetchProducts(); // Always fetch products for product selection
+                await fetchUnits(); // Always fetch units for product selection
+            } catch (error) {
+                console.error("Error during initial data fetch in BudgetEditorPage:", error);
+                toast({ variant: 'destructive', title: 'Erro de Inicialização', description: 'Não foi possível carregar os dados iniciais da página.' });
+                setBudget(initialBudgetState);
+                setCompositions([]);
+                setPeople([]);
+                setAllUfs([]);
+                setAllMunicipalities([]);
+                setAllProducts([]);
+                setSelectedClientData(null);
+            } finally {
+                setLoading(false); // All initial data fetching is complete
+            }
+        };
+
         if (activeCompanyId) {
-            fetchProducts();
+            initializeData();
+        } else {
+            setLoading(false); // Stop loading to show the "Nenhuma Empresa Ativa" message
         }
-    }, [activeCompanyId, fetchProducts]);
-
-    useEffect(() => {
-        if (allUfs.length > 0 && allMunicipalities.length > 0) {
-            fetchBudget();
-            fetchPeople();
-        } else if (!id) {
-            setLoading(false);
-            setBudget(prev => ({
-                ...initialBudgetState,
-                cnpj_empresa: activeCompany?.cnpj || '',
-                usuario_id: user?.id || null,
-                vendedor: user?.user_metadata?.full_name || user?.email || '',
-                numero_pedido: '',
-            }));
-        }
-    }, [allUfs, allMunicipalities, fetchBudget, fetchPeople, id, activeCompany, user]);
+    }, [activeCompanyId, id, fetchUfsAndMunicipalities, fetchBudget, fetchPeople, fetchProducts, fetchUnits, activeCompany, user, toast]);
 
     // Effect to calculate ICMS totals
     useEffect(() => {
@@ -472,7 +485,6 @@ const BudgetEditorPage = () => {
                 natureza: '',
             }));
         }
-        // Removed automatic save here
     };
 
     const handleSelectClient = async (person) => {
@@ -497,7 +509,7 @@ const BudgetEditorPage = () => {
         let newNatureza = '';
         let newCfop = '';
 
-        if (activeCompany?.uf === 'TO') { // Assuming 'TO' is the UF for Tocantins
+        if (activeCompany?.uf === 'TO') {
             if (person.uf === 'TO') {
                 newNatureza = "Venda Merc Adq ou Receb Terceiro";
                 newCfop = "5102";
@@ -505,12 +517,12 @@ const BudgetEditorPage = () => {
                 newNatureza = "Venda de mercadoria adquirida ou recebida de terceiros";
                 newCfop = "6102";
             }
-        } else { // If company is not in Tocantins, default to inter-state for any client
+        } else {
             if (person.uf === activeCompany?.uf) {
-                newNatureza = "Venda Merc Adq ou Receb Terceiro"; // Intra-state for other UFs
+                newNatureza = "Venda Merc Adq ou Receb Terceiro";
                 newCfop = "5102";
             } else {
-                newNatureza = "Venda de mercadoria adquirida ou recebida de terceiros"; // Inter-state for other UFs
+                newNatureza = "Venda de mercadoria adquirida ou recebida de terceiros";
                 newCfop = "6102";
             }
         }
@@ -526,8 +538,8 @@ const BudgetEditorPage = () => {
                     vendedor: user?.user_metadata?.full_name || user?.email || '',
                     cliente_id: person.cpf_cnpj,
                     nome_cliente: clientName,
-                    natureza: newNatureza, // Set new nature
-                    cfop: newCfop,       // Set new CFOP
+                    natureza: newNatureza,
+                    cfop: newCfop,
                 };
 
                 delete defaultBudget.cliente_endereco_completo;
@@ -606,8 +618,8 @@ const BudgetEditorPage = () => {
                 cliente_id: person.cpf_cnpj,
                 nome_cliente: clientName,
                 cliente_endereco_completo: buildClientAddressString(person),
-                natureza: newNatureza, // Set new nature
-                cfop: newCfop,       // Set new CFOP
+                natureza: newNatureza,
+                cfop: newCfop,
             }));
         }
     };
@@ -655,7 +667,7 @@ const BudgetEditorPage = () => {
             };
 
             setCompositions(prev => [...prev, newCompositionItem]);
-            setItemToFocusId(newCompositionItem.id); // Define o ID do novo item para focar
+            setItemToFocusId(newCompositionItem.id);
             toast({ title: "Produto adicionado!", description: `${product.prod_xProd} foi adicionado ao orçamento.` });
         } catch (error) {
             console.error("Caught error in handleSelectProduct:", error);
@@ -711,7 +723,7 @@ const BudgetEditorPage = () => {
                         [field]: updatedComp[field],
                         updated_at: new Date().toISOString(),
                     })
-                    .eq('id', parseInt(compositionId, 10)); // Explicitly parse ID
+                    .eq('id', parseInt(compositionId, 10));
 
                 if (updateError) {
                     console.error(`[ERROR] Supabase update failed for composition item ${compositionId}, field ${field}:`, updateError);
@@ -848,10 +860,8 @@ const BudgetEditorPage = () => {
                 throw error;
             }
 
-            // Process compositions: Update existing items
             if (budgetId) {
                 for (const comp of compositions) {
-                    // Only update if it's an existing item (has a DB-assigned ID)
                     if (comp.id) {
                         const compositionUpdateData = {
                             quantidade: comp.quantidade,
@@ -863,15 +873,13 @@ const BudgetEditorPage = () => {
                         const { error: compUpdateError } = await supabase
                             .from('orcamento_composicao')
                             .update(compositionUpdateData)
-                            .eq('id', parseInt(comp.id, 10)); // Ensure ID is integer
+                            .eq('id', parseInt(comp.id, 10));
                         if (compUpdateError) {
                             console.error(`[ERROR] Supabase update failed for composition item ${comp.id}:`, compUpdateError);
                             throw compUpdateError;
                         }
                         console.log(`[SUCCESS] Supabase update for composition item ${comp.id} completed without error.`);
                     }
-                    // New items are handled by handleSelectProduct (which inserts them immediately)
-                    // Deletions are handled by handleDeleteComposition (which deletes immediately)
                 }
             }
 
@@ -898,8 +906,7 @@ const BudgetEditorPage = () => {
         setSaving(true);
         try {
             const itemToDelete = compositions.find(c => c.id === compositionId);
-            // If it's a new item not yet saved to DB, just remove from state
-            if (itemToDelete && itemToDelete.isNew) { // This case should be rare now with auto-save on add
+            if (itemToDelete && itemToDelete.isNew) {
                 setCompositions(prev => prev.filter(c => c.id !== compositionId));
                 toast({ title: "Item removido!", description: `"${productName}" foi removido da lista.` });
             } else {
@@ -936,7 +943,6 @@ const BudgetEditorPage = () => {
         const baseUrl = window.location.origin; 
         const link = `${baseUrl}/public/budgets/${id}/sign`;
         console.log("Generated share link:", link);
-        // Usar window.open para abrir em uma nova aba
         window.open(link, '_blank'); 
     };
 
@@ -980,7 +986,6 @@ const BudgetEditorPage = () => {
     const totalDescontoDisplay = sumOfItemDiscounts;
     const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
-    // Efeito para focar no campo de quantidade do último item adicionado
     useEffect(() => {
         if (itemToFocusId) {
             const inputElement = itemQuantityInputRefs.current.get(itemToFocusId);
@@ -988,10 +993,10 @@ const BudgetEditorPage = () => {
                 inputElement.focus();
                 inputElement.select();
                 inputElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                setItemToFocusId(null); // Reset the ID after focusing
+                setItemToFocusId(null);
             }
         }
-    }, [itemToFocusId, compositions]); // Depend on itemToFocusId and compositions
+    }, [itemToFocusId, compositions]);
 
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
@@ -1189,7 +1194,6 @@ const BudgetEditorPage = () => {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                {/* Botão de edição removido conforme solicitado */}
                                                 <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600" 
                                                     onClick={() => handleDeleteComposition(comp.id, comp.produtos?.prod_xProd || `Produto ID: ${comp.produto_id}`)}
                                                     disabled={isFaturado}>
@@ -1329,45 +1333,6 @@ const BudgetEditorPage = () => {
                 onApplyDiscount={handleApplyDiscount}
                 isFaturado={isFaturado}
             />
-
-            {/* Share Link Dialog (Removed from this page, but keeping the component definition for clarity if needed elsewhere) */}
-            {/*
-            <Dialog open={isShareLinkDialogOpen} onOpenChange={setIsShareLinkDialogOpen}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <Share2 className="w-5 h-5 text-blue-600" /> Compartilhar Orçamento
-                        </DialogTitle>
-                        <DialogDescription>
-                            Copie o link abaixo para compartilhar este orçamento com o cliente para assinatura.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Label htmlFor="share-link" className="sr-only">Link de Compartilhamento</Label>
-                        <div className="flex space-x-2">
-                            <Input
-                                id="share-link"
-                                type="text"
-                                value={shareLink}
-                                readOnly
-                                className="flex-1"
-                            />
-                            <Button onClick={handleCopyLink} className="shrink-0">
-                                <Copy className="w-4 h-4 mr-2" /> Copiar
-                            </Button>
-                        </div>
-                        <p className="text-sm text-slate-500 mt-2">
-                            O cliente poderá visualizar e assinar o orçamento através deste link.
-                        </p>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsShareLinkDialogOpen(false)}>
-                            Fechar
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-            */}
         </div>
     );
 };
