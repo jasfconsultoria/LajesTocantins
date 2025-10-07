@@ -847,6 +847,33 @@ const BudgetEditorPage = () => {
                 throw error;
             }
 
+            // Process compositions: Update existing items
+            if (budgetId) {
+                for (const comp of compositions) {
+                    // Only update if it's an existing item (has a DB-assigned ID)
+                    if (comp.id) {
+                        const compositionUpdateData = {
+                            quantidade: comp.quantidade,
+                            valor_venda: comp.valor_venda,
+                            desconto_total: comp.desconto_total,
+                            updated_at: new Date().toISOString(),
+                        };
+                        console.log(`[DEBUG] handleSave: Updating existing composition item ID: ${comp.id} with data:`, compositionUpdateData);
+                        const { error: compUpdateError } = await supabase
+                            .from('orcamento_composicao')
+                            .update(compositionUpdateData)
+                            .eq('id', parseInt(comp.id, 10)); // Ensure ID is integer
+                        if (compUpdateError) {
+                            console.error(`[ERROR] Supabase update failed for composition item ${comp.id}:`, compUpdateError);
+                            throw compUpdateError;
+                        }
+                        console.log(`[SUCCESS] Supabase update for composition item ${comp.id} completed without error.`);
+                    }
+                    // New items are handled by handleSelectProduct (which inserts them immediately)
+                    // Deletions are handled by handleDeleteComposition (which deletes immediately)
+                }
+            }
+
             if (user) {
                 await logAction(user.id, actionType, description, activeCompanyId, null);
             }
