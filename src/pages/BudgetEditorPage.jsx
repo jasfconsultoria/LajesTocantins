@@ -888,6 +888,7 @@ const BudgetEditorPage = () => {
                 const inputElement = itemQuantityInputRefs.current.get(lastItem.id);
                 if (inputElement) {
                     inputElement.focus();
+                    inputElement.select(); // Adicionado .select() aqui
                     inputElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }
@@ -1048,9 +1049,10 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={formatDecimal(comp.quantidade)}
+                                                value={comp.quantidade_display}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'quantidade', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'quantidade')}
+                                                onFocus={(e) => e.target.select()} // Adicionado para selecionar o texto
                                                 className="w-20 text-right"
                                                 disabled={isFaturado}
                                                 ref={(el) => itemQuantityInputRefs.current.set(comp.id, el)} // Atribui a ref aqui
@@ -1059,9 +1061,10 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={formatDecimal(comp.valor_venda)}
+                                                value={comp.valor_venda_display}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'valor_venda', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'valor_venda')}
+                                                onFocus={(e) => e.target.select()} // Adicionado para selecionar o texto
                                                 className="w-28 text-right"
                                                 disabled={isFaturado}
                                             />
@@ -1072,9 +1075,10 @@ const BudgetEditorPage = () => {
                                         <TableCell>
                                             <Input
                                                 type="text"
-                                                value={formatDecimal(comp.desconto_total || 0)}
+                                                value={comp.desconto_total_display}
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'desconto_total', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'desconto_total')}
+                                                onFocus={(e) => e.target.select()} // Adicionado para selecionar o texto
                                                 className="w-24 text-right"
                                                 disabled={isFaturado}
                                             />
@@ -1142,7 +1146,7 @@ const BudgetEditorPage = () => {
                         </div>
                     </div>
 
-                    <div className="lg:col-span-1 space-y-2 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div className="lg:col-span-1 space-y-2 p-4 bg-slate-500 rounded-lg border border-slate-200">
                         <h3 className="config-title mb-2">Resumo do Pedido</h3>
                         <div className="flex justify-between text-slate-700"><span>Total dos Produtos R$</span><span>{formatCurrency(totalProdutosBruto)}</span></div>
                         <div className="flex justify-between text-slate-700"><span>Total dos Serviços R$</span><span>{formatCurrency(totalServicosBruto)}</span></div>
