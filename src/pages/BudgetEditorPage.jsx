@@ -834,7 +834,8 @@ const BudgetEditorPage = () => {
         const baseUrl = window.location.origin; 
         const link = `${baseUrl}/public/budgets/${id}/sign`;
         console.log("Generated share link:", link);
-        navigate(link); // Directly navigate to the public signature page
+        // Usar window.location.href para forçar uma navegação completa
+        window.location.href = link; 
     };
 
     const displayTipo = useMemo(() => {
