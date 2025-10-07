@@ -176,9 +176,9 @@ const PublicBudgetSignaturePage = () => {
       setBudget(null); // Ensure budget is null on error
     } finally {
       setLoading(false);
-      console.log("PublicBudgetSignaturePage: fetchBudgetDetails finished. Budget state (after setBudget):", budget); // Log final budget state
+      // console.log("PublicBudgetSignaturePage: fetchBudgetDetails finished. Budget state (after setBudget):", budget); // Removed this log as it would show stale state
     }
-  }, [id, toast, buildClientAddressString, allMunicipalities, budget]); // Added budget to dependencies for logging
+  }, [id, toast, buildClientAddressString, allMunicipalities]); // Removed 'budget' from dependencies
 
   useEffect(() => {
     fetchUfsAndMunicipalities();
