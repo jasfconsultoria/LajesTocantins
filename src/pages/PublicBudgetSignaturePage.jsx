@@ -41,7 +41,12 @@ const PublicBudgetSignaturePage = () => {
   const isFaturado = budget?.status === '2';
   const hasSignature = budget?.signature_url && budget.signature_url.trim() !== '';
 
+  useEffect(() => {
+    console.log("PublicBudgetSignaturePage: Component mounted/updated. ID from useParams:", id);
+  }, [id]);
+
   const fetchUfsAndMunicipalities = useCallback(async () => {
+    console.log("PublicBudgetSignaturePage: Iniciando fetchUfsAndMunicipalities.");
     try {
       const { data: municipalitiesData, error: municipalitiesError } = await supabase
         .from('municipios')
@@ -49,8 +54,9 @@ const PublicBudgetSignaturePage = () => {
         .order('municipio');
       if (municipalitiesError) throw municipalitiesError;
       setAllMunicipalities(municipalitiesData);
+      console.log("PublicBudgetSignaturePage: Municípios carregados com sucesso.");
     } catch (error) {
-      console.error("Error fetching Municipalities:", error);
+      console.error("PublicBudgetSignaturePage: Erro ao carregar Municípios:", error);
       toast({ variant: 'destructive', title: 'Erro', description: error.message || 'Não foi possível carregar dados de localização.' });
     }
   }, [toast]);
@@ -80,7 +86,9 @@ const PublicBudgetSignaturePage = () => {
   }, [allMunicipalities]);
 
   const fetchBudgetDetails = useCallback(async () => {
+    console.log("PublicBudgetSignaturePage: Iniciando fetchBudgetDetails para ID:", id);
     if (!id) {
+      console.log("PublicBudgetSignaturePage: ID do orçamento é nulo ou indefinido, pulando fetch.");
       setLoading(false);
       return;
     }
@@ -94,11 +102,15 @@ const PublicBudgetSignaturePage = () => {
         .single();
 
       if (budgetError) {
+        console.error("PublicBudgetSignaturePage: Erro Supabase ao buscar orçamento:", budgetError);
         throw new Error(`Orçamento não encontrado ou você não tem permissão para acessá-lo. Detalhes: ${budgetError.message}`);
       }
       if (!budgetData) {
+        console.log("PublicBudgetSignaturePage: Nenhum dado de orçamento retornado para ID:", id);
         throw new Error("Orçamento não encontrado.");
       }
+      console.log("PublicBudgetSignaturePage: Dados do orçamento carregados:", budgetData);
+      console.log("PublicBudgetSignaturePage: CNPJ da empresa no orçamento (budgetData.cnpj_empresa):", budgetData.cnpj_empresa);
 
       // Fetch client details
       let clientDetails = null;
@@ -108,9 +120,10 @@ const PublicBudgetSignaturePage = () => {
           .select('*')
           .eq('cpf_cnpj', budgetData.cliente_id)
           .single();
-        if (clientError) console.error("Error fetching client for public budget:", clientError);
+        if (clientError) console.error("PublicBudgetSignaturePage: Erro ao buscar cliente para orçamento público:", clientError);
         clientDetails = clientData;
       }
+      console.log("PublicBudgetSignaturePage: Dados do cliente carregados:", clientDetails);
 
       // Fetch active company details for display
       let companyDetails = null;
@@ -120,10 +133,16 @@ const PublicBudgetSignaturePage = () => {
           .select('razao_social, nome_fantasia, cnpj, telefone, email, logo_sistema_url, logo_documentos_url, logradouro, numero, complemento, bairro, municipio, uf')
           .eq('cnpj', budgetData.cnpj_empresa)
           .single();
-        if (companyError) console.error("Error fetching company for public budget:", companyError);
+        if (companyError) {
+          console.error("PublicBudgetSignaturePage: Erro ao buscar empresa para orçamento público:", companyError);
+          // Se o erro for 'PGRST116' (nenhuma linha encontrada), companyRes será null, o que é esperado.
+          // Outros erros (ex: RLS) serão logados.
+        }
+        console.log("PublicBudgetSignaturePage: Resultado da busca da empresa (companyRes):", companyRes);
         companyDetails = companyRes;
       }
       setActiveCompanyData(companyDetails);
+      console.log("PublicBudgetSignaturePage: activeCompanyData definido como:", companyDetails);
 
       const enrichedBudgetData = {
         ...budgetData,
@@ -142,6 +161,7 @@ const PublicBudgetSignaturePage = () => {
         .eq('orcamento_id', parseInt(id, 10));
       if (compError) throw compError;
       setCompositions(compData);
+      console.log("PublicBudgetSignaturePage: Dados de composição carregados:", compData);
 
       // Fetch units
       const { data: unitsData, error: unitsError } = await supabase
@@ -151,13 +171,15 @@ const PublicBudgetSignaturePage = () => {
       if (unitsError) throw unitsError;
       const map = new Map(unitsData.map(unit => [unit.codigo, unit.unidade]));
       setUnitsMap(map);
+      console.log("PublicBudgetSignaturePage: Unidades carregadas.");
 
     } catch (error) {
-      console.error("Caught error in fetchBudgetDetails:", error);
+      console.error("PublicBudgetSignaturePage: Erro capturado em fetchBudgetDetails:", error);
       toast({ variant: 'destructive', title: 'Erro ao carregar orçamento', description: error.message || 'Ocorreu um erro inesperado ao carregar o orçamento.' });
       setBudget(null);
     } finally {
       setLoading(false);
+      console.log("PublicBudgetSignaturePage: fetchBudgetDetails finalizado. Estado de loading:", false);
     }
   }, [id, toast, buildClientAddressString, allMunicipalities]);
 
@@ -248,9 +270,13 @@ const PublicBudgetSignaturePage = () => {
 
   // Construir o endereço da empresa usando useMemo para garantir reatividade e clareza
   const companyAddressBudget = useMemo(() => {
+    console.log("DEBUG: Recomputing companyAddressBudget.");
     if (!activeCompanyData) {
+      console.log("DEBUG: activeCompanyData é nulo, retornando string vazia para companyAddressBudget.");
       return '';
     }
+
+    console.log("DEBUG: activeCompanyData para endereço:", activeCompanyData);
 
     const parts = [];
     if (activeCompanyData.logradouro) parts.push(activeCompanyData.logradouro);
@@ -269,7 +295,9 @@ const PublicBudgetSignaturePage = () => {
     //     parts.push(ufSigla);
     // }
 
-    return parts.filter(Boolean).join(', ');
+    const finalAddress = parts.filter(Boolean).join(', ');
+    console.log("DEBUG: Endereço final da empresa (companyAddressBudget):", finalAddress);
+    return finalAddress;
   }, [activeCompanyData]); // allMunicipalities não é mais uma dependência direta aqui
 
   if (loading) {
