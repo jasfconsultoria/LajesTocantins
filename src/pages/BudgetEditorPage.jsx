@@ -94,8 +94,6 @@ const BudgetEditorPage = () => {
     const [saving, setSaving] = useState(false);
     const [isProductSearchDialogOpen, setIsProductSearchDialogOpen] = useState(false);
     const [isDiscountDialogOpen, setIsDiscountDialogOpen] = useState(false);
-    // const [isShareLinkDialogOpen, setIsShareLinkDialogOpen] = useState(false); // Removed
-    // const [shareLink, setShareLink] = useState(''); // Removed
     const [unitsMap, setUnitsMap] = useState(new Map());
     const [allProducts, setAllProducts] = useState([]);
     const [selectedClientData, setSelectedClientData] = useState(null);
@@ -105,6 +103,9 @@ const BudgetEditorPage = () => {
 
     const isFaturado = budget.status === '2';
     const isAprovado = budget.status === '1';
+
+    // Ref para armazenar as referências dos campos de quantidade dos itens de composição
+    const itemQuantityInputRefs = useRef(new Map());
 
     // Log the ID when the component renders or updates
     useEffect(() => {
@@ -626,7 +627,7 @@ const BudgetEditorPage = () => {
                 prod_xProd: product.prod_xProd,
                 prod_uCOM: product.prod_uCOM,
             },
-            isNew: true,
+            isNew: true, // Flag para identificar novo item
             base_calculo_entries: baseCalculoData || [],
             // Initialize display fields for new item
             quantidade_display: formatDecimal(1),
@@ -878,6 +879,21 @@ const BudgetEditorPage = () => {
     const totalDescontoDisplay = sumOfItemDiscounts;
     const totalLiquidoFinal = totalDoPedido - totalDescontoDisplay;
 
+    // Efeito para focar no campo de quantidade do último item adicionado
+    useEffect(() => {
+        if (compositions.length > 0) {
+            const lastItem = compositions[compositions.length - 1];
+            // Apenas foca se for um item recém-adicionado (não carregado do banco de dados)
+            if (lastItem && lastItem.isNew) {
+                const inputElement = itemQuantityInputRefs.current.get(lastItem.id);
+                if (inputElement) {
+                    inputElement.focus();
+                    inputElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+    }, [compositions]);
+
     if (loading) {
         return <div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>;
     }
@@ -1037,6 +1053,7 @@ const BudgetEditorPage = () => {
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'quantidade')}
                                                 className="w-20 text-right"
                                                 disabled={isFaturado}
+                                                ref={(el) => itemQuantityInputRefs.current.set(comp.id, el)} // Atribui a ref aqui
                                             />
                                         </TableCell>
                                         <TableCell>
