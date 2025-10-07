@@ -1053,7 +1053,7 @@ const BudgetEditorPage = () => {
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'quantidade', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'quantidade')}
                                                 className="w-20 text-right"
-                                                disabled={isFaturado}
+                                                // disabled={isFaturado} // REMOVIDO TEMPORARIAMENTE
                                                 ref={(el) => itemQuantityInputRefs.current.set(comp.id, el)} // Atribui a ref aqui
                                             />
                                         </TableCell>
@@ -1064,7 +1064,7 @@ const BudgetEditorPage = () => {
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'valor_venda', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'valor_venda')}
                                                 className="w-28 text-right"
-                                                disabled={isFaturado}
+                                                // disabled={isFaturado} // REMOVIDO TEMPORARIAMENTE
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
@@ -1077,7 +1077,7 @@ const BudgetEditorPage = () => {
                                                 onChange={(e) => handleCompositionInputChange(comp.id, 'desconto_total', e.target.value)}
                                                 onBlur={() => handleCompositionInputBlur(comp.id, 'desconto_total')}
                                                 className="w-24 text-right"
-                                                disabled={isFaturado}
+                                                // disabled={isFaturado} // REMOVIDO TEMPORARIAMENTE
                                             />
                                         </TableCell>
                                         <TableCell className="text-right font-bold">
